@@ -3,6 +3,10 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+# Re-export database fixtures from tests/db/conftest.py so they are
+# discoverable by all test modules under tests/.
+pytest_plugins = ["tests.db.conftest"]
+
 
 @pytest.fixture
 def app():

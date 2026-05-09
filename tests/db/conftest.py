@@ -85,3 +85,27 @@ def db_connection(_test_db_engine):
     yield conn
     transaction.rollback()
     conn.close()
+
+
+@pytest.fixture()
+def db_session(_test_db_engine):
+    """Provide a SQLAlchemy Session with transaction rollback.
+
+    Unlike ``db_connection`` which yields a raw ``Connection``, this fixture
+    yields an ORM ``Session`` suitable for domain logic that uses
+    ``session.add()`` / ``session.commit()`` patterns.
+    """
+    from sqlalchemy.orm import Session
+
+    conn = _test_db_engine.connect()
+    transaction = conn.begin()
+    # Use begin_nested so that session.commit() only releases the savepoint
+    # and the outer transaction can still be rolled back for test isolation.
+    nested = conn.begin_nested()
+    session = Session(bind=conn)
+    try:
+        yield session
+    finally:
+        session.close()
+        transaction.rollback()
+        conn.close()

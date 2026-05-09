@@ -44,4 +44,4 @@
 - [x] 5.5 Implement `harvester topic create`.
 - [x] 5.6 Implement `harvester failures recent`.
 - [x] 5.7 Run `pytest tests/api tests/domain tests/cli -q` and confirm it passes.
-- [ ] 5.8 Commit with message `feat: add harvester api cli state machine`.
+- [x] 5.8 Commit with message `feat: add harvester api cli state machine`.

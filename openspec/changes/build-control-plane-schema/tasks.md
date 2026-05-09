@@ -44,4 +44,4 @@
 - [x] 5.4 Write constraint test for `item_versions(content_item_id, content_hash)` uniqueness.
 - [x] 5.5 Write schema test that `raw_objects` has retention metadata but no required payload blob column.
 - [x] 5.6 Run `pytest tests/db -q` and confirm all schema, migration and constraint tests pass.
-- [ ] 5.7 Commit with message `feat: add harvester control plane schema`.
+- [x] 5.7 Commit with message `feat: add harvester control plane schema`.
