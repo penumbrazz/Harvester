@@ -63,3 +63,23 @@ async def test_get_health_no_auth_required():
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         response = await client.get("/health")
         assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_no_token_configured_returns_401():
+    """Mutating endpoints must return 401 when HARVESTER_API_TOKEN is not set."""
+    with patch.dict(os.environ, {
+        "HARVESTER_API_TOKEN": "",
+        "HARVESTER_DATABASE_URL": "postgresql+psycopg://postgres:postgres123@192.168.0.114:5432/postgres",
+    }, clear=False):
+        # Remove the env var entirely to simulate unset
+        os.environ.pop("HARVESTER_API_TOKEN", None)
+        app = create_app()
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post(
+            "/sources/propose",
+            json={"name": "test-no-token", "kind": "web"},
+        )
+        assert response.status_code == 401
+        assert "not configured" in response.json()["detail"].lower()

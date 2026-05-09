@@ -35,3 +35,10 @@ class TestSmokeScript:
         assert "health" in content.lower() or "curl" in content.lower(), (
             "smoke.sh must contain a healthcheck command"
         )
+
+    def test_contains_compose_config_validation(self):
+        """The smoke.sh script must validate docker compose config."""
+        content = SMOKE_SCRIPT.read_text(encoding="utf-8")
+        assert "docker compose" in content and "config" in content, (
+            "smoke.sh must validate docker compose config"
+        )

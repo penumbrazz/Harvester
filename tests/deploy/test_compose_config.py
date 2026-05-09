@@ -65,7 +65,7 @@ class TestComposeConfig:
         assert "ports" in server, "Server service should expose ports"
 
     def test_services_use_env_file(self):
-        """Both server and worker should reference .env file."""
+        """Both server and worker should reference env_file config."""
         content = COMPOSE_FILE.read_text(encoding="utf-8")
         data = yaml.safe_load(content)
         for svc_name in ("server", "worker"):

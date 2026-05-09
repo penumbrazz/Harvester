@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from harvester.db.models import (
     ContentItem,
+    DedupGroup,
     ItemVersion,
     Source,
     TopicWatch,
@@ -165,3 +166,28 @@ class TestKeywordSearch:
         r = results[0]
         expected_keys = {"item_id", "title", "canonical_url", "source_id", "version_id", "created_at"}
         assert set(r.keys()) == expected_keys
+
+    def test_dedup_group_returns_canonical_only(self, db_session):
+        """Two versions in same dedup group should return only the canonical one."""
+        from harvester.search.keyword import keyword_search
+
+        src = _make_source(db_session)
+        ci_a = _make_item(db_session, "Dedup Python Article", source_id=src.id)
+        ci_b = _make_item(db_session, "Dedup Python Article Copy", source_id=src.id)
+
+        v_a = _make_version(db_session, ci_a.id)
+        v_b = _make_version(db_session, ci_b.id)
+
+        # Put both versions in a dedup group with v_a as canonical
+        dg = DedupGroup(canonical_item_version_id=v_a.id)
+        db_session.add(dg)
+        db_session.flush()
+        v_a.dedup_group_id = dg.id
+        v_b.dedup_group_id = dg.id
+        db_session.flush()
+
+        results = keyword_search(db_session, "Python")
+        # Only the canonical version should be returned
+        version_ids = [r["version_id"] for r in results]
+        assert v_a.id in version_ids
+        assert v_b.id not in version_ids

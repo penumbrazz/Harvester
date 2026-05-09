@@ -63,22 +63,19 @@ class TestLeaseExpiry:
         job_id = _insert_job(db_session, id=uuid.uuid4())
         db_session.commit()
 
-        # Simulate a worker claiming the job
+        # Simulate a worker claiming the job with an expired lease
         past = datetime.now(timezone.utc) - timedelta(minutes=10)
         _set_job_status(
             db_session, job_id, "running", "old-worker", past
         )
         db_session.commit()
 
-        # The job should be re-claimable since the lease expired.
-        # In production this would use a separate recovery mechanism;
-        # here we reset it manually to simulate the recovery path.
-        _set_job_status(db_session, job_id, "pending", None, None)
-        db_session.commit()
-
+        # claim_next_jobs should automatically recover expired leases
         claimed = claim_next_jobs(db_session, "new-worker", limit=1)
         assert len(claimed) >= 1
         assert claimed[0].id == job_id
+        assert claimed[0].status == "running"
+        assert claimed[0].locked_by == "new-worker"
 
     def test_running_job_with_valid_lease_not_reclaimed(self, db_session):
         """A running job with a valid lease should not be claimed again."""
@@ -169,7 +166,7 @@ class TestRetryMechanism:
         assert retry_job.priority < 5
 
     def test_exhausted_job_becomes_dead_letter(self, db_session):
-        """A job that has exhausted max_attempts should not create a retry."""
+        """A job that has exhausted max_attempts should become 'dead'."""
         job_id = _insert_job(
             db_session, id=uuid.uuid4(), attempts=2, max_attempts=3
         )
@@ -178,10 +175,11 @@ class TestRetryMechanism:
         claim_next_jobs(db_session, "worker-1", limit=1)
         fail_job(db_session, job_id, "permanent failure")
 
-        # Original should be failed
+        # Original should be dead, not failed
         original = db_session.get(Job, job_id)
-        assert original.status == "failed"
+        assert original.status == "dead"
         assert original.attempts == 3
+        assert original.last_error == "permanent failure"
 
         # No retry job should be created
         retry_jobs = db_session.scalars(

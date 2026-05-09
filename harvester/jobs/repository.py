@@ -24,11 +24,18 @@ def claim_next_jobs(
     worker_id: str,
     limit: int = 1,
     lanes: list[str] | None = None,
+    *,
+    max_per_source: int = 5,
+    max_per_job_type: int = 10,
+    protected_lanes: list[str] | None = None,
 ) -> list[Job]:
     """Atomically claim up to *limit* pending jobs for *worker_id*.
 
     Uses ``SELECT ... FOR UPDATE SKIP LOCKED`` so that multiple workers can
     safely consume from the same queue without blocking each other.
+
+    Implements fairness: per-source cap, per-job-type cap, and a protected
+    lane for manual / failure jobs that are always served first.
 
     Parameters
     ----------
@@ -41,6 +48,15 @@ def claim_next_jobs(
     lanes : list[str] or None
         If provided, only jobs whose ``job_type`` is in this list will be
         considered.
+    max_per_source : int
+        Max in-flight jobs per source_id. Jobs from saturated sources are
+        skipped.
+    max_per_job_type : int
+        Max in-flight jobs per job_type. Jobs from saturated types are
+        skipped.
+    protected_lanes : list[str] or None
+        Lane values that bypass per-source and per-type caps. Defaults to
+        ``["manual", "failure"]``.
 
     Returns
     -------
@@ -49,6 +65,25 @@ def claim_next_jobs(
     """
     now = datetime.datetime.now(datetime.UTC)
     lock_until = now + _LOCK_DURATION
+
+    # Reset expired running jobs back to pending so they can be reclaimed.
+    expired = (
+        sa.select(Job.id)
+        .where(
+            Job.status == "running",
+            Job.locked_until.is_not(None),
+            Job.locked_until < now,
+        )
+        .with_for_update(skip_locked=True)
+    )
+    expired_ids = [row[0] for row in session.execute(expired).fetchall()]
+    if expired_ids:
+        session.execute(
+            sa.update(Job)
+            .where(Job.id.in_(expired_ids))
+            .values(status="pending", locked_by=None, locked_until=None)
+        )
+        session.flush()
 
     # Build the core query: pending jobs that are ready to run.
     stmt = (
@@ -66,15 +101,49 @@ def claim_next_jobs(
     if lanes:
         stmt = stmt.where(Job.job_type.in_(lanes))
 
+    if protected_lanes is None:
+        protected_lanes = ["manual", "failure"]
+
     rows = session.scalars(stmt).all()
 
+    # Count current in-flight jobs per source and per job_type.
+    in_flight = session.execute(
+        sa.select(Job.source_id, Job.job_type, sa.func.count())
+        .where(Job.status == "running")
+        .group_by(Job.source_id, Job.job_type)
+    ).fetchall()
+
+    source_in_flight: dict[str | None, int] = {}
+    type_in_flight: dict[str, int] = {}
+    for sid, jtype, cnt in in_flight:
+        source_in_flight[sid] = source_in_flight.get(sid, 0) + cnt
+        type_in_flight[jtype] = type_in_flight.get(jtype, 0) + cnt
+
+    claimed: list[Job] = []
     for job in rows:
+        is_protected = job.lane in protected_lanes if job.lane else False
+        if not is_protected:
+            src = job.source_id
+            if src is not None and source_in_flight.get(src, 0) >= max_per_source:
+                continue
+            if type_in_flight.get(job.job_type, 0) >= max_per_job_type:
+                continue
+
         job.status = "running"
         job.locked_by = worker_id
         job.locked_until = lock_until
+        claimed.append(job)
+
+        # Update counters for subsequent fairness checks.
+        if job.source_id is not None:
+            source_in_flight[job.source_id] = source_in_flight.get(job.source_id, 0) + 1
+        type_in_flight[job.job_type] = type_in_flight.get(job.job_type, 0) + 1
+
+        if len(claimed) >= limit:
+            break
 
     session.flush()
-    return list(rows)
+    return claimed
 
 
 def complete_job(
@@ -130,7 +199,6 @@ def fail_job(
     if job is None:
         raise ValueError(f"Job {job_id} not found")
 
-    job.status = "failed"
     job.last_error = error_message
     job.locked_by = None
     job.locked_until = None
@@ -138,6 +206,7 @@ def fail_job(
 
     # Schedule a retry if we haven't exhausted max_attempts.
     if job.attempts < job.max_attempts:
+        job.status = "failed"
         backoff = _BACKOFF_BASE_SECONDS * (2 ** (job.attempts - 1))
         run_after = datetime.datetime.now(datetime.UTC) + datetime.timedelta(
             seconds=backoff
@@ -166,6 +235,7 @@ def fail_job(
             backoff,
         )
     else:
+        job.status = "dead"
         logger.warning(
             "Job %s dead-lettered after %d attempts: %s",
             job.id,
@@ -183,6 +253,9 @@ def create_job(
     idempotency_key: str | None = None,
     priority: int = 0,
     run_after: datetime.datetime | None = None,
+    auto_commit: bool = True,
+    source_id: str | None = None,
+    lane: str | None = None,
 ) -> Job | None:
     """Create a new job, skipping if *idempotency_key* already exists.
 
@@ -201,6 +274,14 @@ def create_job(
         Higher priority jobs are claimed first.
     run_after : datetime or None
         Earliest time the job may be claimed.
+    auto_commit : bool
+        If ``True`` (default), commit the session after creation.
+        Set to ``False`` when the caller manages the transaction boundary
+        (e.g. pipeline creating downstream jobs in the same transaction).
+    source_id : str or None
+        Optional source identifier for per-source fairness caps.
+    lane : str or None
+        Optional lane tag (e.g. ``"manual"``, ``"failure"``) for protected queues.
 
     Returns
     -------
@@ -227,8 +308,13 @@ def create_job(
         run_after=run_after,
         idempotency_key=idempotency_key,
         payload=payload,
+        source_id=source_id,
+        lane=lane,
         created_at=datetime.datetime.now(datetime.UTC),
     )
     session.add(job)
-    session.commit()
+    if auto_commit:
+        session.commit()
+    else:
+        session.flush()
     return job

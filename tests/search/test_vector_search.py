@@ -10,7 +10,7 @@ import uuid
 import pytest
 from sqlalchemy.orm import Session
 
-from harvester.db.models import Chunk, ContentItem, ItemVersion, Source
+from harvester.db.models import Chunk, ContentItem, DedupGroup, ItemVersion, Source
 
 
 def _make_source(session: Session, name: str = "test_source") -> Source:
@@ -172,3 +172,32 @@ class TestVectorSearch:
 
         results = vector_search(db_session, emb, limit=5)
         assert len(results) == 0
+
+    def test_dedup_group_returns_canonical_only(self, db_session):
+        """Chunks from versions in the same dedup group return only canonical."""
+        from harvester.search.vector import vector_search
+
+        src = _make_source(db_session)
+        ci_a = _make_item(db_session, "Dedup Article A", src.id)
+        ci_b = _make_item(db_session, "Dedup Article B", src.id)
+
+        v_a = _make_version(db_session, ci_a.id)
+        v_b = _make_version(db_session, ci_b.id)
+
+        emb_a = _dummy_embedding(seed=50)
+        emb_b = _dummy_embedding(seed=51)
+        _make_chunk(db_session, v_a.id, 0, "canonical chunk", embedding=emb_a, embedding_status="ready")
+        _make_chunk(db_session, v_b.id, 0, "duplicate chunk", embedding=emb_b, embedding_status="ready")
+
+        # Put both versions in a dedup group with v_a as canonical
+        dg = DedupGroup(canonical_item_version_id=v_a.id)
+        db_session.add(dg)
+        db_session.flush()
+        v_a.dedup_group_id = dg.id
+        v_b.dedup_group_id = dg.id
+        db_session.flush()
+
+        results = vector_search(db_session, emb_a, limit=10)
+        version_ids = {r["item_version_id"] for r in results}
+        assert v_a.id in version_ids
+        assert v_b.id not in version_ids

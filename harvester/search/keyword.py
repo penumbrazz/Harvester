@@ -2,6 +2,7 @@
 
 Uses PostgreSQL ILIKE for case-insensitive substring matching against
 the title column of the latest item version per content item.
+Results are collapsed by dedup group so each group appears at most once.
 """
 
 import uuid
@@ -10,6 +11,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from harvester.db.models import ContentItem, ItemVersion
+from harvester.search.dedup import collapse_dedup_groups
 
 
 def keyword_search(
@@ -25,7 +27,8 @@ def keyword_search(
 
     Returns the latest item version for each matching content item,
     filtered by the given keyword (case-insensitive ILIKE match) and
-    optional source/topic constraints.
+    optional source/topic constraints.  Dedup groups are collapsed so
+    that only the canonical version is returned per group.
 
     Args:
         session: SQLAlchemy ORM session.
@@ -41,6 +44,9 @@ def keyword_search(
     """
     if not query or not query.strip():
         return []
+
+    # Fetch more rows than requested to compensate for dedup collapse.
+    fetch_limit = limit * 3
 
     # Subquery: latest version per content_item
     latest_version = (
@@ -78,7 +84,14 @@ def keyword_search(
     if topic_watch_id is not None:
         stmt = stmt.where(ContentItem.topic_watch_id == topic_watch_id)
 
-    stmt = stmt.order_by(ItemVersion.created_at.desc()).limit(limit).offset(offset)
+    stmt = stmt.order_by(ItemVersion.created_at.desc()).limit(fetch_limit).offset(offset)
 
     rows = session.execute(stmt).fetchall()
-    return [row._mapping for row in rows]
+
+    # Collapse dedup groups.
+    version_ids = [row.version_id for row in rows]
+    canonical_ids = set(collapse_dedup_groups(session, version_ids))
+
+    # Filter rows to keep only canonical versions, preserving order.
+    results = [row._mapping for row in rows if row.version_id in canonical_ids]
+    return results[:limit]

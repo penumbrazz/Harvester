@@ -1,7 +1,8 @@
 """Vector (embedding) search over chunks.
 
 Uses pgvector cosine distance (<=>) to find the nearest-neighbor
-chunks for a given query embedding.
+chunks for a given query embedding.  Results are collapsed by dedup
+group so each group appears at most once.
 """
 
 import uuid
@@ -11,6 +12,7 @@ from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import Session
 
 from harvester.db.models import Chunk, ContentItem, ItemVersion
+from harvester.search.dedup import collapse_dedup_groups
 
 
 def vector_search(
@@ -23,7 +25,8 @@ def vector_search(
 
     Only considers chunks where ``embedding IS NOT NULL`` and
     ``embedding_status = 'ready'``.  Results are ordered by ascending
-    cosine distance.
+    cosine distance.  Dedup groups are collapsed so that only the
+    canonical version is returned per group.
 
     Args:
         session: SQLAlchemy ORM session.
@@ -34,6 +37,9 @@ def vector_search(
         List of dicts with keys: chunk_id, item_version_id, text,
         distance, content_item_id, title.
     """
+    # Fetch more rows than requested to compensate for dedup collapse.
+    fetch_limit = limit * 3
+
     # Build the distance expression using pgvector's cosine operator
     distance_col = Chunk.embedding.cosine_distance(query_embedding).label("distance")
 
@@ -51,8 +57,15 @@ def vector_search(
         .where(Chunk.embedding.is_not(None))
         .where(Chunk.embedding_status == "ready")
         .order_by("distance")
-        .limit(limit)
+        .limit(fetch_limit)
     )
 
     rows = session.execute(stmt).fetchall()
-    return [row._mapping for row in rows]
+
+    # Collapse dedup groups at the version level.
+    version_ids = list({row.item_version_id for row in rows})
+    canonical_ids = set(collapse_dedup_groups(session, version_ids))
+
+    # Filter rows to keep only canonical versions, preserving order.
+    results = [row._mapping for row in rows if row.item_version_id in canonical_ids]
+    return results[:limit]

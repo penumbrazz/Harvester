@@ -62,6 +62,14 @@ def upsert_content_item(
                 ContentItem.external_item_id == external_item_id,
             )
         )
+    elif canonical_url_hash is not None:
+        # Weak key fallback: upsert by canonical URL hash within the same source.
+        existing = session.scalar(
+            sa.select(ContentItem).where(
+                ContentItem.source_id == source_id,
+                ContentItem.canonical_url_hash == canonical_url_hash,
+            )
+        )
 
     now = datetime.datetime.now(datetime.UTC)
 
@@ -113,6 +121,9 @@ def create_observation(
 ) -> ItemObservation:
     """Record an observation linking a content item to a raw object.
 
+    If an observation for (content_item_id, raw_object_id) already exists,
+    updates ``last_seen`` and mutable fields instead of inserting a duplicate.
+
     Parameters
     ----------
     session : Session
@@ -137,6 +148,24 @@ def create_observation(
     ItemObservation
         The persisted observation record.
     """
+    existing = session.scalar(
+        sa.select(ItemObservation).where(
+            ItemObservation.content_item_id == content_item_id,
+            ItemObservation.raw_object_id == raw_object_id,
+        )
+    )
+
+    now = datetime.datetime.now(datetime.UTC)
+
+    if existing is not None:
+        existing.last_seen = now
+        if snippet is not None:
+            existing.snippet = snippet
+        if position is not None:
+            existing.position = position
+        session.flush()
+        return existing
+
     obs = ItemObservation(
         id=uuid.uuid4(),
         content_item_id=content_item_id,
@@ -146,7 +175,8 @@ def create_observation(
         observed_url=observed_url,
         payload_hash=payload_hash,
         snippet=snippet,
-        created_at=datetime.datetime.now(datetime.UTC),
+        created_at=now,
+        last_seen=now,
     )
     session.add(obs)
     session.flush()
@@ -249,6 +279,7 @@ def create_downstream_jobs(
             session,
             job_type=jtype,
             payload={"item_version_id": str(item_version_id)},
+            auto_commit=False,
         )
         if job is not None:
             created.append(job)

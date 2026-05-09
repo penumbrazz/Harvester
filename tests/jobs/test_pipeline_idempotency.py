@@ -123,9 +123,88 @@ class TestUpsertContentItemIdempotency:
         assert created2 is True
         assert item1.id != item2.id
 
+    def test_weak_key_canonical_url_hash_dedup(self, db_session):
+        """Without external_item_id, same canonical_url_hash should upsert."""
+        source_id = _insert_source(db_session, id=uuid.uuid4())
+        db_session.commit()
+
+        url_hash = "a" * 64  # 64-char hex hash
+
+        item1, created1 = upsert_content_item(
+            db_session,
+            source_id=source_id,
+            item_type="article",
+            canonical_url="https://example.com/article",
+            canonical_url_hash=url_hash,
+            title="First",
+        )
+        assert created1 is True
+
+        # Same canonical_url_hash, no external_item_id -> should match existing
+        item2, created2 = upsert_content_item(
+            db_session,
+            source_id=source_id,
+            item_type="article",
+            canonical_url="https://example.com/article",
+            canonical_url_hash=url_hash,
+            title="Updated",
+        )
+        assert created2 is False
+        assert item2.id == item1.id
+        assert item2.title == "Updated"
+
+    def test_weak_key_different_hash_creates_new(self, db_session):
+        """Different canonical_url_hash without external_item_id creates new item."""
+        source_id = _insert_source(db_session, id=uuid.uuid4())
+        db_session.commit()
+
+        item1, created1 = upsert_content_item(
+            db_session,
+            source_id=source_id,
+            item_type="article",
+            canonical_url_hash="a" * 64,
+        )
+        item2, created2 = upsert_content_item(
+            db_session,
+            source_id=source_id,
+            item_type="article",
+            canonical_url_hash="b" * 64,
+        )
+        assert created1 is True
+        assert created2 is True
+        assert item1.id != item2.id
+
+    def test_external_id_takes_priority_over_weak_key(self, db_session):
+        """When external_item_id is set, it should be used instead of weak key."""
+        source_id = _insert_source(db_session, id=uuid.uuid4())
+        db_session.commit()
+
+        url_hash = "a" * 64
+
+        # Create with external_id and hash
+        item1, _ = upsert_content_item(
+            db_session,
+            source_id=source_id,
+            external_item_id="ext-priority",
+            item_type="article",
+            canonical_url_hash=url_hash,
+        )
+
+        # Without external_id but same hash -> should NOT match
+        # because external_id match and weak key match are separate paths
+        item2, created2 = upsert_content_item(
+            db_session,
+            source_id=source_id,
+            item_type="article",
+            canonical_url_hash=url_hash,
+        )
+        # Weak key should match since item1 has the same hash
+        assert created2 is False
+        assert item2.id == item1.id
+
 
 class TestObservationIdempotency:
-    """Tests for observation creation."""
+    """Tests for observation creation and dedup."""
 
     def test_observation_can_be_created(self, db_session):
         """Should successfully create an observation linking item to raw object."""
@@ -150,6 +229,48 @@ class TestObservationIdempotency:
         assert obs.content_item_id == item.id
         assert obs.raw_object_id == raw_id
         assert obs.position == 0
+
+    def test_duplicate_observation_updates_last_seen(self, db_session):
+        """Re-creating observation with same (item, raw_object) updates last_seen."""
+        source_id = _insert_source(db_session, id=uuid.uuid4())
+        raw_id = _insert_raw_object(db_session)
+        db_session.commit()
+
+        item, _ = upsert_content_item(
+            db_session,
+            source_id=source_id,
+            external_item_id="ext-obs-dedup",
+            item_type="article",
+        )
+
+        obs1 = create_observation(
+            db_session,
+            content_item_id=item.id,
+            raw_object_id=raw_id,
+            snippet="first",
+        )
+        db_session.commit()
+
+        obs2 = create_observation(
+            db_session,
+            content_item_id=item.id,
+            raw_object_id=raw_id,
+            snippet="updated",
+        )
+        db_session.commit()
+
+        # Same row, not a duplicate
+        assert obs2.id == obs1.id
+        assert obs2.snippet == "updated"
+        assert obs2.last_seen >= obs1.created_at
+
+        # Only one observation row
+        count = db_session.scalar(
+            sa.select(sa.func.count())
+            .select_from(ItemObservation)
+            .where(ItemObservation.content_item_id == item.id)
+        )
+        assert count == 1
 
     def test_multiple_observations_for_same_item(self, db_session):
         """Should allow multiple observations (from different raw objects)."""

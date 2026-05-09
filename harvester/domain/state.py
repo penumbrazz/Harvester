@@ -142,16 +142,24 @@ def transition_entity(
             reason=reason,
         )
     else:
-        write_audit(
-            session,
-            actor=actor,
-            action="status_change_rejected",
-            entity_type=entity_type,
-            entity_id=entity_id,
-            before_state={"status": current_status},
-            after_state={"status": target_status},
-            reason=reason,
-        )
+        # Use a savepoint so the rejection audit survives an outer rollback.
+        nested = session.begin_nested()
+        try:
+            write_audit(
+                session,
+                actor=actor,
+                action="status_change_rejected",
+                entity_type=entity_type,
+                entity_id=entity_id,
+                before_state={"status": current_status},
+                after_state={"status": target_status},
+                reason=reason,
+            )
+            session.flush()
+            nested.commit()
+        except Exception:
+            nested.rollback()
+            raise
         raise ValueError(
             f"Illegal {entity_type} status transition: "
             f"{current_status!r} -> {target_status!r}"

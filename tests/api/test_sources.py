@@ -179,3 +179,36 @@ async def test_promote_nonexistent_source_returns_404(api_client):
 
     # Assert
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_invalid_transition_persists_rejection_audit(api_client, api_test_db):
+    """Illegal transition must persist a rejection audit event."""
+    # Arrange — create a candidate source
+    resp = await api_client.post(
+        "/sources/propose",
+        json={"name": f"audit-{uuid.uuid4().hex[:6]}", "kind": "web"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    source_id = resp.json()["id"]
+
+    # Act — try to pause a candidate (illegal: candidate -> paused is not allowed)
+    resp = await api_client.post(
+        f"/sources/{source_id}/pause",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 400
+
+    # Assert — rejection audit must be in the database
+    engine = create_engine(api_test_db)
+    with engine.connect() as conn:
+        row = conn.execute(
+            sa.text(
+                "SELECT action FROM audit_events "
+                "WHERE entity_id = :eid AND action = 'status_change_rejected'"
+            ),
+            {"eid": source_id},
+        ).fetchone()
+    engine.dispose()
+    assert row is not None, "Rejection audit event must be persisted after illegal transition"
+    assert row[0] == "status_change_rejected"

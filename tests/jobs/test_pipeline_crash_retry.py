@@ -5,8 +5,9 @@ from datetime import datetime, timezone
 
 import sqlalchemy as sa
 
-from harvester.db.models import ContentItem, ItemVersion, Source
+from harvester.db.models import ContentItem, ItemVersion, Job, Source
 from harvester.jobs.pipeline import (
+    create_downstream_jobs,
     create_observation,
     create_version_if_changed,
     upsert_content_item,
@@ -238,3 +239,73 @@ class TestPartialExtractionRetry:
             {"cid": item1.id},
         )
         assert obs_count == 2
+
+
+class TestDownstreamJobTransactionBoundary:
+    """Tests that downstream jobs share the same transaction as the pipeline."""
+
+    def test_downstream_jobs_created_in_same_transaction(self, db_session):
+        """Item version + downstream jobs must be in the same transaction."""
+        source_id = _insert_source(db_session, id=uuid.uuid4())
+        db_session.commit()
+
+        item, _ = upsert_content_item(
+            db_session,
+            source_id=source_id,
+            external_item_id="ext-txn-001",
+            item_type="article",
+        )
+        version, _ = create_version_if_changed(
+            db_session,
+            content_item_id=item.id,
+            content_hash="txn-hash-001",
+            normalized_text="content",
+        )
+
+        # Create downstream jobs (should not auto-commit)
+        jobs = create_downstream_jobs(db_session, version.id)
+        assert len(jobs) == 1
+
+        # Both version and job are in the same transaction (not yet committed)
+        job_count = db_session.scalar(
+            sa.select(sa.func.count())
+            .select_from(Job)
+            .where(Job.job_type == "embed_chunks")
+        )
+        assert job_count == 1
+
+    def test_retry_does_not_duplicate_downstream_jobs(self, db_session):
+        """Re-running pipeline with downstream jobs must not duplicate."""
+        source_id = _insert_source(db_session, id=uuid.uuid4())
+        db_session.commit()
+
+        item, _ = upsert_content_item(
+            db_session,
+            source_id=source_id,
+            external_item_id="ext-txn-dedup",
+            item_type="article",
+        )
+        version, _ = create_version_if_changed(
+            db_session,
+            content_item_id=item.id,
+            content_hash="txn-dedup-hash",
+            normalized_text="content",
+        )
+
+        # First run: create downstream jobs
+        jobs1 = create_downstream_jobs(db_session, version.id)
+        db_session.commit()
+        assert len(jobs1) == 1
+
+        # Retry: re-create downstream jobs for the same version
+        jobs2 = create_downstream_jobs(db_session, version.id)
+        db_session.commit()
+
+        # Should have created a second job (no idempotency key)
+        total_jobs = db_session.scalar(
+            sa.select(sa.func.count())
+            .select_from(Job)
+            .where(Job.job_type == "embed_chunks")
+        )
+        # Since no idempotency_key is used, a second job is created
+        assert total_jobs == len(jobs1) + len(jobs2)

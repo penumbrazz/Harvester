@@ -2,13 +2,16 @@
 
 import os
 import uuid
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pytest
+import sqlalchemy as sa
 from alembic import command
 from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, text
+from sqlalchemy.orm import Session
 
 
 @pytest.fixture(scope="module")
@@ -92,3 +95,38 @@ async def test_get_recent_failures_with_limit(api_client):
 
     # Assert
     assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_recent_failures_includes_dead_jobs(api_client, api_test_db):
+    """GET /failures/recent must return jobs with status 'dead'."""
+    # Arrange — insert a dead job directly
+    engine = create_engine(api_test_db)
+    with Session(bind=engine) as session:
+        session.execute(
+            sa.text(
+                "INSERT INTO jobs (id, job_type, status, priority, attempts, "
+                "max_attempts, last_error, created_at, updated_at) "
+                "VALUES (:id, :job_type, 'dead', 0, 3, 3, :err, :ts, :ts)"
+            ),
+            {
+                "id": uuid.uuid4(),
+                "job_type": "crawl",
+                "err": "exhausted",
+                "ts": datetime.now(timezone.utc),
+            },
+        )
+        session.commit()
+    engine.dispose()
+
+    # Act
+    resp = await api_client.get(
+        "/failures/recent",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Assert
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["jobs"]) >= 1
+    assert any(j["status"] == "dead" for j in data["jobs"])

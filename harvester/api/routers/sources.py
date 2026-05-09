@@ -110,7 +110,8 @@ def promote_source(
     try:
         transition_entity(session, source, SOURCE_TRANSITIONS, target, "api", "source", reason=reason)
     except ValueError as e:
-        session.rollback()
+        # Commit to persist the rejection audit written by transition_entity.
+        session.commit()
         raise HTTPException(status_code=400, detail=str(e)) from e
 
     session.commit()
@@ -140,7 +141,7 @@ def pause_source(
     try:
         transition_entity(session, source, SOURCE_TRANSITIONS, "paused", "api", "source")
     except ValueError as e:
-        session.rollback()
+        session.commit()
         raise HTTPException(status_code=400, detail=str(e)) from e
 
     session.commit()

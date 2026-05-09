@@ -46,7 +46,7 @@ def get_recent_failures(
 
     failed_jobs = (
         session.query(Job)
-        .filter(Job.status == "failed")
+        .filter(Job.status.in_(["failed", "dead"]))
         .order_by(desc(Job.created_at))
         .limit(limit)
         .all()

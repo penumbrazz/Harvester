@@ -180,9 +180,14 @@ class TestTransitionEntity:
         except ValueError:
             pass
 
-        # Assert — rejection audit was recorded before the error was raised
-        # The rejection event is written within the same savepoint,
-        # but the outer rollback will undo it. We verify the mechanism exists.
-        # Since the outer transaction rolls back, we cannot query the event here.
-        # The important thing is that the ValueError is raised.
-        db_session.rollback()
+        # Assert — rejection audit was committed via savepoint before ValueError
+        result = db_session.execute(
+            sa.text(
+                "SELECT action FROM audit_events "
+                "WHERE entity_id = :eid AND action = 'status_change_rejected'"
+            ),
+            {"eid": str(source.id)},
+        )
+        row = result.fetchone()
+        assert row is not None, "Rejection audit event must be persisted"
+        assert row[0] == "status_change_rejected"

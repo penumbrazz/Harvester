@@ -3,13 +3,17 @@ set -euo pipefail
 
 echo "=== Harvester Smoke Test ==="
 
-echo "[1/4] Checking configuration..."
-test -f .env || { echo "ERROR: .env file not found"; exit 1; }
+echo "[1/5] Validating docker compose config..."
+docker compose --env-file .env.example config > /dev/null
+echo "Compose config OK"
 
-echo "[2/4] Running database migrations..."
+echo "[2/5] Checking configuration..."
+test -f .env || { echo "WARNING: .env file not found, copying from .env.example"; cp .env.example .env; }
+
+echo "[3/5] Running database migrations..."
 uv run alembic upgrade head
 
-echo "[3/4] Checking API health..."
+echo "[4/5] Checking API health..."
 for i in $(seq 1 10); do
   if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
     echo "API is healthy"
@@ -19,7 +23,7 @@ for i in $(seq 1 10); do
   sleep 2
 done
 
-echo "[4/4] Running fixture crawl test..."
+echo "[5/5] Running fixture crawl test..."
 uv run python -c "
 from harvester.cli.main import app
 from typer.testing import CliRunner

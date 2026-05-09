@@ -260,6 +260,16 @@ class ItemObservation(Base):
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow
     )
+    last_seen: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=_utcnow
+    )
+
+    __table_args__ = (
+        sa.UniqueConstraint(
+            "content_item_id", "raw_object_id",
+            name="uq_item_observations_item_raw",
+        ),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -386,6 +396,8 @@ class Job(Base):
     )
     payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    lane: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow
     )
@@ -397,6 +409,7 @@ class Job(Base):
         sa.Index("ix_jobs_status_priority", "status", "priority"),
         sa.Index("ix_jobs_run_after", "run_after"),
         sa.Index("ix_jobs_locked_until", "locked_until"),
+        sa.Index("ix_jobs_source_id", "source_id"),
     )
 
 

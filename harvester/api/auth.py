@@ -14,7 +14,10 @@ async def require_api_token(
     Returns the token value on success. Raises 401 on failure.
     """
     if not settings.api_token:
-        return ""
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="HARVESTER_API_TOKEN is not configured — mutating endpoints are disabled",
+        )
 
     token = ""
     if authorization.startswith("Bearer "):
