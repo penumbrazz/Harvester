@@ -118,13 +118,13 @@ class FirecrawlAdapter:
 
         inner = data.get("data", {})
         metadata = inner.get("metadata", {})
-        content = inner.get("content", "")
+        content = inner.get("content", "") or inner.get("markdown", "")
 
         final_url = metadata.get("sourceURL", url)
         status_code = metadata.get("statusCode", response.status_code)
 
         # Detect content type from metadata or infer from content
-        content_type = metadata.get("content_type")
+        content_type = metadata.get("contentType") or metadata.get("content_type")
         if not content_type and isinstance(content, str):
             content_type = "text/html"
 

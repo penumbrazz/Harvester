@@ -47,3 +47,5 @@ htmlcov/
 
 .claude/
 .codex/
+
+.harvester
