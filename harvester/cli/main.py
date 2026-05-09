@@ -187,5 +187,39 @@ def failures_recent(
         raise typer.Exit(code=1) from None
 
 
+# --- Crawl subcommands ---
+
+crawl_app = typer.Typer(help="Crawl execution")
+app.add_typer(crawl_app, name="crawl")
+
+
+@crawl_app.command("run")
+def crawl_run(
+    source_id: str = typer.Option(..., "--source-id", help="Source ID to crawl"),
+    recipe_id: str = typer.Option(..., "--recipe-id", help="Recipe ID to use"),
+) -> None:
+    """Execute a crawl run via the API."""
+    try:
+        response = httpx.post(
+            f"{_get_base_url()}/crawl/run",
+            json={"source_id": source_id, "recipe_id": recipe_id},
+            headers=_api_headers(),
+            timeout=60.0,
+        )
+        if response.status_code == 200:
+            data = response.json()
+            typer.echo(
+                f"Crawl run: {data['crawl_run_id']} "
+                f"status={data['status']} "
+                f"raw_object_id={data.get('raw_object_id', 'N/A')}"
+            )
+        else:
+            typer.echo(f"Error: {response.status_code} {response.text}")
+            raise typer.Exit(code=1)
+    except httpx.ConnectError as e:
+        typer.echo(f"Failed to connect to API: {e}")
+        raise typer.Exit(code=1) from None
+
+
 if __name__ == "__main__":
     app()
