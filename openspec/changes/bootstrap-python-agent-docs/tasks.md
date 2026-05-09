@@ -27,4 +27,4 @@
 - [x] 4.1 Run `openspec status --change bootstrap-python-agent-docs` and confirm artifacts are complete.
 - [x] 4.2 Run `pytest` and record the passing output in the implementation notes.
 - [x] 4.3 Run `python -m harvester.cli.main --help` and record the passing output.
-- [ ] 4.4 Commit with message `chore: bootstrap harvester python project`.
+- [x] 4.4 Commit with message `chore: bootstrap harvester python project`.
