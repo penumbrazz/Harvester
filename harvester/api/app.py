@@ -4,11 +4,7 @@ from fastapi import FastAPI
 
 
 def create_app() -> FastAPI:
-    """Create and configure the FastAPI application.
-
-    Returns:
-        Configured FastAPI application instance.
-    """
+    """Create and configure the FastAPI application."""
     app = FastAPI(
         title="Harvester",
         description="Personal home lab information collection control plane",
@@ -17,11 +13,13 @@ def create_app() -> FastAPI:
 
     @app.get("/health")
     async def health() -> dict[str, str]:
-        """Health check endpoint.
-
-        Returns:
-            Dictionary with status key.
-        """
         return {"status": "ok"}
+
+    from harvester.api.routers import sources, topics, recipes, failures
+
+    app.include_router(sources.router)
+    app.include_router(topics.router)
+    app.include_router(recipes.router)
+    app.include_router(failures.router)
 
     return app
