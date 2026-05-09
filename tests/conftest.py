@@ -9,6 +9,14 @@ pytest_plugins = ["tests.db.conftest"]
 
 
 @pytest.fixture
+def frozen_time():
+    """Return a fixed datetime for deterministic test results."""
+    from datetime import datetime, timezone
+
+    return datetime(2025, 1, 15, 12, 0, 0, tzinfo=timezone.utc)
+
+
+@pytest.fixture
 def app():
     """Create a test FastAPI application instance.
 

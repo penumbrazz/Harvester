@@ -1,0 +1,40 @@
+[
+  {
+    "external_item_id": "5100001",
+    "item_type": "post",
+    "title": null,
+    "original_url": null,
+    "final_url": null,
+    "canonical_url": null,
+    "canonical_url_hash": null,
+    "content_text": "【健康提醒】冬季流感高发期，请注意个人防护。",
+    "language": null,
+    "position": 0,
+    "observed_url": null,
+    "payload_hash": null,
+    "snippet": "【健康提醒】冬季流感高发期，请注意个人防护。",
+    "extra": {
+      "source": null,
+      "created_at": "Thu Jan 16 10:30:00 +0800 2025"
+    }
+  },
+  {
+    "external_item_id": "5100002",
+    "item_type": "post",
+    "title": null,
+    "original_url": null,
+    "final_url": null,
+    "canonical_url": null,
+    "canonical_url_hash": null,
+    "content_text": "【疫情通报】最新传染病监测数据已发布。",
+    "language": null,
+    "position": 1,
+    "observed_url": null,
+    "payload_hash": null,
+    "snippet": "【疫情通报】最新传染病监测数据已发布。",
+    "extra": {
+      "source": null,
+      "created_at": "Thu Jan 16 08:00:00 +0800 2025"
+    }
+  }
+]

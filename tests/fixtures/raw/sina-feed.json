@@ -1,0 +1,20 @@
+{
+  "statuses": [
+    {
+      "idstr": "5100001",
+      "text": "【健康提醒】冬季流感高发期，请注意个人防护。",
+      "created_at": "Thu Jan 16 10:30:00 +0800 2025",
+      "user": {"screen_name": "健康中国"},
+      "reposts_count": 120,
+      "comments_count": 45
+    },
+    {
+      "idstr": "5100002",
+      "text": "【疫情通报】最新传染病监测数据已发布。",
+      "created_at": "Thu Jan 16 08:00:00 +0800 2025",
+      "user": {"screen_name": "疾控中心"},
+      "reposts_count": 89,
+      "comments_count": 32
+    }
+  ]
+}
