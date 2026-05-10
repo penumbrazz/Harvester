@@ -108,11 +108,17 @@ def _vector_search(
     topic_watch_id: UUID | None = None,
     limit: int = 20,
 ) -> SearchResponse:
-    from harvester.adapters.stub_model import StubModelAdapter
+    from harvester.adapters.embedding_settings import create_embedding_adapter
     from harvester.search.vector import vector_search
 
-    adapter = StubModelAdapter()
-    query_embedding = adapter.embed(q)
+    try:
+        adapter, _model_name = create_embedding_adapter()
+        query_embedding = adapter.embed(q)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Embedding adapter unavailable: {exc}",
+        ) from exc
 
     raw = vector_search(
         session,

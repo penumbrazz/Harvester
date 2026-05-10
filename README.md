@@ -214,6 +214,45 @@ curl -X POST http://localhost:8000/crawl/run \
 HARVESTER_ENABLE_LIVE_CRAWL=1 uv run pytest tests/integration/test_cdc_public_crawl_smoke.py -q
 ```
 
+## Embedding 适配器
+
+Harvester 的 embedding 只对 `item_version -> chunk` 做 embedding，**不对 raw HTML/API payload 做 embedding**。Worker 和 vector search API 共用同一个适配器工厂，确保 chunk embedding 和 query embedding 使用一致的模型和维度。
+
+### 默认：Stub 适配器
+
+默认使用 deterministic stub 适配器，不需要外部模型服务，适合离线开发和 CI。
+
+```bash
+# 默认行为，无需额外配置
+uv run harvester worker once --limit 10
+```
+
+### 切换到 Qwen 适配器
+
+在 `.env` 中设置以下环境变量即可切换到本地 Qwen embedding 服务（OpenAI-compatible API）：
+
+```bash
+HARVESTER_EMBEDDING_ADAPTER=qwen
+HARVESTER_EMBEDDING_MODEL=text-embedding-v3
+HARVESTER_EMBEDDING_DIMENSION=1536
+HARVESTER_QWEN_EMBEDDING_BASE_URL=http://localhost:8080
+HARVESTER_QWEN_EMBEDDING_TIMEOUT_SECONDS=30
+```
+
+切换后 worker 和 vector search API 都会使用 Qwen 适配器。回滚时删除或注释 `HARVESTER_EMBEDDING_ADAPTER=qwen` 即可回到 stub。
+
+### Live Smoke 测试
+
+当本地 Qwen 服务可用时，可以运行 live smoke 测试：
+
+```bash
+HARVESTER_EMBEDDING_ADAPTER=qwen \
+HARVESTER_EMBEDDING_MODEL=text-embedding-v3 \
+HARVESTER_QWEN_EMBEDDING_BASE_URL=http://localhost:8080 \
+HARVESTER_LIVE_QWEN_EMBEDDING=1 \
+uv run pytest tests/integration/test_vector_search_api_pipeline.py -q
+```
+
 ## 设计文档
 
 - [Harvester 个人信息采集控制平面](docs/designs/office-hours-harvester-20260508-201322.md)

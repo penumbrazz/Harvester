@@ -309,13 +309,13 @@ def worker_once(
     limit: int = typer.Option(10, "--limit", help="Max jobs to process"),
 ) -> None:
     """Run the embedding worker once and exit."""
-    from harvester.adapters.stub_model import StubModelAdapter
+    from harvester.adapters.embedding_settings import create_embedding_adapter
     from harvester.workers.daemon import _make_session, run_once
 
+    adapter, model_name = create_embedding_adapter()
     session = _make_session()
-    adapter = StubModelAdapter()
     try:
-        stats = run_once(session, adapter, "stub-embedding-1536", limit=limit)
+        stats = run_once(session, adapter, model_name, limit=limit)
         typer.echo(
             f"Worker one-shot complete: "
             f"claimed={stats['claimed']} "
@@ -334,17 +334,17 @@ def worker_run(
     limit: int = typer.Option(10, "--limit", help="Max jobs per iteration"),
 ) -> None:
     """Run the embedding worker daemon in a loop."""
-    from harvester.adapters.stub_model import StubModelAdapter
+    from harvester.adapters.embedding_settings import create_embedding_adapter
     from harvester.workers.daemon import _make_session, run_loop
 
-    adapter = StubModelAdapter()
+    adapter, model_name = create_embedding_adapter()
     typer.echo(
         f"Starting embedding worker daemon (poll={poll_interval}s, limit={limit})"
     )
     run_loop(
         _make_session,
         adapter,
-        "stub-embedding-1536",
+        model_name,
         poll_interval=poll_interval,
         limit=limit,
     )
