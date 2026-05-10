@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -35,11 +35,25 @@ class RecipeResponse(BaseModel):
     id: str
     name: str
     executor: str
-    status: str
     risk_level: str
     approval_status: str
     version: int
     created_at: datetime
+    updated_at: datetime | None = None
+
+
+def _to_recipe_response(recipe: Recipe) -> RecipeResponse:
+    """Serialize a Recipe ORM object to RecipeResponse."""
+    return RecipeResponse(
+        id=str(recipe.id),
+        name=recipe.name,
+        executor=recipe.executor,
+        risk_level=recipe.risk_level,
+        approval_status=recipe.approval_status,
+        version=recipe.version,
+        created_at=recipe.created_at,
+        updated_at=recipe.updated_at,
+    )
 
 
 @router.post("", response_model=RecipeResponse, status_code=status.HTTP_201_CREATED)
@@ -78,16 +92,7 @@ def create_recipe(
     )
     session.commit()
     session.refresh(recipe)
-    return RecipeResponse(
-        id=str(recipe.id),
-        name=recipe.name,
-        executor=recipe.executor,
-        status="draft",
-        risk_level=recipe.risk_level,
-        approval_status=recipe.approval_status,
-        version=recipe.version,
-        created_at=recipe.created_at,
-    )
+    return _to_recipe_response(recipe)
 
 
 @router.post("/{recipe_id}/approve", response_model=RecipeResponse)
@@ -112,13 +117,23 @@ def approve_recipe(
 
     session.commit()
     session.refresh(recipe)
-    return RecipeResponse(
-        id=str(recipe.id),
-        name=recipe.name,
-        executor=recipe.executor,
-        status="approved",
-        risk_level=recipe.risk_level,
-        approval_status=recipe.approval_status,
-        version=recipe.version,
-        created_at=recipe.created_at,
-    )
+    return _to_recipe_response(recipe)
+
+
+@router.get("", response_model=list[RecipeResponse])
+def list_recipes(
+    _token: str = _Token,
+    session: Session = _Session,
+    approval_status: str | None = Query(None, description="Filter by approval status"),
+    executor: str | None = Query(None, description="Filter by executor type"),
+):
+    """List recipes with optional filtering by approval status and executor."""
+    query = session.query(Recipe)
+
+    if approval_status:
+        query = query.filter(Recipe.approval_status == approval_status)
+    if executor:
+        query = query.filter(Recipe.executor == executor)
+
+    recipes = query.order_by(Recipe.created_at.desc()).all()
+    return [_to_recipe_response(r) for r in recipes]

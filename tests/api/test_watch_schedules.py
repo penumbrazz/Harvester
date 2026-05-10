@@ -368,3 +368,178 @@ async def test_active_source_accepted(api_client, api_test_db):
         headers={"Authorization": "Bearer test-secret"},
     )
     assert resp.status_code == 201
+
+
+# ---------------------------------------------------------------------------
+# GET /schedules — list endpoint tests
+# ---------------------------------------------------------------------------
+
+
+def _insert_schedule(db_url: str, source_id: str, recipe_id: str, **overrides) -> str:
+    """Insert a watch schedule and return its id."""
+    engine = create_engine(db_url)
+    sid = uuid.uuid4()
+    now = datetime.now(timezone.utc)
+    key = overrides.pop("schedule_key", f"source:{source_id}:recipe:{recipe_id}")
+    with engine.connect() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO watch_schedules "
+                "(id, schedule_key, source_id, recipe_id, status, interval_seconds, "
+                "next_run_at, priority, lane, created_at, updated_at) "
+                "VALUES (:id, :key, :src, :recipe, :status, :interval, :next_run, "
+                ":priority, :lane, :ts, :ts)"
+            ),
+            {
+                "id": sid,
+                "key": key,
+                "src": source_id,
+                "recipe": recipe_id,
+                "status": overrides.get("status", "active"),
+                "interval": overrides.get("interval_seconds", 3600),
+                "next_run": overrides.get("next_run_at", now),
+                "priority": overrides.get("priority", 0),
+                "lane": overrides.get("lane"),
+                "ts": now,
+            },
+        )
+        conn.commit()
+    engine.dispose()
+    return str(sid)
+
+
+@pytest.mark.asyncio
+async def test_list_schedules_requires_auth(api_client):
+    """GET /schedules without token returns 401."""
+    resp = await api_client.get("/schedules")
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_list_schedules_returns_empty(api_client):
+    """GET /schedules returns a list (may not be empty due to shared test db)."""
+    resp = await api_client.get(
+        "/schedules",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 200
+    assert isinstance(resp.json(), list)
+
+
+@pytest.mark.asyncio
+async def test_list_schedules_returns_created_schedules(api_client, api_test_db):
+    """GET /schedules returns schedules that were previously created."""
+    headers = {"Authorization": "Bearer test-secret"}
+    src_id = _insert_source(api_test_db)
+    recipe_id = _insert_recipe(api_test_db)
+
+    # Create a schedule via API
+    await api_client.post(
+        "/schedules",
+        json={
+            "source_id": src_id,
+            "recipe_id": recipe_id,
+            "interval_seconds": 3600,
+        },
+        headers=headers,
+    )
+
+    resp = await api_client.get("/schedules", headers=headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) >= 1
+
+    # Verify required fields present
+    for item in data:
+        assert "id" in item
+        assert "schedule_key" in item
+        assert "source_id" in item
+        assert "recipe_id" in item
+        assert "status" in item
+        assert "interval_seconds" in item
+        assert "next_run_at" in item
+        assert "priority" in item
+        assert "lane" in item
+        assert "created_at" in item
+
+
+@pytest.mark.asyncio
+async def test_list_schedules_filter_by_status(api_client, api_test_db):
+    """GET /schedules?status=active returns only active schedules."""
+    headers = {"Authorization": "Bearer test-secret"}
+    src_id = _insert_source(api_test_db)
+    recipe_id = _insert_recipe(api_test_db)
+
+    # Create active schedule
+    await api_client.post(
+        "/schedules",
+        json={
+            "source_id": src_id,
+            "recipe_id": recipe_id,
+            "interval_seconds": 3600,
+        },
+        headers=headers,
+    )
+
+    resp = await api_client.get(
+        "/schedules?status=active",
+        headers=headers,
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) >= 1
+    assert all(s["status"] == "active" for s in data)
+
+
+@pytest.mark.asyncio
+async def test_list_schedules_filter_by_source_id(api_client, api_test_db):
+    """GET /schedules?source_id=X returns only matching schedules."""
+    headers = {"Authorization": "Bearer test-secret"}
+    src_id = _insert_source(api_test_db)
+    recipe_id = _insert_recipe(api_test_db)
+
+    await api_client.post(
+        "/schedules",
+        json={
+            "source_id": src_id,
+            "recipe_id": recipe_id,
+            "interval_seconds": 3600,
+        },
+        headers=headers,
+    )
+
+    resp = await api_client.get(
+        f"/schedules?source_id={src_id}",
+        headers=headers,
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) >= 1
+    assert all(s["source_id"] == src_id for s in data)
+
+
+@pytest.mark.asyncio
+async def test_list_schedules_filter_by_recipe_id(api_client, api_test_db):
+    """GET /schedules?recipe_id=X returns only matching schedules."""
+    headers = {"Authorization": "Bearer test-secret"}
+    src_id = _insert_source(api_test_db)
+    recipe_id = _insert_recipe(api_test_db)
+
+    await api_client.post(
+        "/schedules",
+        json={
+            "source_id": src_id,
+            "recipe_id": recipe_id,
+            "interval_seconds": 3600,
+        },
+        headers=headers,
+    )
+
+    resp = await api_client.get(
+        f"/schedules?recipe_id={recipe_id}",
+        headers=headers,
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) >= 1
+    assert all(s["recipe_id"] == recipe_id for s in data)

@@ -86,7 +86,7 @@ describe('App shell', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.click(screen.getByTestId('nav-recipes'))
+    await user.click(screen.getByTestId('nav-crawls'))
     expect(
       screen.getByText(/This page will be implemented in a future update/),
     ).toBeInTheDocument()

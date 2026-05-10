@@ -5,14 +5,12 @@ import { AppLayout } from './components/common/app-layout'
 import { getNavItems } from './lib/navigation'
 import { OverviewPage } from './features/overview/overview-page'
 import { SourcesPage } from './features/sources/sources-page'
+import { RecipesPage } from './features/recipes-schedules/recipes-page'
+import { SchedulesPage } from './features/recipes-schedules/schedules-page'
 import { PlaceholderPage } from './pages/placeholder-page'
 import { loadApiConfig, saveApiConfig } from './lib/api-client'
 
 const placeholderDescriptions: Record<string, string> = {
-  recipes:
-    'Configure extraction and processing recipes. This page will be implemented in a future update.',
-  schedules:
-    'Set up crawl schedules and monitoring rules. This page will be implemented in a future update.',
   crawls:
     'View crawl history and status. This page will be implemented in a future update.',
   jobs: 'Monitor the job queue and worker status. This page will be implemented in a future update.',
@@ -38,6 +36,14 @@ export function App() {
 
     if (activeKey === 'sources') {
       return <SourcesPage config={config} />
+    }
+
+    if (activeKey === 'recipes') {
+      return <RecipesPage config={config} />
+    }
+
+    if (activeKey === 'schedules') {
+      return <SchedulesPage config={config} />
     }
 
     const navItem = navItems.find((item) => item.key === activeKey)

@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -42,6 +42,24 @@ class ScheduleResponse(BaseModel):
     priority: int
     lane: str | None
     created_at: datetime
+
+
+def _to_schedule_response(schedule: WatchSchedule) -> ScheduleResponse:
+    """Serialize a WatchSchedule ORM object to ScheduleResponse."""
+    return ScheduleResponse(
+        id=str(schedule.id),
+        schedule_key=schedule.schedule_key,
+        source_id=str(schedule.source_id),
+        topic_watch_id=str(schedule.topic_watch_id) if schedule.topic_watch_id else None,
+        recipe_id=str(schedule.recipe_id),
+        status=schedule.status,
+        interval_seconds=schedule.interval_seconds,
+        next_run_at=schedule.next_run_at,
+        last_enqueued_at=schedule.last_enqueued_at,
+        priority=schedule.priority,
+        lane=schedule.lane,
+        created_at=schedule.created_at,
+    )
 
 
 def _build_schedule_key(
@@ -178,17 +196,36 @@ def create_schedule(
     session.commit()
     session.refresh(schedule)
 
-    return ScheduleResponse(
-        id=str(schedule.id),
-        schedule_key=schedule.schedule_key,
-        source_id=str(schedule.source_id),
-        topic_watch_id=str(schedule.topic_watch_id) if schedule.topic_watch_id else None,
-        recipe_id=str(schedule.recipe_id),
-        status=schedule.status,
-        interval_seconds=schedule.interval_seconds,
-        next_run_at=schedule.next_run_at,
-        last_enqueued_at=schedule.last_enqueued_at,
-        priority=schedule.priority,
-        lane=schedule.lane,
-        created_at=schedule.created_at,
-    )
+    return _to_schedule_response(schedule)
+
+
+@router.get("", response_model=list[ScheduleResponse])
+def list_schedules(
+    _token: str = _Token,
+    session: Session = _Session,
+    status: str | None = Query(None, description="Filter by schedule status"),
+    source_id: str | None = Query(None, description="Filter by source ID"),
+    recipe_id: str | None = Query(None, description="Filter by recipe ID"),
+):
+    """List watch schedules with optional filtering."""
+    query = session.query(WatchSchedule)
+
+    if status:
+        query = query.filter(WatchSchedule.status == status)
+    if source_id:
+        try:
+            query = query.filter(WatchSchedule.source_id == uuid.UUID(source_id))
+        except ValueError:
+            raise HTTPException(
+                status_code=422, detail="Invalid source_id format"
+            ) from None
+    if recipe_id:
+        try:
+            query = query.filter(WatchSchedule.recipe_id == uuid.UUID(recipe_id))
+        except ValueError:
+            raise HTTPException(
+                status_code=422, detail="Invalid recipe_id format"
+            ) from None
+
+    schedules = query.order_by(WatchSchedule.created_at.desc()).all()
+    return [_to_schedule_response(s) for s in schedules]

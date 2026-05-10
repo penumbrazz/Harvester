@@ -163,3 +163,117 @@ async def test_approve_already_approved_returns_400(api_client):
 
     # Assert
     assert resp.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# GET /recipes — list endpoint tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_list_recipes_requires_auth(api_client):
+    """GET /recipes without token returns 401."""
+    resp = await api_client.get("/recipes")
+    assert resp.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_list_recipes_returns_empty(api_client):
+    """GET /recipes returns a list (may not be empty due to shared test db)."""
+    resp = await api_client.get(
+        "/recipes",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 200
+    assert isinstance(resp.json(), list)
+
+
+@pytest.mark.asyncio
+async def test_list_recipes_returns_created_recipes(api_client):
+    """GET /recipes returns recipes that were previously created."""
+    headers = {"Authorization": "Bearer test-secret"}
+
+    # Create two recipes
+    await api_client.post(
+        "/recipes",
+        json={"name": f"list-a-{uuid.uuid4().hex[:6]}", "executor": "http_fetch"},
+        headers=headers,
+    )
+    await api_client.post(
+        "/recipes",
+        json={"name": f"list-b-{uuid.uuid4().hex[:6]}", "executor": "rss_parse"},
+        headers=headers,
+    )
+
+    resp = await api_client.get("/recipes", headers=headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) >= 2
+
+    # Verify required fields present
+    for item in data:
+        assert "id" in item
+        assert "name" in item
+        assert "executor" in item
+        assert "approval_status" in item
+        assert "risk_level" in item
+        assert "version" in item
+        assert "created_at" in item
+
+
+@pytest.mark.asyncio
+async def test_list_recipes_filter_by_approval_status(api_client):
+    """GET /recipes?approval_status=approved returns only approved recipes."""
+    headers = {"Authorization": "Bearer test-secret"}
+
+    # Create and approve one recipe
+    resp = await api_client.post(
+        "/recipes",
+        json={"name": f"approved-{uuid.uuid4().hex[:6]}", "executor": "firecrawl"},
+        headers=headers,
+    )
+    recipe_id = resp.json()["id"]
+    await api_client.post(f"/recipes/{recipe_id}/approve", headers=headers)
+
+    # Create another pending recipe
+    await api_client.post(
+        "/recipes",
+        json={"name": f"pending-{uuid.uuid4().hex[:6]}", "executor": "http_fetch"},
+        headers=headers,
+    )
+
+    # Filter for approved only
+    resp = await api_client.get(
+        "/recipes?approval_status=approved",
+        headers=headers,
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) >= 1
+    assert all(r["approval_status"] == "approved" for r in data)
+
+
+@pytest.mark.asyncio
+async def test_list_recipes_filter_by_executor(api_client):
+    """GET /recipes?executor=http_fetch returns only matching recipes."""
+    headers = {"Authorization": "Bearer test-secret"}
+
+    await api_client.post(
+        "/recipes",
+        json={"name": f"exec-a-{uuid.uuid4().hex[:6]}", "executor": "http_fetch"},
+        headers=headers,
+    )
+    await api_client.post(
+        "/recipes",
+        json={"name": f"exec-b-{uuid.uuid4().hex[:6]}", "executor": "rss_parse"},
+        headers=headers,
+    )
+
+    resp = await api_client.get(
+        "/recipes?executor=http_fetch",
+        headers=headers,
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data) >= 1
+    assert all(r["executor"] == "http_fetch" for r in data)
