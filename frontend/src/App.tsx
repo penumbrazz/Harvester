@@ -10,13 +10,13 @@ import { RecipesPage } from './features/recipes-schedules/recipes-page'
 import { SchedulesPage } from './features/recipes-schedules/schedules-page'
 import { CrawlsPage } from './features/operations/crawls-page'
 import { JobsPage } from './features/operations/jobs-page'
+import { AuditPage } from './features/audit/audit-page'
 import { PlaceholderPage } from './pages/placeholder-page'
 import { loadApiConfig, saveApiConfig } from './lib/api-client'
 
 const placeholderDescriptions: Record<string, string> = {
   content:
     'Browse and search the content library. This page will be implemented in a future update.',
-  audit: 'Review system audit logs. This page will be implemented in a future update.',
 }
 
 export function App() {
@@ -56,6 +56,10 @@ export function App() {
 
     if (activeKey === 'jobs') {
       return <JobsPage config={config} />
+    }
+
+    if (activeKey === 'audit') {
+      return <AuditPage config={config} />
     }
 
     const navItem = navItems.find((item) => item.key === activeKey)
