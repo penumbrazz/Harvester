@@ -18,7 +18,7 @@ services:
 
   worker:
     build: .
-    command: uv run python -m harvester.cli.main
+    command: uv run harvester worker run
     env_file:
       - path: .env
         required: false
@@ -26,7 +26,7 @@ services:
       server:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f harvester.cli || exit 1"]
+      test: ["CMD-SHELL", "pgrep -f '[h]arvester worker run' || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3

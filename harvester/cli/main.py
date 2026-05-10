@@ -271,5 +271,53 @@ def crawl_run(
         raise typer.Exit(code=1) from None
 
 
+# --- Worker subcommands ---
+
+worker_app = typer.Typer(help="Worker daemon commands")
+app.add_typer(worker_app, name="worker")
+
+
+@worker_app.command("once")
+def worker_once(
+    limit: int = typer.Option(10, "--limit", help="Max jobs to process"),
+) -> None:
+    """Run the embedding worker once and exit."""
+    from harvester.adapters.stub_model import StubModelAdapter
+    from harvester.workers.daemon import _make_session, run_once
+
+    session = _make_session()
+    adapter = StubModelAdapter()
+    try:
+        stats = run_once(session, adapter, "stub-embedding-1536", limit=limit)
+        typer.echo(
+            f"Worker one-shot complete: "
+            f"claimed={stats['claimed']} "
+            f"completed={stats['completed']} "
+            f"failed={stats['failed']}"
+        )
+    finally:
+        session.close()
+
+
+@worker_app.command("run")
+def worker_run(
+    poll_interval: int = typer.Option(10, "--poll-interval", help="Seconds between polls"),
+    limit: int = typer.Option(10, "--limit", help="Max jobs per iteration"),
+) -> None:
+    """Run the embedding worker daemon in a loop."""
+    from harvester.adapters.stub_model import StubModelAdapter
+    from harvester.workers.daemon import _make_session, run_loop
+
+    adapter = StubModelAdapter()
+    typer.echo(f"Starting embedding worker daemon (poll={poll_interval}s, limit={limit})")
+    run_loop(
+        _make_session,
+        adapter,
+        "stub-embedding-1536",
+        poll_interval=poll_interval,
+        limit=limit,
+    )
+
+
 if __name__ == "__main__":
     app()

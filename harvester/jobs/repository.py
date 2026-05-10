@@ -221,7 +221,7 @@ def fail_job(
             priority=retry_priority,
             run_after=run_after,
             payload=job.payload,
-            attempts=0,
+            attempts=job.attempts,
             max_attempts=job.max_attempts,
             created_at=datetime.datetime.now(datetime.UTC),
         )

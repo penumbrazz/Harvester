@@ -71,3 +71,28 @@ class TestComposeConfig:
         for svc_name in ("server", "worker"):
             svc = data["services"][svc_name]
             assert "env_file" in svc, f"{svc_name} service should use env_file"
+
+    def test_worker_command_starts_worker_daemon(self):
+        """Worker service command must start 'harvester worker run'."""
+        content = COMPOSE_FILE.read_text(encoding="utf-8")
+        data = yaml.safe_load(content)
+        worker = data["services"]["worker"]
+        cmd = worker.get("command", "")
+        assert "harvester worker run" in cmd, (
+            f"Worker command should contain 'harvester worker run', got: {cmd}"
+        )
+
+    def test_worker_healthcheck_checks_worker_run_process(self):
+        """Worker healthcheck must pgrep for the worker run process."""
+        content = COMPOSE_FILE.read_text(encoding="utf-8")
+        data = yaml.safe_load(content)
+        worker = data["services"]["worker"]
+        hc = worker.get("healthcheck", {})
+        test_cmd = hc.get("test", [])
+        if isinstance(test_cmd, list):
+            test_str = " ".join(test_cmd)
+        else:
+            test_str = str(test_cmd)
+        assert "[h]arvester worker run" in test_str, (
+            f"Worker healthcheck should use '[h]arvester worker run' pattern, got: {test_str}"
+        )
