@@ -2,6 +2,7 @@ import type { NavItem } from '../components/common/sidebar'
 
 const navItems: NavItem[] = [
   { key: 'overview', label: 'Overview' },
+  { key: 'dashboard', label: 'Dashboard' },
   { key: 'sources', label: 'Sources' },
   { key: 'recipes', label: 'Recipes' },
   { key: 'schedules', label: 'Schedules' },

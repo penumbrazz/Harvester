@@ -1,0 +1,346 @@
+import { useCallback, useEffect, useState } from 'react'
+
+import type { ApiConfig } from '../../types/api'
+import type { DashboardSummary, FailureItem } from '../../types/observability'
+import { Card } from '../../components/ui/card'
+import { StatusPill } from '../../components/ui/status-pill'
+import { getDashboardSummary, getRecentFailures } from '../../lib/observability-api'
+import { formatDate } from '../../lib/format'
+
+interface DashboardPageProps {
+  config: ApiConfig
+}
+
+/** Metric card displaying a label and value. */
+function MetricCard({
+  label,
+  value,
+  sublabel,
+}: {
+  label: string
+  value: number | string
+  sublabel?: string
+}) {
+  return (
+    <Card>
+      <p
+        style={{
+          fontSize: 'var(--font-size-sm)',
+          color: 'var(--color-warm-gray-300)',
+          marginBottom: 'var(--space-2)',
+        }}
+      >
+        {label}
+      </p>
+      <p
+        style={{
+          fontSize: 'var(--font-size-xl)',
+          fontWeight: 700,
+        }}
+      >
+        {value}
+      </p>
+      {sublabel && (
+        <p
+          style={{
+            fontSize: 'var(--font-size-xs)',
+            color: 'var(--color-warm-gray-500)',
+            marginTop: 'var(--space-1)',
+          }}
+        >
+          {sublabel}
+        </p>
+      )}
+    </Card>
+  )
+}
+
+/** Status pill variant helper for failure items. */
+function failureVariant(status: string): 'error' | 'warning' | 'default' {
+  if (status === 'dead') return 'error'
+  if (status === 'failed') return 'warning'
+  return 'default'
+}
+
+/** Display a list of recent failures. */
+function FailurePanel({ items, title }: { items: FailureItem[]; title: string }) {
+  if (items.length === 0) return null
+  return (
+    <div style={{ marginBottom: 'var(--space-4)' }}>
+      <h4
+        style={{
+          fontFamily: 'var(--font-family)',
+          fontSize: 'var(--font-size-base)',
+          fontWeight: 600,
+          marginBottom: 'var(--space-2)',
+        }}
+      >
+        {title}
+      </h4>
+      <div
+        style={{
+          overflowX: 'auto',
+          border: 'var(--border-whisper)',
+          borderRadius: 'var(--radius-lg)',
+        }}
+      >
+        <table
+          data-testid={`failures-${title.toLowerCase().replace(/\s+/g, '-')}`}
+          style={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            fontFamily: 'var(--font-family)',
+          }}
+        >
+          <thead>
+            <tr
+              style={{
+                borderBottom: 'var(--border-whisper)',
+                backgroundColor: 'var(--color-warm-white)',
+              }}
+            >
+              {['ID', 'Status', 'Error', 'Created'].map((header) => (
+                <th
+                  key={header}
+                  style={{
+                    padding: '10px var(--space-3)',
+                    fontSize: 'var(--font-size-xs)',
+                    fontWeight: 600,
+                    color: 'var(--color-warm-gray-500)',
+                    textAlign: 'left',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.125px',
+                  }}
+                >
+                  {header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.id} style={{ borderBottom: 'var(--border-whisper)' }}>
+                <td
+                  style={{
+                    padding: '10px var(--space-3)',
+                    fontSize: 'var(--font-size-sm)',
+                    verticalAlign: 'middle',
+                    fontFamily: 'monospace',
+                    maxWidth: '120px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {item.id.slice(0, 8)}
+                </td>
+                <td
+                  style={{
+                    padding: '10px var(--space-3)',
+                    fontSize: 'var(--font-size-sm)',
+                    verticalAlign: 'middle',
+                  }}
+                >
+                  <StatusPill variant={failureVariant(item.status)}>
+                    {item.status}
+                  </StatusPill>
+                </td>
+                <td
+                  style={{
+                    padding: '10px var(--space-3)',
+                    fontSize: 'var(--font-size-sm)',
+                    verticalAlign: 'middle',
+                    color: 'var(--color-warm-gray-500)',
+                    maxWidth: '300px',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {item.error_message || '--'}
+                </td>
+                <td
+                  style={{
+                    padding: '10px var(--space-3)',
+                    fontSize: 'var(--font-size-sm)',
+                    verticalAlign: 'middle',
+                    color: 'var(--color-warm-gray-300)',
+                  }}
+                >
+                  {formatDate(item.created_at)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+export function DashboardPage({ config }: DashboardPageProps) {
+  const [summary, setSummary] = useState<DashboardSummary | null>(null)
+  const [failures, setFailures] = useState<FailureItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const fetchData = useCallback(async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const [summaryData, failuresData] = await Promise.all([
+        getDashboardSummary(config),
+        getRecentFailures(config, 5),
+      ])
+      setSummary(summaryData)
+      setFailures([...failuresData.crawl_runs, ...failuresData.jobs])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load dashboard')
+    } finally {
+      setLoading(false)
+    }
+  }, [config])
+
+  useEffect(() => {
+    if (config.baseUrl) {
+      void fetchData()
+    }
+  }, [config.baseUrl, fetchData])
+
+  return (
+    <div data-testid="page-dashboard">
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 'var(--space-5)',
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: 'var(--font-family)',
+            fontSize: 'var(--font-size-2xl)',
+            fontWeight: 700,
+            letterSpacing: '-0.625px',
+            lineHeight: 'var(--line-height-tight)',
+          }}
+        >
+          Dashboard
+        </h2>
+        <button
+          onClick={() => void fetchData()}
+          data-testid="refresh-dashboard"
+          style={{
+            padding: '6px 12px',
+            fontSize: 'var(--font-size-sm)',
+            fontWeight: 500,
+            fontFamily: 'var(--font-family)',
+            color: 'var(--color-warm-gray-500)',
+            background: 'transparent',
+            border: 'var(--border-whisper)',
+            borderRadius: 'var(--radius-sm)',
+            cursor: 'pointer',
+          }}
+        >
+          Refresh
+        </button>
+      </div>
+
+      {loading && (
+        <p
+          data-testid="dashboard-loading"
+          style={{
+            color: 'var(--color-warm-gray-500)',
+            fontSize: 'var(--font-size-sm)',
+          }}
+        >
+          Loading dashboard...
+        </p>
+      )}
+
+      {!loading && error && (
+        <p
+          data-testid="dashboard-error"
+          style={{ color: 'var(--color-orange)', fontSize: 'var(--font-size-sm)' }}
+        >
+          {error}
+        </p>
+      )}
+
+      {!loading && !error && summary && (
+        <>
+          {/* Metric cards */}
+          <div
+            data-testid="dashboard-metrics"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: 'var(--space-4)',
+              marginBottom: 'var(--space-5)',
+            }}
+          >
+            <MetricCard
+              label="Sources"
+              value={summary.sources.total}
+              sublabel={formatBreakdown(summary.sources.by_status)}
+            />
+            <MetricCard
+              label="Crawl Runs"
+              value={summary.crawl_runs.total}
+              sublabel={formatBreakdown(summary.crawl_runs.by_status)}
+            />
+            <MetricCard
+              label="Jobs"
+              value={summary.jobs.total}
+              sublabel={formatBreakdown(summary.jobs.by_status)}
+            />
+            <MetricCard label="Content Items" value={summary.content_items.total} />
+            <MetricCard
+              label="Failures"
+              value={summary.failures.total}
+              sublabel={formatBreakdown(summary.failures.by_status)}
+            />
+            <MetricCard label="Audit Events" value={summary.audit_events.total} />
+          </div>
+
+          {/* Recent failures */}
+          <Card>
+            <h3
+              style={{
+                fontFamily: 'var(--font-family)',
+                fontSize: 'var(--font-size-base)',
+                fontWeight: 600,
+                marginBottom: 'var(--space-3)',
+              }}
+            >
+              Recent Failures
+            </h3>
+            {failures.length === 0 ? (
+              <p
+                data-testid="dashboard-no-failures"
+                style={{
+                  color: 'var(--color-warm-gray-300)',
+                  fontSize: 'var(--font-size-sm)',
+                  textAlign: 'center',
+                  padding: 'var(--space-4)',
+                }}
+              >
+                No recent failures
+              </p>
+            ) : (
+              <FailurePanel items={failures.slice(0, 5)} title="Recent Failures" />
+            )}
+          </Card>
+        </>
+      )}
+    </div>
+  )
+}
+
+/** Format a status breakdown map into a readable string. */
+function formatBreakdown(byStatus: Record<string, number>): string {
+  const entries = Object.entries(byStatus).filter(([, count]) => count > 0)
+  if (entries.length === 0) return ''
+  return entries.map(([status, count]) => `${count} ${status}`).join(', ')
+}

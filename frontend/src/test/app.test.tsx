@@ -86,10 +86,32 @@ describe('App shell', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.click(screen.getByTestId('nav-crawls'))
+    await user.click(screen.getByTestId('nav-content'))
     expect(
       screen.getByText(/This page will be implemented in a future update/),
     ).toBeInTheDocument()
+  })
+
+  it('renders the crawls page with filter and trigger button', async () => {
+    mockFetch.mockRejectedValue(new Error('Not configured'))
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByTestId('nav-crawls'))
+    expect(screen.getByTestId('page-crawls')).toBeInTheDocument()
+    expect(screen.getByTestId('select-crawl-status-filter')).toBeInTheDocument()
+    expect(screen.getByTestId('trigger-crawl-button')).toBeInTheDocument()
+  })
+
+  it('renders the jobs page with filters', async () => {
+    mockFetch.mockRejectedValue(new Error('Not configured'))
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByTestId('nav-jobs'))
+    expect(screen.getByTestId('page-jobs')).toBeInTheDocument()
+    expect(screen.getByTestId('select-job-type-filter')).toBeInTheDocument()
+    expect(screen.getByTestId('select-job-status-filter')).toBeInTheDocument()
   })
 })
 

@@ -17,6 +17,7 @@ def create_app() -> FastAPI:
 
     from harvester.api.routers import (
         crawl,
+        dashboard,
         failures,
         queue,
         recipes,
@@ -34,5 +35,6 @@ def create_app() -> FastAPI:
     app.include_router(search.router)
     app.include_router(schedules.router)
     app.include_router(queue.router)
+    app.include_router(dashboard.router)
 
     return app
