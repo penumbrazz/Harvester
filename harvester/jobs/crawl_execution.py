@@ -27,6 +27,12 @@ logger = logging.getLogger(__name__)
 class CrawlExecutionError(Exception):
     """Raised when crawl execution fails."""
 
+    retryable: bool = False
+
+    def __init__(self, message: str, retryable: bool = False) -> None:
+        super().__init__(message)
+        self.retryable = retryable
+
 
 @dataclass
 class CrawlExecutionResult:
@@ -78,6 +84,7 @@ def execute_crawl(
     source_id: uuid.UUID,
     recipe_id: uuid.UUID,
     actor: str = "system",
+    topic_watch_id: uuid.UUID | None = None,
 ) -> CrawlExecutionResult:
     """Execute a public web crawl run.
 
@@ -122,6 +129,7 @@ def execute_crawl(
     crawl_run = CrawlRun(
         id=run_id,
         source_id=source_id,
+        topic_watch_id=topic_watch_id,
         recipe_id=recipe_id,
         status="pending",
         started_at=now,
@@ -266,7 +274,8 @@ def execute_crawl(
     except Exception as exc:
         _fail_crawl_run(session, crawl_run, str(exc))
         session.commit()
-        raise CrawlExecutionError(str(exc)) from exc
+        # Unexpected errors are retryable (network, adapter, archive)
+        raise CrawlExecutionError(str(exc), retryable=True) from exc
 
 
 def _fail_crawl_run(session: Session, crawl_run: CrawlRun, error_message: str) -> None:

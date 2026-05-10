@@ -304,18 +304,78 @@ worker_app = typer.Typer(help="Worker daemon commands")
 app.add_typer(worker_app, name="worker")
 
 
+# --- Schedule subcommands ---
+
+schedule_app = typer.Typer(help="Watch schedule management")
+app.add_typer(schedule_app, name="schedule")
+
+
+@schedule_app.command("create")
+def schedule_create(
+    source_id: str = typer.Option(..., "--source-id", help="Source ID"),
+    topic_watch_id: str | None = typer.Option(
+        None, "--topic-watch-id", help="Topic watch ID (optional)"
+    ),
+    recipe_id: str = typer.Option(..., "--recipe-id", help="Recipe ID"),
+    interval: int = typer.Option(
+        ..., "--interval", help="Interval in seconds between crawls"
+    ),
+    priority: int = typer.Option(0, "--priority", help="Job priority"),
+    lane: str | None = typer.Option(None, "--lane", help="Job lane"),
+) -> None:
+    """Create a watch schedule for a source or topic-source pair."""
+    payload: dict = {
+        "source_id": source_id,
+        "recipe_id": recipe_id,
+        "interval_seconds": interval,
+        "priority": priority,
+    }
+    if topic_watch_id:
+        payload["topic_watch_id"] = topic_watch_id
+    if lane:
+        payload["lane"] = lane
+    try:
+        response = httpx.post(
+            f"{_get_base_url()}/schedules",
+            json=payload,
+            headers=_api_headers(),
+            timeout=10.0,
+        )
+        if response.status_code == 201:
+            data = response.json()
+            typer.echo(
+                f"Schedule created: {data['id']} "
+                f"key={data['schedule_key']} "
+                f"status={data['status']} "
+                f"interval={data['interval_seconds']}s"
+            )
+        else:
+            typer.echo(f"Error: {response.status_code} {response.text}")
+            raise typer.Exit(code=1)
+    except httpx.ConnectError as e:
+        typer.echo(f"Failed to connect to API: {e}")
+        raise typer.Exit(code=1) from None
+
+
 @worker_app.command("once")
 def worker_once(
     limit: int = typer.Option(10, "--limit", help="Max jobs to process"),
+    job_type: str = typer.Option(
+        "embed_chunks", "--job-type", help="Job type to process (embed_chunks or crawl)"
+    ),
 ) -> None:
-    """Run the embedding worker once and exit."""
-    from harvester.adapters.embedding_settings import create_embedding_adapter
-    from harvester.workers.daemon import _make_session, run_once
+    """Run the worker once and exit."""
+    from harvester.workers.daemon import _make_session, run_once, run_crawl_once
 
-    adapter, model_name = create_embedding_adapter()
     session = _make_session()
     try:
-        stats = run_once(session, adapter, model_name, limit=limit)
+        if job_type == "crawl":
+            stats = run_crawl_once(session, limit=limit)
+        else:
+            from harvester.adapters.embedding_settings import create_embedding_adapter
+
+            adapter, model_name = create_embedding_adapter()
+            stats = run_once(session, adapter, model_name, limit=limit)
         typer.echo(
             f"Worker one-shot complete: "
             f"claimed={stats['claimed']} "
@@ -348,6 +408,67 @@ def worker_run(
         poll_interval=poll_interval,
         limit=limit,
     )
+
+
+# --- Scheduler subcommands ---
+
+scheduler_app = typer.Typer(help="Watch scheduler commands")
+app.add_typer(scheduler_app, name="scheduler")
+
+
+@scheduler_app.command("run")
+def scheduler_run() -> None:
+    """Run the scheduler once and enqueue due crawl jobs."""
+    from datetime import datetime, timezone
+
+    from harvester.jobs.scheduler import run_scheduler_once
+    from harvester.workers.daemon import _make_session
+
+    session = _make_session()
+    try:
+        now = datetime.now(timezone.utc)
+        result = run_scheduler_once(session, now=now)
+        typer.echo(
+            f"Scheduler one-shot complete: "
+            f"scanned={result.scanned} "
+            f"enqueued={result.enqueued} "
+            f"skipped={result.skipped} "
+            f"duplicates={result.duplicates}"
+        )
+    finally:
+        session.close()
+
+
+# --- Queue status subcommands ---
+
+queue_app = typer.Typer(help="Queue status inspection")
+app.add_typer(queue_app, name="queue")
+
+
+@queue_app.command("status")
+def queue_status() -> None:
+    """Show queue status aggregated by job_type and status."""
+    from harvester.workers.daemon import _make_session
+
+    session = _make_session()
+    try:
+        from sqlalchemy import text
+
+        rows = session.execute(
+            text(
+                "SELECT job_type, status, COUNT(*) as cnt "
+                "FROM jobs "
+                "GROUP BY job_type, status "
+                "ORDER BY job_type, status"
+            )
+        ).fetchall()
+        if not rows:
+            typer.echo("Queue is empty.")
+            return
+        for row in rows:
+            typer.echo(f"  {row[0]:20s} {row[1]:12s} {row[2]}")
+    finally:
+        session.close()
 
 
 if __name__ == "__main__":

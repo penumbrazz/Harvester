@@ -20,6 +20,7 @@ content_item / item_version / chunk 才是资料库和搜索层。
 - CDC/Sina fixture extractor、deterministic fixture soak。
 - keyword search、pgvector-ready chunk/vector search、Docker Compose smoke 基座。
 - 真实公开网页抓取：Firecrawl adapter、fetch policy（DNS/IP 分类、redirect 复检）、raw payload archive、crawl API/CLI、CDC smoke。
+- Watch scheduler：watch_schedules 表、schedule API/CLI、one-shot scheduler、crawl job handler、crawl worker、队列状态查看。
 
 后续：
 
@@ -214,9 +215,60 @@ curl -X POST http://localhost:8000/crawl/run \
 HARVESTER_ENABLE_LIVE_CRAWL=1 uv run pytest tests/integration/test_cdc_public_crawl_smoke.py -q
 ```
 
+## Watch Scheduler 与 Crawl Worker
+
+Harvester 支持为 Source 或 Topic Watch 创建定时调度（watch schedule），由 scheduler 按间隔自动创建 crawl job，crawl worker 消费 job 执行抓取。
+
+### 创建 Schedule
+
+```bash
+# 为 source 创建定时调度（每 3600 秒抓取一次）
+uv run harvester schedule create \
+  --source-id <source-id> \
+  --recipe-id <recipe-id> \
+  --interval 3600
+
+# 为 topic watch 的 source 创建调度
+uv run harvester schedule create \
+  --source-id <source-id> \
+  --topic-watch-id <topic-id> \
+  --recipe-id <recipe-id> \
+  --interval 1800
+```
+
+### 运行 Scheduler One-shot
+
+Scheduler 是 one-shot 命令，每次调用扫描到期 schedule 并创建 crawl job。可配合 cron/systemd 定期执行。
+
+```bash
+# 执行一次 scheduler
+uv run harvester scheduler run
+# 输出: scanned=N enqueued=N skipped=N duplicates=N
+```
+
+### 运行 Crawl Worker One-shot
+
+```bash
+# 处理 pending 的 crawl job
+uv run harvester worker once --job-type crawl --limit 10
+```
+
+默认 `worker once` 仍只处理 `embed_chunks` job，不会改变已有行为。
+
+### 查看队列状态
+
+```bash
+# 通过 CLI
+uv run harvester queue status
+
+# 通过 API
+curl -H "Authorization: Bearer $HARVESTER_API_TOKEN" \
+  http://localhost:8000/queue/status
+```
+
 ## Embedding 适配器
 
-Harvester 的 embedding 只对 `item_version -> chunk` 做 embedding，**不对 raw HTML/API payload 做 embedding**。Worker 和 vector search API 共用同一个适配器工厂，确保 chunk embedding 和 query embedding 使用一致的模型和维度。
+Harvester 的 embedding 只对 `item_version -> chunk` 做 embedding，**不对 raw HTML/API payload 做 embedding**。`raw_object` 是短保留 evidence cache，不是长期语料库。默认 raw HTML/API payload 可按约 7 天保留；提取成功后可压缩或删除 payload。长期保留的是 metadata、hash、audit、`content_item`、`item_observation`、`item_version`、`chunk`。Worker 和 vector search API 共用同一个适配器工厂，确保 chunk embedding 和 query embedding 使用一致的模型和维度。
 
 ### 默认：Stub 适配器
 

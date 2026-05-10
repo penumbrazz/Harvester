@@ -442,6 +442,63 @@ class SourceFrontier(Base):
 
 
 # ---------------------------------------------------------------------------
+# Watch Schedules
+# ---------------------------------------------------------------------------
+
+
+class WatchSchedule(Base):
+    """A recurring crawl schedule for a source or topic-source pair."""
+
+    __tablename__ = "watch_schedules"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    schedule_key: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    source_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("sources.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    topic_watch_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("topic_watches.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    recipe_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("recipes.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="active"
+    )
+    interval_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
+    next_run_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    last_enqueued_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    lane: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow
+    )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
+    )
+
+    __table_args__ = (
+        sa.Index(
+            "ix_watch_schedules_status_next_run_at",
+            "status",
+            "next_run_at",
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Audit Events
 # ---------------------------------------------------------------------------
 

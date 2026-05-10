@@ -15,7 +15,16 @@ def create_app() -> FastAPI:
     async def health() -> dict[str, str]:
         return {"status": "ok"}
 
-    from harvester.api.routers import crawl, failures, recipes, search, sources, topics
+    from harvester.api.routers import (
+        crawl,
+        failures,
+        queue,
+        recipes,
+        schedules,
+        search,
+        sources,
+        topics,
+    )
 
     app.include_router(sources.router)
     app.include_router(topics.router)
@@ -23,5 +32,7 @@ def create_app() -> FastAPI:
     app.include_router(failures.router)
     app.include_router(crawl.router)
     app.include_router(search.router)
+    app.include_router(schedules.router)
+    app.include_router(queue.router)
 
     return app

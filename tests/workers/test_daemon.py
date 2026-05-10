@@ -1,10 +1,14 @@
 """Tests for the worker daemon — run_once and run_loop.
 
 Covers: one-shot claiming embed_chunks jobs only, empty queue returning
-zero counts, limit enforcement, and loop mode with stop condition.
+zero counts, limit enforcement, loop mode with stop condition,
+and crawl job processing via run_crawl_once.
 """
 
-from unittest.mock import MagicMock
+import uuid
+from unittest.mock import MagicMock, patch
+
+import sqlalchemy as sa
 
 from harvester.db.models import Job
 from harvester.jobs.repository import create_job
@@ -118,6 +122,52 @@ class TestRunOnce:
         assert stats["claimed"] == 1
         assert stats["completed"] == 0
         assert stats["failed"] == 1
+
+
+class TestRunCrawlOnce:
+    """Tests for run_crawl_once — crawl job processing."""
+
+    def test_claims_crawl_jobs_only(self, db_session):
+        """run_crawl_once only claims crawl jobs, not embed_chunks."""
+        from harvester.workers.daemon import run_crawl_once
+
+        # Create an embed_chunks job that should NOT be claimed
+        _, _, iv = make_full_chain(db_session, "Crawl Lane Test")
+        chunk = make_chunk(db_session, iv.id, 0, "crawl lane text")
+        db_session.commit()
+        embed_job = create_job(
+            db_session,
+            job_type="embed_chunks",
+            payload={"chunk_id": str(chunk.id)},
+            idempotency_key=f"embed-{chunk.id}",
+        )
+
+        # Create a crawl job with dead-letter-level payload (will fail)
+        crawl_job = create_job(
+            db_session,
+            job_type="crawl",
+            payload={"source_id": str(uuid.uuid4())},
+        )
+        db_session.commit()
+
+        stats = run_crawl_once(db_session, limit=10)
+
+        assert stats["claimed"] >= 1
+
+        # embed job should still be pending
+        db_session.expire_all()
+        embed = db_session.get(Job, embed_job.id)
+        assert embed.status == "pending"
+
+    def test_empty_queue_returns_zero_counts(self, db_session):
+        """run_crawl_once returns all-zero counts when no crawl jobs."""
+        from harvester.workers.daemon import run_crawl_once
+
+        stats = run_crawl_once(db_session, limit=10)
+
+        assert stats["claimed"] == 0
+        assert stats["completed"] == 0
+        assert stats["failed"] == 0
 
 
 class TestRunLoop:
