@@ -10,7 +10,7 @@ from harvester.extractors.base import CandidateItem
 _FLASH_RE = re.compile(
     r"(?P<time>\d{2}:\d{2}:\d{2})\n"
     r"\n"
-    r"\[(?P<title>[^\]]+)\]\((?P<url>https?://[^)]+)\)\n"
+    r"\[(?P<title>(?:[^\]]|\]\()[^]]*)\]\((?P<url>https?://[^)]+)\)\n"
     r"\n"
     r"(?:(?P<read_line>[^\n]*阅读[^\n]*)\n\n)?",
     re.MULTILINE,
@@ -30,7 +30,7 @@ def _parse_read_count(text: str | None) -> int | None:
 
 
 def _extract_item_id(url: str) -> str | None:
-    m = re.search(r"/(\d+)/?$", url)
+    m = re.search(r"/(\d+)(?:[/?#]|$)", url)
     return m.group(1) if m else None
 
 
@@ -41,7 +41,7 @@ class Sina7x24Extractor:
         self, raw_metadata: dict, raw_payload: str | bytes
     ) -> list[CandidateItem]:
         if isinstance(raw_payload, bytes):
-            raw_payload = raw_payload.decode("utf-8")
+            raw_payload = raw_payload.decode("utf-8", errors="replace")
         items: list[CandidateItem] = []
         for idx, m in enumerate(_FLASH_RE.finditer(raw_payload)):
             url = m.group("url")

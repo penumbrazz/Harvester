@@ -196,3 +196,25 @@ class TestExpectedOutputFiles:
             assert "read_count" in item["extra"], (
                 f"Item extra missing 'read_count': {item}"
             )
+
+    def test_sina_7x24_extractor_matches_expected(self):
+        """Extractor output on fixture raw must match expected items."""
+        from harvester.extractors.sina_7x24 import Sina7x24Extractor
+
+        raw = (RAW_DIR / "sina-7x24.md").read_text(encoding="utf-8")
+        expected = json.loads(
+            (EXPECTED_DIR / "sina-7x24-items.json").read_text(encoding="utf-8")
+        )
+        items = Sina7x24Extractor().extract({}, raw)
+        assert len(items) == len(expected)
+        for item, exp in zip(items, expected):
+            assert item.external_item_id == exp["external_item_id"], (
+                f"ID mismatch: {item.external_item_id} != {exp['external_item_id']}"
+            )
+            assert item.title == exp["title"], (
+                f"Title mismatch for {exp['external_item_id']}: "
+                f"{item.title!r} != {exp['title']!r}"
+            )
+            assert item.final_url == exp["final_url"]
+            assert item.extra["time"] == exp["extra"]["time"]
+            assert item.extra["read_count"] == exp["extra"]["read_count"]
