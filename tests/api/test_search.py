@@ -2,17 +2,22 @@
 
 import os
 import uuid
-from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
-import sqlalchemy as sa
 from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
 from alembic import command
+from tests.utils.factories import (
+    insert_chunk,
+    insert_content_item,
+    insert_item_version,
+    insert_source,
+    insert_topic,
+)
 
 
 @pytest.fixture(scope="module")
@@ -65,82 +70,6 @@ async def api_client(api_test_db):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             yield client
-
-
-def _now() -> datetime:
-    return datetime.now(UTC)
-
-
-def _insert_source(session: Session, name: str | None = None) -> uuid.UUID:
-    """Insert a source row and return its id."""
-    src_id = uuid.uuid4()
-    session.execute(
-        sa.text(
-            "INSERT INTO sources "
-            "(id, name, kind, status, trust_level, auth_required, failure_count, created_at, updated_at) "
-            "VALUES (:id, :name, 'rss', 'watched', 'medium', false, 0, :ts, :ts)"
-        ),
-        {"id": src_id, "name": name or f"src-{uuid.uuid4().hex[:6]}", "ts": _now()},
-    )
-    return src_id
-
-
-def _insert_topic(session: Session, name: str | None = None) -> uuid.UUID:
-    """Insert a topic_watch row and return its id."""
-    tw_id = uuid.uuid4()
-    session.execute(
-        sa.text(
-            "INSERT INTO topic_watches (id, name, query, status, created_at, updated_at) "
-            "VALUES (:id, :name, :query, 'active', :ts, :ts)"
-        ),
-        {"id": tw_id, "name": name or f"topic-{uuid.uuid4().hex[:6]}", "query": "test", "ts": _now()},
-    )
-    return tw_id
-
-
-def _insert_content_item(
-    session: Session,
-    source_id: uuid.UUID,
-    title: str,
-    *,
-    topic_watch_id: uuid.UUID | None = None,
-    canonical_url: str | None = None,
-) -> uuid.UUID:
-    """Insert a content_item row and return its id."""
-    ci_id = uuid.uuid4()
-    url = canonical_url or f"https://example.com/{uuid.uuid4().hex[:8]}"
-    session.execute(
-        sa.text(
-            "INSERT INTO content_items "
-            "(id, item_type, title, source_id, topic_watch_id, "
-            "canonical_url, canonical_url_hash, status, created_at, updated_at) "
-            "VALUES (:id, 'article', :title, :source_id, :tw_id, "
-            ":url, md5(:url), 'active', :ts, :ts)"
-        ),
-        {
-            "id": ci_id,
-            "title": title,
-            "source_id": source_id,
-            "tw_id": topic_watch_id,
-            "url": url,
-            "ts": _now(),
-        },
-    )
-    return ci_id
-
-
-def _insert_item_version(session: Session, content_item_id: uuid.UUID) -> uuid.UUID:
-    """Insert an item_version row and return its id."""
-    iv_id = uuid.uuid4()
-    session.execute(
-        sa.text(
-            "INSERT INTO item_versions "
-            "(id, content_item_id, content_hash, created_at) "
-            "VALUES (:id, :ci_id, :hash, :ts)"
-        ),
-        {"id": iv_id, "ci_id": content_item_id, "hash": uuid.uuid4().hex, "ts": _now()},
-    )
-    return iv_id
 
 
 # --- Auth tests ---
@@ -196,11 +125,11 @@ async def test_search_returns_matching_items(api_client, api_test_db):
     """GET /items/search?q=Python should return items with matching titles."""
     engine = create_engine(api_test_db)
     with Session(bind=engine) as session:
-        src_id = _insert_source(session, "search-src-1")
-        ci_id = _insert_content_item(session, src_id, "Python Async Programming Guide")
-        _insert_item_version(session, ci_id)
-        ci2_id = _insert_content_item(session, src_id, "Rust Ownership Model")
-        _insert_item_version(session, ci2_id)
+        src_id = insert_source(session, "search-src-1")
+        ci_id = insert_content_item(session, src_id, "Python Async Programming Guide")
+        insert_item_version(session, ci_id)
+        ci2_id = insert_content_item(session, src_id, "Rust Ownership Model")
+        insert_item_version(session, ci2_id)
         session.commit()
     engine.dispose()
 
@@ -219,12 +148,12 @@ async def test_search_filter_by_source_id(api_client, api_test_db):
     """GET /items/search?q=Python&source_id=X should only return items from that source."""
     engine = create_engine(api_test_db)
     with Session(bind=engine) as session:
-        src_a = _insert_source(session, "filter-src-a")
-        src_b = _insert_source(session, "filter-src-b")
-        ci_a = _insert_content_item(session, src_a, "Python Data Analysis")
-        _insert_item_version(session, ci_a)
-        ci_b = _insert_content_item(session, src_b, "Python Web Development")
-        _insert_item_version(session, ci_b)
+        src_a = insert_source(session, "filter-src-a")
+        src_b = insert_source(session, "filter-src-b")
+        ci_a = insert_content_item(session, src_a, "Python Data Analysis")
+        insert_item_version(session, ci_a)
+        ci_b = insert_content_item(session, src_b, "Python Web Development")
+        insert_item_version(session, ci_b)
         session.commit()
     engine.dispose()
 
@@ -243,13 +172,17 @@ async def test_search_filter_by_topic_watch_id(api_client, api_test_db):
     """GET /items/search?q=Python&topic_watch_id=X should only return items from that topic."""
     engine = create_engine(api_test_db)
     with Session(bind=engine) as session:
-        src_id = _insert_source(session, "topic-src")
-        tw_a = _insert_topic(session, "topic-a")
-        tw_b = _insert_topic(session, "topic-b")
-        ci_a = _insert_content_item(session, src_id, "Python ML Guide", topic_watch_id=tw_a)
-        _insert_item_version(session, ci_a)
-        ci_b = _insert_content_item(session, src_id, "Python DL Guide", topic_watch_id=tw_b)
-        _insert_item_version(session, ci_b)
+        src_id = insert_source(session, "topic-src")
+        tw_a = insert_topic(session, "topic-a")
+        tw_b = insert_topic(session, "topic-b")
+        ci_a = insert_content_item(
+            session, src_id, "Python ML Guide", topic_watch_id=tw_a
+        )
+        insert_item_version(session, ci_a)
+        ci_b = insert_content_item(
+            session, src_id, "Python DL Guide", topic_watch_id=tw_b
+        )
+        insert_item_version(session, ci_b)
         session.commit()
     engine.dispose()
 
@@ -268,10 +201,10 @@ async def test_search_limit_parameter(api_client, api_test_db):
     """GET /items/search?q=Python&limit=1 should return at most 1 result."""
     engine = create_engine(api_test_db)
     with Session(bind=engine) as session:
-        src_id = _insert_source(session, "limit-src")
+        src_id = insert_source(session, "limit-src")
         for i in range(3):
-            ci = _insert_content_item(session, src_id, f"Python Article {i}")
-            _insert_item_version(session, ci)
+            ci = insert_content_item(session, src_id, f"Python Article {i}")
+            insert_item_version(session, ci)
         session.commit()
     engine.dispose()
 
@@ -289,10 +222,10 @@ async def test_search_offset_parameter(api_client, api_test_db):
     """GET /items/search?q=Python&offset=2 should skip first 2 results."""
     engine = create_engine(api_test_db)
     with Session(bind=engine) as session:
-        src_id = _insert_source(session, "offset-src")
+        src_id = insert_source(session, "offset-src")
         for i in range(4):
-            ci = _insert_content_item(session, src_id, f"Python Offset {i}")
-            _insert_item_version(session, ci)
+            ci = insert_content_item(session, src_id, f"Python Offset {i}")
+            insert_item_version(session, ci)
         session.commit()
     engine.dispose()
 
@@ -318,12 +251,14 @@ async def test_search_response_contains_expected_fields(api_client, api_test_db)
     """Each search result must contain item_id, version_id, source_id, title, canonical_url, created_at."""
     engine = create_engine(api_test_db)
     with Session(bind=engine) as session:
-        src_id = _insert_source(session, "fields-src")
-        ci_id = _insert_content_item(
-            session, src_id, "Field Test Article",
+        src_id = insert_source(session, "fields-src")
+        ci_id = insert_content_item(
+            session,
+            src_id,
+            "Field Test Article",
             canonical_url="https://example.com/field-test",
         )
-        _insert_item_version(session, ci_id)
+        insert_item_version(session, ci_id)
         session.commit()
     engine.dispose()
 
@@ -335,8 +270,288 @@ async def test_search_response_contains_expected_fields(api_client, api_test_db)
     data = response.json()
     assert len(data["items"]) == 1
     item = data["items"][0]
-    expected_fields = {"item_id", "version_id", "source_id", "title", "canonical_url", "created_at"}
-    assert set(item.keys()) == expected_fields
+    expected_fields = {
+        "item_id",
+        "version_id",
+        "source_id",
+        "title",
+        "canonical_url",
+        "created_at",
+    }
+    assert expected_fields.issubset(set(item.keys()))
     assert item["title"] == "Field Test Article"
     assert item["canonical_url"] == "https://example.com/field-test"
     assert item["source_id"] == str(src_id)
+
+
+# --- Vector search mode tests ---
+
+
+@pytest.mark.asyncio
+async def test_vector_search_returns_results(api_client, api_test_db):
+    """GET /items/search?q=Python&mode=vector uses query embedding and returns vector results."""
+    engine = create_engine(api_test_db)
+    with Session(bind=engine) as session:
+        src_id = insert_source(session, "vec-src")
+        ci_id = insert_content_item(session, src_id, "Python Vector Guide")
+        iv_id = insert_item_version(session, ci_id)
+        # Use StubModelAdapter to produce the same embedding the API will generate
+        from harvester.adapters.stub_model import StubModelAdapter
+
+        adapter = StubModelAdapter()
+        emb = adapter.embed("Python")
+        insert_chunk(
+            session,
+            iv_id,
+            0,
+            "Python vector text",
+            embedding=emb,
+            embedding_status="ready",
+        )
+        session.commit()
+    engine.dispose()
+
+    response = await api_client.get(
+        "/items/search?q=Python&mode=vector",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["items"]) >= 1
+
+
+@pytest.mark.asyncio
+async def test_search_without_mode_defaults_to_keyword(api_client, api_test_db):
+    """GET /items/search?q=... without mode should still return keyword results."""
+    unique = uuid.uuid4().hex[:8]
+    title = f"KeywordDefaultTest {unique}"
+    engine = create_engine(api_test_db)
+    with Session(bind=engine) as session:
+        src_id = insert_source(session, f"kw-default-{unique}")
+        ci_id = insert_content_item(session, src_id, title)
+        insert_item_version(session, ci_id)
+        session.commit()
+    engine.dispose()
+
+    response = await api_client.get(
+        f"/items/search?q={unique}",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["items"]) == 1
+    assert data["items"][0]["title"] == title
+    assert data["items"][0]["mode"] == "keyword"
+
+
+@pytest.mark.asyncio
+async def test_invalid_mode_returns_error(api_client):
+    """GET /items/search?q=Python&mode=unknown should return 422."""
+    response = await api_client.get(
+        "/items/search?q=Python&mode=unknown",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_vector_search_rejects_nonzero_offset(api_client):
+    """GET /items/search?mode=vector&offset=1 should return 422."""
+    response = await api_client.get(
+        "/items/search?q=test&mode=vector&offset=1",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 422
+    assert "offset is not supported in vector mode" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_vector_search_accepts_zero_offset(api_client, api_test_db):
+    """GET /items/search?mode=vector&offset=0 should succeed."""
+    engine = create_engine(api_test_db)
+    with Session(bind=engine) as session:
+        src_id = insert_source(session, "vec-off0-src")
+        ci_id = insert_content_item(session, src_id, "Vector Offset Zero")
+        iv_id = insert_item_version(session, ci_id)
+        from harvester.adapters.stub_model import StubModelAdapter
+
+        adapter = StubModelAdapter()
+        emb = adapter.embed("OffsetZero")
+        insert_chunk(
+            session,
+            iv_id,
+            0,
+            "offset zero chunk",
+            embedding=emb,
+            embedding_status="ready",
+        )
+        session.commit()
+    engine.dispose()
+
+    response = await api_client.get(
+        "/items/search?q=OffsetZero&mode=vector&offset=0",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_vector_blank_query_returns_empty(api_client):
+    """GET /items/search?q=   &mode=vector should return 200 with empty results."""
+    response = await api_client.get(
+        "/items/search?q=%20%20%20&mode=vector",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["items"] == []
+
+
+@pytest.mark.asyncio
+async def test_vector_response_contains_expected_fields(api_client, api_test_db):
+    """Vector search response must include chunk_id, item_version_id, content_item_id, title, text, distance, mode."""
+    engine = create_engine(api_test_db)
+    with Session(bind=engine) as session:
+        src_id = insert_source(session, "vec-fields-src")
+        ci_id = insert_content_item(session, src_id, "Vector Fields Article")
+        iv_id = insert_item_version(session, ci_id)
+        from harvester.adapters.stub_model import StubModelAdapter
+
+        adapter = StubModelAdapter()
+        emb = adapter.embed("Fields")
+        insert_chunk(
+            session,
+            iv_id,
+            0,
+            "fields chunk text",
+            embedding=emb,
+            embedding_status="ready",
+        )
+        session.commit()
+    engine.dispose()
+
+    response = await api_client.get(
+        "/items/search?q=Fields&mode=vector",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["items"]) >= 1
+    item = data["items"][0]
+    required_fields = {
+        "chunk_id",
+        "item_version_id",
+        "content_item_id",
+        "title",
+        "text",
+        "distance",
+        "mode",
+    }
+    assert required_fields.issubset(set(item.keys()))
+    assert item["mode"] == "vector"
+
+
+@pytest.mark.asyncio
+async def test_vector_filter_by_source_id(api_client, api_test_db):
+    """Vector search with source_id only returns chunks from that source."""
+    engine = create_engine(api_test_db)
+    with Session(bind=engine) as session:
+        src_a = insert_source(session, "vec-src-a")
+        src_b = insert_source(session, "vec-src-b")
+        ci_a = insert_content_item(session, src_a, "Python Source A")
+        ci_b = insert_content_item(session, src_b, "Python Source B")
+        iv_a = insert_item_version(session, ci_a)
+        iv_b = insert_item_version(session, ci_b)
+        from harvester.adapters.stub_model import StubModelAdapter
+
+        adapter = StubModelAdapter()
+        emb = adapter.embed("Python")
+        insert_chunk(
+            session, iv_a, 0, "source a chunk", embedding=emb, embedding_status="ready"
+        )
+        insert_chunk(
+            session, iv_b, 0, "source b chunk", embedding=emb, embedding_status="ready"
+        )
+        session.commit()
+    engine.dispose()
+
+    response = await api_client.get(
+        f"/items/search?q=Python&mode=vector&source_id={src_a}",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["items"]) == 1
+    assert data["items"][0]["content_item_id"] == str(ci_a)
+
+
+@pytest.mark.asyncio
+async def test_vector_filter_by_topic_watch_id(api_client, api_test_db):
+    """Vector search with topic_watch_id only returns chunks from that topic."""
+    engine = create_engine(api_test_db)
+    with Session(bind=engine) as session:
+        src_id = insert_source(session, "vec-topic-src")
+        tw_a = insert_topic(session, "vec-topic-a")
+        tw_b = insert_topic(session, "vec-topic-b")
+        ci_a = insert_content_item(
+            session, src_id, "Python Topic A", topic_watch_id=tw_a
+        )
+        ci_b = insert_content_item(
+            session, src_id, "Python Topic B", topic_watch_id=tw_b
+        )
+        iv_a = insert_item_version(session, ci_a)
+        iv_b = insert_item_version(session, ci_b)
+        from harvester.adapters.stub_model import StubModelAdapter
+
+        adapter = StubModelAdapter()
+        emb = adapter.embed("Python")
+        insert_chunk(
+            session, iv_a, 0, "topic a chunk", embedding=emb, embedding_status="ready"
+        )
+        insert_chunk(
+            session, iv_b, 0, "topic b chunk", embedding=emb, embedding_status="ready"
+        )
+        session.commit()
+    engine.dispose()
+
+    response = await api_client.get(
+        f"/items/search?q=Python&mode=vector&topic_watch_id={tw_a}",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["items"]) == 1
+    assert data["items"][0]["content_item_id"] == str(ci_a)
+
+
+@pytest.mark.asyncio
+async def test_vector_limit_parameter(api_client, api_test_db):
+    """Vector search with limit returns at most that many results."""
+    engine = create_engine(api_test_db)
+    with Session(bind=engine) as session:
+        src_id = insert_source(session, "vec-limit-src")
+        from harvester.adapters.stub_model import StubModelAdapter
+
+        adapter = StubModelAdapter()
+        emb = adapter.embed("Python")
+        for i in range(3):
+            ci = insert_content_item(session, src_id, f"Python Limit {i}")
+            iv = insert_item_version(session, ci)
+            insert_chunk(
+                session,
+                iv,
+                0,
+                f"limit chunk {i}",
+                embedding=emb,
+                embedding_status="ready",
+            )
+        session.commit()
+    engine.dispose()
+
+    response = await api_client.get(
+        "/items/search?q=Python&mode=vector&limit=1",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["items"]) <= 1

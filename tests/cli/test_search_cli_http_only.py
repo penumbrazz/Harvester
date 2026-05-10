@@ -148,6 +148,145 @@ class TestSearchCLIHttpOnly:
                     if "db" in node.module and "session" in str(
                         [alias.name for alias in (node.names or [])]
                     ):
+                        pytest.fail(f"CLI imports database session from {node.module}")
+
+
+class TestSearchCLIVectorMode:
+    """CLI vector mode tests."""
+
+    @patch("httpx.get")
+    def test_vector_mode_passes_mode_param(self, mock_get):
+        """CLI --mode vector should pass mode=vector to API."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"items": []}
+        mock_get.return_value = mock_response
+
+        runner.invoke(app, ["search", "Python", "--mode", "vector"])
+
+        params = mock_get.call_args.kwargs.get("params", {})
+        assert params.get("mode") == "vector"
+
+    @patch("httpx.get")
+    def test_vector_mode_passes_source_id_and_limit(self, mock_get):
+        """CLI vector mode should pass --source-id and --limit."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"items": []}
+        mock_get.return_value = mock_response
+
+        runner.invoke(
+            app,
+            [
+                "search",
+                "Python",
+                "--mode",
+                "vector",
+                "--source-id",
+                "src-uuid",
+                "--limit",
+                "5",
+            ],
+        )
+
+        params = mock_get.call_args.kwargs.get("params", {})
+        assert params.get("mode") == "vector"
+        assert params.get("source_id") == "src-uuid"
+        assert params.get("limit") == 5
+
+    @patch("httpx.get")
+    def test_vector_mode_passes_topic_watch_id(self, mock_get):
+        """CLI vector mode should pass --topic-watch-id."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"items": []}
+        mock_get.return_value = mock_response
+
+        runner.invoke(
+            app,
+            ["search", "Python", "--mode", "vector", "--topic-watch-id", "tw-uuid"],
+        )
+
+        params = mock_get.call_args.kwargs.get("params", {})
+        assert params.get("topic_watch_id") == "tw-uuid"
+
+    @patch("httpx.get")
+    def test_vector_mode_outputs_chunk_and_distance(self, mock_get):
+        """CLI vector mode should output title, chunk id, item version id and distance."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "items": [
+                {
+                    "chunk_id": "chunk-001",
+                    "item_version_id": "ver-001",
+                    "content_item_id": "ci-001",
+                    "title": "Vector Result Title",
+                    "text": "some text",
+                    "distance": 0.123,
+                    "mode": "vector",
+                }
+            ]
+        }
+        mock_get.return_value = mock_response
+
+        result = runner.invoke(app, ["search", "Python", "--mode", "vector"])
+
+        assert "Vector Result Title" in result.output
+        assert "chunk-001" in result.output
+        assert "ver-001" in result.output
+        assert "0.123" in result.output
+
+    def test_vector_mode_does_not_import_db_or_model_adapter(self):
+        """CLI vector mode should not import db session, model adapter or vector search at top level."""
+        cli_path = Path(__file__).parent.parent.parent / "harvester" / "cli" / "main.py"
+        source = cli_path.read_text()
+        tree = ast.parse(source)
+
+        forbidden_modules = {
+            "harvester.search.vector",
+            "harvester.adapters.stub_model",
+        }
+        for node in tree.body:
+            if isinstance(node, (ast.ImportFrom, ast.Import)):
+                if isinstance(node, ast.ImportFrom) and node.module:
+                    if node.module in forbidden_modules:
                         pytest.fail(
-                            f"CLI imports database session from {node.module}"
+                            f"CLI top-level imports forbidden module: {node.module}"
                         )
+
+    @patch("httpx.get")
+    def test_invalid_mode_rejected_at_cli(self, mock_get):
+        """CLI should reject invalid --mode without calling the API."""
+        result = runner.invoke(app, ["search", "Python", "--mode", "unknown"])
+
+        assert result.exit_code == 1
+        assert (
+            "Invalid mode" in result.output or "invalid mode" in result.output.lower()
+        )
+        assert not mock_get.called
+
+    @patch("httpx.get")
+    def test_vector_mode_rejects_nonzero_offset(self, mock_get):
+        """CLI should reject --offset > 0 in vector mode without calling the API."""
+        result = runner.invoke(
+            app, ["search", "Python", "--mode", "vector", "--offset", "10"]
+        )
+
+        assert result.exit_code == 1
+        assert "offset" in result.output.lower()
+        assert not mock_get.called
+
+    @patch("httpx.get")
+    def test_mode_case_insensitive(self, mock_get):
+        """CLI --mode VECTOR (uppercase) should be accepted and normalized."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"items": []}
+        mock_get.return_value = mock_response
+
+        result = runner.invoke(app, ["search", "Python", "--mode", "VECTOR"])
+
+        assert result.exit_code == 0
+        params = mock_get.call_args.kwargs.get("params", {})
+        assert params.get("mode") == "vector"

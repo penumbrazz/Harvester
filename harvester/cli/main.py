@@ -81,7 +81,9 @@ def source_propose(
         )
         if response.status_code == 201:
             data = response.json()
-            typer.echo(f"Source proposed: {data['id']} ({data['name']}) status={data['status']}")
+            typer.echo(
+                f"Source proposed: {data['id']} ({data['name']}) status={data['status']}"
+            )
         else:
             typer.echo(f"Error: {response.status_code} {response.text}")
             raise typer.Exit(code=1)
@@ -139,7 +141,9 @@ def topic_create(
         )
         if response.status_code == 201:
             data = response.json()
-            typer.echo(f"Topic created: {data['id']} ({data['name']}) status={data['status']}")
+            typer.echo(
+                f"Topic created: {data['id']} ({data['name']}) status={data['status']}"
+            )
         else:
             typer.echo(f"Error: {response.status_code} {response.text}")
             raise typer.Exit(code=1)
@@ -195,13 +199,28 @@ def failures_recent(
 @app.command("search")
 def search_items(
     query: str = typer.Argument(..., help="Search query keyword"),
+    mode: str = typer.Option(
+        "keyword", "--mode", help="Search mode: keyword or vector", case_sensitive=False
+    ),
     source_id: str = typer.Option(None, "--source-id", help="Filter by source ID"),
-    topic_watch_id: str = typer.Option(None, "--topic-watch-id", help="Filter by topic watch ID"),
+    topic_watch_id: str = typer.Option(
+        None, "--topic-watch-id", help="Filter by topic watch ID"
+    ),
     limit: int = typer.Option(20, "--limit", help="Max results"),
     offset: int = typer.Option(0, "--offset", help="Pagination offset"),
 ) -> None:
-    """Search content items by keyword."""
-    params: dict = {"q": query}
+    """Search content items by keyword or vector similarity."""
+    valid_modes = ("keyword", "vector")
+    mode = mode.lower()
+    if mode not in valid_modes:
+        typer.echo(
+            f"Error: Invalid mode '{mode}'. Must be one of: {', '.join(valid_modes)}"
+        )
+        raise typer.Exit(code=1)
+    if mode == "vector" and offset > 0:
+        typer.echo("Error: --offset is not supported in vector mode")
+        raise typer.Exit(code=1)
+    params: dict = {"q": query, "mode": mode}
     if source_id:
         params["source_id"] = source_id
     if topic_watch_id:
@@ -223,12 +242,20 @@ def search_items(
                 typer.echo("No results found.")
                 return
             for item in items:
-                typer.echo(
-                    f"  {item['title']}\n"
-                    f"    item_id={item['item_id']} "
-                    f"version_id={item['version_id']} "
-                    f"source_id={item['source_id']}"
-                )
+                if item.get("mode") == "vector":
+                    typer.echo(
+                        f"  {item['title']}\n"
+                        f"    chunk_id={item['chunk_id']} "
+                        f"item_version_id={item['item_version_id']} "
+                        f"distance={item['distance']}"
+                    )
+                else:
+                    typer.echo(
+                        f"  {item['title']}\n"
+                        f"    item_id={item['item_id']} "
+                        f"version_id={item['version_id']} "
+                        f"source_id={item['source_id']}"
+                    )
         else:
             typer.echo(f"Error: {response.status_code} {response.text}")
             raise typer.Exit(code=1)
@@ -301,7 +328,9 @@ def worker_once(
 
 @worker_app.command("run")
 def worker_run(
-    poll_interval: int = typer.Option(10, "--poll-interval", help="Seconds between polls"),
+    poll_interval: int = typer.Option(
+        10, "--poll-interval", help="Seconds between polls"
+    ),
     limit: int = typer.Option(10, "--limit", help="Max jobs per iteration"),
 ) -> None:
     """Run the embedding worker daemon in a loop."""
@@ -309,7 +338,9 @@ def worker_run(
     from harvester.workers.daemon import _make_session, run_loop
 
     adapter = StubModelAdapter()
-    typer.echo(f"Starting embedding worker daemon (poll={poll_interval}s, limit={limit})")
+    typer.echo(
+        f"Starting embedding worker daemon (poll={poll_interval}s, limit={limit})"
+    )
     run_loop(
         _make_session,
         adapter,

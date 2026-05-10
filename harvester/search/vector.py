@@ -8,7 +8,6 @@ group so each group appears at most once.
 import uuid
 
 import sqlalchemy as sa
-from pgvector.sqlalchemy import Vector
 from sqlalchemy.orm import Session
 
 from harvester.db.models import Chunk, ContentItem, ItemVersion
@@ -20,6 +19,8 @@ def vector_search(
     query_embedding: list[float],
     *,
     limit: int = 20,
+    source_id: uuid.UUID | None = None,
+    topic_watch_id: uuid.UUID | None = None,
 ) -> list[dict]:
     """Search chunks by cosine distance to the given embedding.
 
@@ -32,6 +33,8 @@ def vector_search(
         session: SQLAlchemy ORM session.
         query_embedding: The query vector (1536 dimensions).
         limit: Maximum number of results.
+        source_id: Optional filter by source.
+        topic_watch_id: Optional filter by topic watch.
 
     Returns:
         List of dicts with keys: chunk_id, item_version_id, text,
@@ -56,9 +59,14 @@ def vector_search(
         .join(ContentItem, ContentItem.id == ItemVersion.content_item_id)
         .where(Chunk.embedding.is_not(None))
         .where(Chunk.embedding_status == "ready")
-        .order_by("distance")
-        .limit(fetch_limit)
     )
+
+    if source_id is not None:
+        stmt = stmt.where(ContentItem.source_id == source_id)
+    if topic_watch_id is not None:
+        stmt = stmt.where(ContentItem.topic_watch_id == topic_watch_id)
+
+    stmt = stmt.order_by("distance").limit(fetch_limit)
 
     rows = session.execute(stmt).fetchall()
 

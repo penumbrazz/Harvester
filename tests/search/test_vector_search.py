@@ -7,10 +7,10 @@ distance.
 
 import uuid
 
-import pytest
 from sqlalchemy.orm import Session
 
 from harvester.db.models import Chunk, ContentItem, DedupGroup, ItemVersion, Source
+from tests.utils.factories import dummy_embedding
 
 
 def _make_source(session: Session, name: str = "test_source") -> Source:
@@ -61,19 +61,6 @@ def _make_chunk(
     return chunk
 
 
-def _dummy_embedding(seed: int = 0) -> list[float]:
-    """Produce a deterministic unit-normalized 1536-d embedding."""
-    dim = 1536
-    vals = [0.0] * dim
-    # Simple pattern: set a few positions to create a direction
-    vals[seed % dim] = 1.0
-    vals[(seed + 1) % dim] = 0.5
-    vals[(seed + 2) % dim] = 0.3
-    # Normalize
-    norm = sum(v * v for v in vals) ** 0.5
-    return [v / norm for v in vals]
-
-
 class TestVectorSearch:
     """Tests for the vector_search function."""
 
@@ -84,9 +71,14 @@ class TestVectorSearch:
         src = _make_source(db_session)
         ci = _make_item(db_session, "Embedding Test", src.id)
         iv = _make_version(db_session, ci.id)
-        emb = _dummy_embedding(seed=42)
+        emb = dummy_embedding(seed=42)
         _make_chunk(
-            db_session, iv.id, 0, "test chunk text", embedding=emb, embedding_status="ready"
+            db_session,
+            iv.id,
+            0,
+            "test chunk text",
+            embedding=emb,
+            embedding_status="ready",
         )
 
         results = vector_search(db_session, emb, limit=5)
@@ -117,12 +109,17 @@ class TestVectorSearch:
         iv = _make_version(db_session, ci.id)
         # Create 5 chunks with slightly different embeddings
         for i in range(5):
-            emb = _dummy_embedding(seed=i)
+            emb = dummy_embedding(seed=i)
             _make_chunk(
-                db_session, iv.id, i, f"chunk {i}", embedding=emb, embedding_status="ready"
+                db_session,
+                iv.id,
+                i,
+                f"chunk {i}",
+                embedding=emb,
+                embedding_status="ready",
             )
 
-        results = vector_search(db_session, _dummy_embedding(seed=0), limit=2)
+        results = vector_search(db_session, dummy_embedding(seed=0), limit=2)
         assert len(results) == 2
 
     def test_results_include_item_version_and_content_item_info(self, db_session):
@@ -132,8 +129,15 @@ class TestVectorSearch:
         src = _make_source(db_session)
         ci = _make_item(db_session, "Context Test", src.id)
         iv = _make_version(db_session, ci.id)
-        emb = _dummy_embedding(seed=10)
-        _make_chunk(db_session, iv.id, 0, "context chunk", embedding=emb, embedding_status="ready")
+        emb = dummy_embedding(seed=10)
+        _make_chunk(
+            db_session,
+            iv.id,
+            0,
+            "context chunk",
+            embedding=emb,
+            embedding_status="ready",
+        )
 
         results = vector_search(db_session, emb, limit=5)
         assert len(results) == 1
@@ -150,8 +154,15 @@ class TestVectorSearch:
         src = _make_source(db_session)
         ci = _make_item(db_session, "Distance Test", src.id)
         iv = _make_version(db_session, ci.id)
-        emb = _dummy_embedding(seed=99)
-        _make_chunk(db_session, iv.id, 0, "distance chunk", embedding=emb, embedding_status="ready")
+        emb = dummy_embedding(seed=99)
+        _make_chunk(
+            db_session,
+            iv.id,
+            0,
+            "distance chunk",
+            embedding=emb,
+            embedding_status="ready",
+        )
 
         # The same vector should have cosine distance ~0
         results = vector_search(db_session, emb, limit=1)
@@ -166,12 +177,92 @@ class TestVectorSearch:
         src = _make_source(db_session)
         ci = _make_item(db_session, "Pending Test", src.id)
         iv = _make_version(db_session, ci.id)
-        emb = _dummy_embedding(seed=7)
+        emb = dummy_embedding(seed=7)
         # Chunk has embedding but status is 'pending'
-        _make_chunk(db_session, iv.id, 0, "pending chunk", embedding=emb, embedding_status="pending")
+        _make_chunk(
+            db_session,
+            iv.id,
+            0,
+            "pending chunk",
+            embedding=emb,
+            embedding_status="pending",
+        )
 
         results = vector_search(db_session, emb, limit=5)
         assert len(results) == 0
+
+    def test_source_id_filter_returns_only_matching_source(self, db_session):
+        """source_id filter restricts results to chunks from that source."""
+        from harvester.search.vector import vector_search
+
+        src_a = _make_source(db_session, "source-a")
+        src_b = _make_source(db_session, "source-b")
+        ci_a = _make_item(db_session, "Python in Source A", src_a.id)
+        ci_b = _make_item(db_session, "Python in Source B", src_b.id)
+        iv_a = _make_version(db_session, ci_a.id)
+        iv_b = _make_version(db_session, ci_b.id)
+        emb = dummy_embedding(seed=20)
+        _make_chunk(
+            db_session,
+            iv_a.id,
+            0,
+            "chunk from a",
+            embedding=emb,
+            embedding_status="ready",
+        )
+        _make_chunk(
+            db_session,
+            iv_b.id,
+            0,
+            "chunk from b",
+            embedding=emb,
+            embedding_status="ready",
+        )
+
+        results = vector_search(db_session, emb, limit=10, source_id=src_a.id)
+        assert len(results) == 1
+        assert results[0]["content_item_id"] == ci_a.id
+
+    def test_topic_watch_id_filter_returns_only_matching_topic(self, db_session):
+        """topic_watch_id filter restricts results to chunks from that topic."""
+        from harvester.db.models import TopicWatch
+        from harvester.search.vector import vector_search
+
+        src = _make_source(db_session, "topic-src")
+        tw_a = TopicWatch(name="topic-a", query="python")
+        tw_b = TopicWatch(name="topic-b", query="rust")
+        db_session.add_all([tw_a, tw_b])
+        db_session.flush()
+
+        ci_a = _make_item(db_session, "Python Topic A", src.id)
+        ci_a.topic_watch_id = tw_a.id
+        ci_b = _make_item(db_session, "Python Topic B", src.id)
+        ci_b.topic_watch_id = tw_b.id
+        db_session.flush()
+
+        iv_a = _make_version(db_session, ci_a.id)
+        iv_b = _make_version(db_session, ci_b.id)
+        emb = dummy_embedding(seed=30)
+        _make_chunk(
+            db_session,
+            iv_a.id,
+            0,
+            "topic chunk a",
+            embedding=emb,
+            embedding_status="ready",
+        )
+        _make_chunk(
+            db_session,
+            iv_b.id,
+            0,
+            "topic chunk b",
+            embedding=emb,
+            embedding_status="ready",
+        )
+
+        results = vector_search(db_session, emb, limit=10, topic_watch_id=tw_a.id)
+        assert len(results) == 1
+        assert results[0]["content_item_id"] == ci_a.id
 
     def test_dedup_group_returns_canonical_only(self, db_session):
         """Chunks from versions in the same dedup group return only canonical."""
@@ -184,10 +275,24 @@ class TestVectorSearch:
         v_a = _make_version(db_session, ci_a.id)
         v_b = _make_version(db_session, ci_b.id)
 
-        emb_a = _dummy_embedding(seed=50)
-        emb_b = _dummy_embedding(seed=51)
-        _make_chunk(db_session, v_a.id, 0, "canonical chunk", embedding=emb_a, embedding_status="ready")
-        _make_chunk(db_session, v_b.id, 0, "duplicate chunk", embedding=emb_b, embedding_status="ready")
+        emb_a = dummy_embedding(seed=50)
+        emb_b = dummy_embedding(seed=51)
+        _make_chunk(
+            db_session,
+            v_a.id,
+            0,
+            "canonical chunk",
+            embedding=emb_a,
+            embedding_status="ready",
+        )
+        _make_chunk(
+            db_session,
+            v_b.id,
+            0,
+            "duplicate chunk",
+            embedding=emb_b,
+            embedding_status="ready",
+        )
 
         # Put both versions in a dedup group with v_a as canonical
         dg = DedupGroup(canonical_item_version_id=v_a.id)
