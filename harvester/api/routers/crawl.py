@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from harvester.api.auth import require_api_token
 from harvester.api.deps import get_db_session
 from harvester.jobs.crawl_execution import CrawlExecutionError, execute_crawl
 
 router = APIRouter(prefix="/crawl", tags=["crawl"])
+
+_Token = Depends(require_api_token)
+_Session = Depends(get_db_session)
 
 
 class CrawlRunRequest(BaseModel):
@@ -27,8 +31,8 @@ class CrawlRunResponse(BaseModel):
 @router.post("/run", response_model=CrawlRunResponse)
 def run_crawl(
     request: CrawlRunRequest,
-    _token: str = Depends(require_api_token),
-    session=Depends(get_db_session),
+    _token: str = _Token,
+    session: Session = _Session,
 ):
     """Execute a public web crawl run for an approved source and recipe."""
     import uuid
@@ -37,9 +41,7 @@ def run_crawl(
         source_id = uuid.UUID(request.source_id)
         recipe_id = uuid.UUID(request.recipe_id)
     except ValueError:
-        from fastapi import HTTPException
-
-        raise HTTPException(status_code=422, detail="Invalid UUID format")
+        raise HTTPException(status_code=422, detail="Invalid UUID format") from None
 
     try:
         result = execute_crawl(
@@ -49,9 +51,7 @@ def run_crawl(
             actor="api",
         )
     except CrawlExecutionError as exc:
-        from fastapi import HTTPException
-
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return CrawlRunResponse(
         crawl_run_id=str(result.crawl_run_id),

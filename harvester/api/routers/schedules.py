@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -11,10 +11,13 @@ from sqlalchemy.orm import Session
 
 from harvester.api.auth import require_api_token
 from harvester.api.deps import get_db_session
-from harvester.db.models import Recipe, Source, TopicWatch, WatchSchedule
+from harvester.db.models import Recipe, Source, TopicSource, TopicWatch, WatchSchedule
 from harvester.domain.audit import write_audit
 
 router = APIRouter(prefix="/schedules", tags=["schedules"])
+
+_Token = Depends(require_api_token)
+_Session = Depends(get_db_session)
 
 
 class ScheduleCreateRequest(BaseModel):
@@ -55,15 +58,15 @@ def _build_schedule_key(
 @router.post("", response_model=ScheduleResponse, status_code=status.HTTP_201_CREATED)
 def create_schedule(
     req: ScheduleCreateRequest,
-    _token: str = Depends(require_api_token),
-    session: Session = Depends(get_db_session),
+    _token: str = _Token,
+    session: Session = _Session,
 ):
     """Create a new watch schedule."""
     # Parse and validate source
     try:
         source_uuid = uuid.UUID(req.source_id)
     except ValueError:
-        raise HTTPException(status_code=422, detail="Invalid source_id format")
+        raise HTTPException(status_code=422, detail="Invalid source_id format") from None
 
     source = session.get(Source, source_uuid)
     if not source:
@@ -78,7 +81,7 @@ def create_schedule(
     try:
         recipe_uuid = uuid.UUID(req.recipe_id)
     except ValueError:
-        raise HTTPException(status_code=422, detail="Invalid recipe_id format")
+        raise HTTPException(status_code=422, detail="Invalid recipe_id format") from None
 
     recipe = session.get(Recipe, recipe_uuid)
     if not recipe:
@@ -95,7 +98,7 @@ def create_schedule(
         try:
             topic_uuid = uuid.UUID(req.topic_watch_id)
         except ValueError:
-            raise HTTPException(status_code=422, detail="Invalid topic_watch_id format")
+            raise HTTPException(status_code=422, detail="Invalid topic_watch_id format") from None
 
         topic = session.get(TopicWatch, topic_uuid)
         if not topic:
@@ -104,6 +107,21 @@ def create_schedule(
             raise HTTPException(
                 status_code=422,
                 detail=f"Topic watch status is '{topic.status}', must be 'active'",
+            )
+
+        # Verify source belongs to this topic via topic_sources
+        topic_source = (
+            session.query(TopicSource)
+            .filter(
+                TopicSource.topic_watch_id == topic_uuid,
+                TopicSource.source_id == source_uuid,
+            )
+            .first()
+        )
+        if not topic_source:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Source {req.source_id} is not attached to topic {req.topic_watch_id}",
             )
 
     # Build schedule_key and check duplicates
@@ -126,7 +144,7 @@ def create_schedule(
             detail="interval_seconds must be at least 60",
         )
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     schedule = WatchSchedule(
         id=uuid.uuid4(),
         schedule_key=schedule_key,

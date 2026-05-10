@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 import os
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID
 
@@ -78,7 +78,7 @@ class ArchiveWriter:
             )
 
         content_hash = "sha256:" + hashlib.sha256(payload).hexdigest()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         date_str = now.strftime("%Y-%m-%d")
         filename = f"{crawl_run_id.hex}.raw"
 

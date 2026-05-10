@@ -10,14 +10,13 @@ Provides ``run_scheduler_once(session, now, limit)`` which:
 from __future__ import annotations
 
 import logging
-import uuid
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
-from harvester.db.models import Job, Source, TopicWatch, WatchSchedule
+from harvester.db.models import Source, TopicWatch, WatchSchedule
 from harvester.jobs.repository import create_job
 
 logger = logging.getLogger(__name__)
@@ -79,10 +78,12 @@ def run_scheduler_once(
         source = session.get(Source, schedule.source_id)
         if source is None or source.status not in ("watched", "active"):
             logger.info(
-                "Skipping schedule %s: source %s not found or inactive",
+                "Pausing schedule %s: source %s not found or inactive",
                 schedule.id,
                 schedule.source_id,
             )
+            schedule.status = "paused"
+            schedule.updated_at = now
             result.skipped += 1
             continue
 
@@ -91,18 +92,22 @@ def run_scheduler_once(
             topic = session.get(TopicWatch, schedule.topic_watch_id)
             if topic is None or topic.status != "active":
                 logger.info(
-                    "Skipping schedule %s: topic %s inactive",
+                    "Pausing schedule %s: topic %s inactive",
                     schedule.id,
                     schedule.topic_watch_id,
                 )
+                schedule.status = "paused"
+                schedule.updated_at = now
                 result.skipped += 1
                 continue
             if topic.expires_at and topic.expires_at <= now:
                 logger.info(
-                    "Skipping schedule %s: topic %s expired",
+                    "Pausing schedule %s: topic %s expired",
                     schedule.id,
                     schedule.topic_watch_id,
                 )
+                schedule.status = "paused"
+                schedule.updated_at = now
                 result.skipped += 1
                 continue
 

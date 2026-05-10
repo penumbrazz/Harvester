@@ -7,8 +7,6 @@ already been extracted and normalized before chunking.
 
 from __future__ import annotations
 
-import math
-
 
 def chunk_text(
     normalized_text: str,

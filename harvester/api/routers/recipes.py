@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -16,6 +16,9 @@ from harvester.domain.audit import write_audit
 from harvester.domain.state import RECIPE_TRANSITIONS, transition_entity
 
 router = APIRouter(prefix="/recipes", tags=["recipes"])
+
+_Token = Depends(require_api_token)
+_Session = Depends(get_db_session)
 
 APPROVED_EXECUTORS = {"firecrawl", "http_fetch", "rss_parse", "static"}
 
@@ -42,8 +45,8 @@ class RecipeResponse(BaseModel):
 @router.post("", response_model=RecipeResponse, status_code=status.HTTP_201_CREATED)
 def create_recipe(
     req: RecipeCreateRequest,
-    _token: str = Depends(require_api_token),
-    session: Session = Depends(get_db_session),
+    _token: str = _Token,
+    session: Session = _Session,
 ):
     """Create a draft recipe."""
     if req.executor not in APPROVED_EXECUTORS:
@@ -61,8 +64,8 @@ def create_recipe(
         approval_status="pending",
         version=1,
         auth_profile=req.auth_profile,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     session.add(recipe)
     write_audit(
@@ -90,8 +93,8 @@ def create_recipe(
 @router.post("/{recipe_id}/approve", response_model=RecipeResponse)
 def approve_recipe(
     recipe_id: str,
-    _token: str = Depends(require_api_token),
-    session: Session = Depends(get_db_session),
+    _token: str = _Token,
+    session: Session = _Session,
 ):
     """Approve a pending recipe."""
     recipe = session.get(Recipe, recipe_id)

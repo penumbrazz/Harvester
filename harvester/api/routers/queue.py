@@ -12,6 +12,9 @@ from harvester.api.deps import get_db_session
 
 router = APIRouter(prefix="/queue", tags=["queue"])
 
+_Token = Depends(require_api_token)
+_Session = Depends(get_db_session)
+
 
 class QueueStatusItem(BaseModel):
     job_type: str
@@ -21,8 +24,8 @@ class QueueStatusItem(BaseModel):
 
 @router.get("/status", response_model=list[QueueStatusItem])
 def get_queue_status(
-    _token: str = Depends(require_api_token),
-    session: Session = Depends(get_db_session),
+    _token: str = _Token,
+    session: Session = _Session,
 ):
     """Return job queue counts aggregated by job_type and status.
 

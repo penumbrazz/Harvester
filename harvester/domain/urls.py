@@ -8,7 +8,7 @@ to a single canonical form.
 from __future__ import annotations
 
 import hashlib
-from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 # Tracking query parameters that should be stripped during normalization.
 TRACKING_PARAMS: set[str] = {

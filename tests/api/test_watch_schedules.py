@@ -151,6 +151,28 @@ def _insert_topic(db_url: str, status: str = "active", ttl: int | None = None) -
     return str(tid)
 
 
+def _insert_topic_source(db_url: str, topic_id: str, source_id: str) -> None:
+    """Link a source to a topic via topic_sources."""
+    engine = create_engine(db_url)
+    now = datetime.now(timezone.utc)
+    with engine.connect() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO topic_sources "
+                "(id, topic_watch_id, source_id, created_at) "
+                "VALUES (:id, :topic_id, :source_id, :ts)"
+            ),
+            {
+                "id": uuid.uuid4(),
+                "topic_id": topic_id,
+                "source_id": source_id,
+                "ts": now,
+            },
+        )
+        conn.commit()
+    engine.dispose()
+
+
 @pytest.mark.asyncio
 async def test_create_source_schedule(api_client, api_test_db):
     """POST /schedules should create a source-only schedule."""
@@ -182,6 +204,7 @@ async def test_create_topic_source_schedule(api_client, api_test_db):
     src_id = _insert_source(api_test_db)
     recipe_id = _insert_recipe(api_test_db)
     topic_id = _insert_topic(api_test_db)
+    _insert_topic_source(api_test_db, topic_id, src_id)
 
     resp = await api_client.post(
         "/schedules",
@@ -288,6 +311,28 @@ async def test_invalid_topic_rejected(api_client, api_test_db):
         headers={"Authorization": "Bearer test-secret"},
     )
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_topic_source_not_linked_rejected(api_client, api_test_db):
+    """Source not attached to topic should be rejected with 422."""
+    src_id = _insert_source(api_test_db)
+    recipe_id = _insert_recipe(api_test_db)
+    topic_id = _insert_topic(api_test_db)
+    # Do NOT call _insert_topic_source — source is not linked to topic
+
+    resp = await api_client.post(
+        "/schedules",
+        json={
+            "source_id": src_id,
+            "topic_watch_id": topic_id,
+            "recipe_id": recipe_id,
+            "interval_seconds": 3600,
+        },
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 422
+    assert "not attached" in resp.json()["detail"]
 
 
 @pytest.mark.asyncio

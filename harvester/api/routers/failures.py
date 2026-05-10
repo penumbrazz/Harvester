@@ -15,6 +15,9 @@ from harvester.db.models import CrawlRun, Job
 
 router = APIRouter(prefix="/failures", tags=["failures"])
 
+_Token = Depends(require_api_token)
+_Session = Depends(get_db_session)
+
 
 class FailureItem(BaseModel):
     id: str
@@ -32,8 +35,8 @@ class FailuresResponse(BaseModel):
 @router.get("/recent", response_model=FailuresResponse)
 def get_recent_failures(
     limit: int = 20,
-    _token: str = Depends(require_api_token),
-    session: Session = Depends(get_db_session),
+    _token: str = _Token,
+    session: Session = _Session,
 ):
     """Return recent failed crawl runs and jobs."""
     failed_crawls = (

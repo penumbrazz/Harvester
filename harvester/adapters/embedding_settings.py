@@ -84,7 +84,13 @@ def create_embedding_adapter(
         )
         return adapter, settings.model
 
-    # Default: stub adapter
-    from harvester.adapters.stub_model import StubModelAdapter
+    if settings.adapter == "stub":
+        from harvester.adapters.stub_model import StubModelAdapter
 
-    return StubModelAdapter(), settings.model
+        return StubModelAdapter(), settings.model
+
+    raise EmbeddingAdapterError(
+        f"Unknown HARVESTER_EMBEDDING_ADAPTER '{settings.adapter}'. "
+        "Allowed values: stub, qwen",
+        is_config_error=True,
+    )

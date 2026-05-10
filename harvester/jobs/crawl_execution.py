@@ -9,9 +9,8 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
-import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from harvester.adapters.firecrawl import CrawlResult
@@ -19,7 +18,7 @@ from harvester.db.models import CrawlRun, RawObject, Recipe, Source
 from harvester.domain.audit import write_audit
 from harvester.domain.fetch_policy import check_fetch_policy
 from harvester.domain.state import CRAWL_RUN_TRANSITIONS, transition_entity
-from harvester.jobs.archive import ArchiveConfig, ArchiveWriter
+from harvester.jobs.archive import ArchiveConfig, ArchiveWriter, ArchiveWriteResult
 
 logger = logging.getLogger(__name__)
 
@@ -61,12 +60,11 @@ def write_archive(
     source_id: uuid.UUID,
     crawl_run_id: uuid.UUID,
     content_type: str,
-) -> "ArchiveWriteResult":
+) -> ArchiveWriteResult:
     """Write payload to archive storage.
 
     Separated for testability.
     """
-    from harvester.jobs.archive import ArchiveWriter
 
     config = ArchiveConfig.from_env()
     writer = ArchiveWriter(config)
@@ -125,7 +123,7 @@ def execute_crawl(
 
     # 3. Create pending crawl run
     run_id = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     crawl_run = CrawlRun(
         id=run_id,
         source_id=source_id,
@@ -183,10 +181,10 @@ def execute_crawl(
                 reason=crawl_result.error,
             )
             session.commit()
-            return CrawlExecutionResult(
-                crawl_run_id=run_id,
-                status="failed",
-                error_message=crawl_result.error,
+            # Adapter/network errors are retryable — let worker use fail_job
+            # for retry/dead-letter flow instead of dead-lettering directly.
+            raise CrawlExecutionError(
+                crawl_result.error, retryable=True
             )
 
         # 7. Check redirect target policy
@@ -226,7 +224,7 @@ def execute_crawl(
             retention_policy="raw",
             retain_until=archive_result.retain_until,
             compressed=False,
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         session.add(raw_object)
         session.flush()
@@ -238,7 +236,7 @@ def execute_crawl(
         crawl_run.fetch_fingerprint = archive_result.content_hash
 
         if crawl_result.final_url:
-            crawl_run.completed_at = datetime.now(timezone.utc)
+            crawl_run.completed_at = datetime.now(UTC)
 
         transition_entity(
             session,
@@ -283,4 +281,4 @@ def _fail_crawl_run(session: Session, crawl_run: CrawlRun, error_message: str) -
     if crawl_run.status != "failed":
         crawl_run.status = "failed"
     crawl_run.error_message = error_message
-    crawl_run.completed_at = datetime.now(timezone.utc)
+    crawl_run.completed_at = datetime.now(UTC)

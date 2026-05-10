@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import logging
+import os
 import socket
 import time
-import os
-from typing import Callable
+from collections.abc import Callable
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker

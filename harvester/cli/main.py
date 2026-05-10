@@ -1,6 +1,7 @@
 """Harvester CLI application."""
 
 import os
+from datetime import UTC
 
 import httpx
 import typer
@@ -365,7 +366,7 @@ def worker_once(
     ),
 ) -> None:
     """Run the worker once and exit."""
-    from harvester.workers.daemon import _make_session, run_once, run_crawl_once
+    from harvester.workers.daemon import _make_session, run_crawl_once, run_once
 
     session = _make_session()
     try:
@@ -419,14 +420,14 @@ app.add_typer(scheduler_app, name="scheduler")
 @scheduler_app.command("run")
 def scheduler_run() -> None:
     """Run the scheduler once and enqueue due crawl jobs."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     from harvester.jobs.scheduler import run_scheduler_once
     from harvester.workers.daemon import _make_session
 
     session = _make_session()
     try:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         result = run_scheduler_once(session, now=now)
         typer.echo(
             f"Scheduler one-shot complete: "

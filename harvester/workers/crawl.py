@@ -17,9 +17,6 @@ from harvester.db.models import Job
 from harvester.jobs.crawl_execution import (
     CrawlExecutionError,
     execute_crawl,
-    check_fetch_policy,
-    execute_adapter_crawl,
-    write_archive,
 )
 from harvester.jobs.repository import complete_job, fail_job
 

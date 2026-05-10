@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -15,6 +15,9 @@ from harvester.db.models import Source, TopicSource, TopicWatch
 from harvester.domain.audit import write_audit
 
 router = APIRouter(prefix="/topics", tags=["topics"])
+
+_Token = Depends(require_api_token)
+_Session = Depends(get_db_session)
 
 
 class TopicCreateRequest(BaseModel):
@@ -39,14 +42,14 @@ class TopicAttachSourceRequest(BaseModel):
 @router.post("", response_model=TopicResponse, status_code=status.HTTP_201_CREATED)
 def create_topic(
     req: TopicCreateRequest,
-    _token: str = Depends(require_api_token),
-    session: Session = Depends(get_db_session),
+    _token: str = _Token,
+    session: Session = _Session,
 ):
     """Create a new topic watch."""
     expires_at = None
     if req.ttl_seconds:
         from datetime import timedelta
-        expires_at = datetime.now(timezone.utc) + timedelta(seconds=req.ttl_seconds)
+        expires_at = datetime.now(UTC) + timedelta(seconds=req.ttl_seconds)
 
     topic = TopicWatch(
         id=uuid.uuid4(),
@@ -55,8 +58,8 @@ def create_topic(
         status="active",
         ttl_seconds=req.ttl_seconds,
         expires_at=expires_at,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     session.add(topic)
     write_audit(
@@ -83,8 +86,8 @@ def create_topic(
 def attach_source_to_topic(
     topic_id: str,
     req: TopicAttachSourceRequest,
-    _token: str = Depends(require_api_token),
-    session: Session = Depends(get_db_session),
+    _token: str = _Token,
+    session: Session = _Session,
 ):
     """Attach an existing source to a topic watch."""
     topic = session.get(TopicWatch, topic_id)
@@ -110,7 +113,7 @@ def attach_source_to_topic(
         id=uuid.uuid4(),
         topic_watch_id=topic.id,
         source_id=source.id,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     session.add(link)
     write_audit(

@@ -275,11 +275,12 @@ class TestAdapterFailure:
                 return_value=crawl_result,
             ),
         ):
-            result = execute_crawl(
-                session=db_session,
-                source_id=source_id,
-                recipe_id=recipe_id,
-                actor="test",
-            )
-        assert result.status == "failed"
-        assert result.error_message is not None
+            with pytest.raises(CrawlExecutionError) as exc_info:
+                execute_crawl(
+                    session=db_session,
+                    source_id=source_id,
+                    recipe_id=recipe_id,
+                    actor="test",
+                )
+        assert exc_info.value.retryable is True
+        assert "502" in str(exc_info.value)

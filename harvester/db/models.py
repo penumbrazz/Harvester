@@ -13,7 +13,7 @@ from harvester.db.base import Base
 
 
 def _utcnow() -> datetime.datetime:
-    return datetime.datetime.now(datetime.timezone.utc)
+    return datetime.datetime.now(datetime.UTC)
 
 
 # ---------------------------------------------------------------------------

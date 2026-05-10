@@ -1,7 +1,7 @@
 """Audit event writing helper for Harvester."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from harvester.db.models import AuditEvent
 
@@ -52,7 +52,7 @@ def write_audit(
         before_state=before_state,
         after_state=after_state,
         reason=reason,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     session.add(event)
     return event

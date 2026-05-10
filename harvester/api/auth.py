@@ -4,10 +4,13 @@ from fastapi import Depends, Header, HTTPException, status
 
 from harvester.api.settings import APISettings, get_api_settings
 
+_Settings = Depends(get_api_settings)
+_AuthHeader = Header(default="")
+
 
 async def require_api_token(
-    authorization: str = Header(default=""),
-    settings: APISettings = Depends(get_api_settings),
+    authorization: str = _AuthHeader,
+    settings: APISettings = _Settings,
 ) -> str:
     """Validate the API token from Authorization header.
 
