@@ -1,7 +1,6 @@
 """Harvester CLI application."""
 
 import os
-from unittest.mock import patch
 
 import httpx
 import typer
@@ -31,6 +30,7 @@ def _api_headers() -> dict[str, str]:
 
 @app.callback(invoke_without_command=True)
 def health(
+    ctx: typer.Context,
     base_url: str = typer.Option(
         None,
         "--base-url",
@@ -38,6 +38,8 @@ def health(
     ),
 ) -> None:
     """Check the health of the Harvester API."""
+    if ctx.invoked_subcommand is not None:
+        return
     url = (base_url or _get_base_url()) + "/health"
     try:
         response = httpx.get(url, timeout=5.0)
@@ -179,6 +181,54 @@ def failures_recent(
                 typer.echo(f"Failed jobs ({len(jobs)}):")
                 for j in jobs:
                     typer.echo(f"  {j['id']} {j['error_message'] or ''}")
+        else:
+            typer.echo(f"Error: {response.status_code} {response.text}")
+            raise typer.Exit(code=1)
+    except httpx.ConnectError as e:
+        typer.echo(f"Failed to connect to API: {e}")
+        raise typer.Exit(code=1) from None
+
+
+# --- Search command ---
+
+
+@app.command("search")
+def search_items(
+    query: str = typer.Argument(..., help="Search query keyword"),
+    source_id: str = typer.Option(None, "--source-id", help="Filter by source ID"),
+    topic_watch_id: str = typer.Option(None, "--topic-watch-id", help="Filter by topic watch ID"),
+    limit: int = typer.Option(20, "--limit", help="Max results"),
+    offset: int = typer.Option(0, "--offset", help="Pagination offset"),
+) -> None:
+    """Search content items by keyword."""
+    params: dict = {"q": query}
+    if source_id:
+        params["source_id"] = source_id
+    if topic_watch_id:
+        params["topic_watch_id"] = topic_watch_id
+    params["limit"] = limit
+    params["offset"] = offset
+
+    try:
+        response = httpx.get(
+            f"{_get_base_url()}/items/search",
+            params=params,
+            headers=_api_headers(),
+            timeout=10.0,
+        )
+        if response.status_code == 200:
+            data = response.json()
+            items = data.get("items", [])
+            if not items:
+                typer.echo("No results found.")
+                return
+            for item in items:
+                typer.echo(
+                    f"  {item['title']}\n"
+                    f"    item_id={item['item_id']} "
+                    f"version_id={item['version_id']} "
+                    f"source_id={item['source_id']}"
+                )
         else:
             typer.echo(f"Error: {response.status_code} {response.text}")
             raise typer.Exit(code=1)

@@ -6,8 +6,6 @@ on the title column of the latest item version per content item.
 
 import uuid
 
-import pytest
-import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from harvester.db.models import (
@@ -191,3 +189,32 @@ class TestKeywordSearch:
         version_ids = [r["version_id"] for r in results]
         assert v_a.id in version_ids
         assert v_b.id not in version_ids
+
+    def test_wildcard_percent_treated_as_literal(self, db_session):
+        """User input containing % should not act as SQL wildcard."""
+        from harvester.search.keyword import keyword_search
+
+        src = _make_source(db_session)
+        ci_match = _make_item(db_session, "100% Python Guide", source_id=src.id)
+        _make_version(db_session, ci_match.id)
+        ci_other = _make_item(db_session, "Python Tutorial", source_id=src.id)
+        _make_version(db_session, ci_other.id)
+
+        # Searching for literal "100%" should only match the first item
+        results = keyword_search(db_session, "100%")
+        assert len(results) == 1
+        assert results[0]["title"] == "100% Python Guide"
+
+    def test_wildcard_underscore_treated_as_literal(self, db_session):
+        """User input containing _ should not act as SQL wildcard."""
+        from harvester.search.keyword import keyword_search
+
+        src = _make_source(db_session)
+        ci = _make_item(db_session, "test_variable", source_id=src.id)
+        _make_version(db_session, ci.id)
+        ci_other = _make_item(db_session, "testXvariable", source_id=src.id)
+        _make_version(db_session, ci_other.id)
+
+        results = keyword_search(db_session, "test_variable")
+        assert len(results) == 1
+        assert results[0]["title"] == "test_variable"

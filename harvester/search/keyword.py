@@ -45,6 +45,9 @@ def keyword_search(
     if not query or not query.strip():
         return []
 
+    # Escape ILIKE wildcards so user input is treated as literal text.
+    escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
     # Fetch more rows than requested to compensate for dedup collapse.
     fetch_limit = limit * 3
 
@@ -76,7 +79,7 @@ def keyword_search(
                 latest_version.c.max_created_at == ItemVersion.created_at,
             ),
         )
-        .where(ContentItem.title.ilike(f"%{query}%"))
+        .where(ContentItem.title.ilike(f"%{escaped}%"))
     )
 
     if source_id is not None:
