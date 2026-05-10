@@ -19,4 +19,4 @@
 ## 4. 全量验证
 
 - [x] 4.1 运行 `uv run pytest -q` 并确认全量测试通过。
-- [ ] 4.2 提交信息使用 `feat: add sina 7x24 markdown extractor`。
+- [x] 4.2 提交信息使用 `feat: add sina 7x24 markdown extractor`。
