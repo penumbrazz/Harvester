@@ -171,3 +171,106 @@ class TestMissingReadCount:
         items = Sina7x24Extractor().extract({}, payload)
         assert len(items) == 1
         assert items[0].extra.get("read_count") is None
+
+
+class TestReadCountPrecision:
+    """Should parse wan-level read counts without float precision loss."""
+
+    def test_057_wan(self):
+        payload = """\
+21:37:33
+
+[快讯](https://wap.cj.sina.cn/pc/7x24/1000001)
+
+0.57万 阅读
+
+0
+"""
+        items = Sina7x24Extractor().extract({}, payload)
+        assert items[0].extra["read_count"] == 5700
+
+    def test_113_wan(self):
+        payload = """\
+21:37:33
+
+[快讯](https://wap.cj.sina.cn/pc/7x24/1000002)
+
+1.13万 阅读
+
+0
+"""
+        items = Sina7x24Extractor().extract({}, payload)
+        assert items[0].extra["read_count"] == 11300
+
+    def test_integer_wan(self):
+        payload = """\
+21:37:33
+
+[快讯](https://wap.cj.sina.cn/pc/7x24/1000003)
+
+43万 阅读
+
+0
+"""
+        items = Sina7x24Extractor().extract({}, payload)
+        assert items[0].extra["read_count"] == 430000
+
+    def test_four_decimal_wan(self):
+        payload = """\
+21:37:33
+
+[快讯](https://wap.cj.sina.cn/pc/7x24/1000004)
+
+1.0844万 阅读
+
+0
+"""
+        items = Sina7x24Extractor().extract({}, payload)
+        assert items[0].extra["read_count"] == 10844
+
+
+class TestSkipsInvalidUrls:
+    """Should skip items with non-sina or missing-ID URLs."""
+
+    def test_skips_non_sina_link(self):
+        payload = """\
+21:37:33
+
+[快讯](https://example.com/some/page)
+
+0
+"""
+        items = Sina7x24Extractor().extract({}, payload)
+        assert items == []
+
+    def test_skips_javascript_link(self):
+        payload = """\
+21:37:33
+
+[快讯](javascript:;)
+
+0
+"""
+        items = Sina7x24Extractor().extract({}, payload)
+        assert items == []
+
+    def test_position_renumbers_after_skip(self):
+        payload = """\
+21:37:33
+
+[快讯](https://example.com/page)
+
+0
+
+21:36:50
+
+[有效快讯](https://wap.cj.sina.cn/pc/7x24/9988776)
+
+3200 阅读
+
+0
+"""
+        items = Sina7x24Extractor().extract({}, payload)
+        assert len(items) == 1
+        assert items[0].external_item_id == "9988776"
+        assert items[0].position == 0
