@@ -14,7 +14,7 @@ app = typer.Typer(
 
 
 def _get_base_url() -> str:
-    return os.environ.get("HARVESTER_API_URL", "http://localhost:8000")
+    return os.environ.get("HARVESTER_API_URL", "http://localhost:8001")
 
 
 def _get_token() -> str:
