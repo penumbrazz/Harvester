@@ -81,15 +81,15 @@ describe('App shell', () => {
     expect(screen.getByTestId('select-kind-filter')).toBeInTheDocument()
   })
 
-  it('shows placeholder text for unimplemented pages', async () => {
+  it('renders the content library page with search and filters', async () => {
     mockFetch.mockRejectedValue(new Error('Not configured'))
     const user = userEvent.setup()
     render(<App />)
 
     await user.click(screen.getByTestId('nav-content'))
-    expect(
-      screen.getByText(/This page will be implemented in a future update/),
-    ).toBeInTheDocument()
+    expect(screen.getByTestId('page-content-library')).toBeInTheDocument()
+    expect(screen.getByTestId('search-input')).toBeInTheDocument()
+    expect(screen.getByTestId('search-mode-select')).toBeInTheDocument()
   })
 
   it('renders the crawls page with filter and trigger button', async () => {

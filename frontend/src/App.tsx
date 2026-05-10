@@ -11,6 +11,7 @@ import { SchedulesPage } from './features/recipes-schedules/schedules-page'
 import { CrawlsPage } from './features/operations/crawls-page'
 import { JobsPage } from './features/operations/jobs-page'
 import { AuditPage } from './features/audit/audit-page'
+import { ContentLibraryPage } from './features/content/content-library-page'
 import { PlaceholderPage } from './pages/placeholder-page'
 import { loadApiConfig, saveApiConfig } from './lib/api-client'
 
@@ -60,6 +61,10 @@ export function App() {
 
     if (activeKey === 'audit') {
       return <AuditPage config={config} />
+    }
+
+    if (activeKey === 'content') {
+      return <ContentLibraryPage config={config} />
     }
 
     const navItem = navItems.find((item) => item.key === activeKey)
