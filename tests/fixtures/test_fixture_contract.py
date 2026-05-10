@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,9 @@ EXPECTED_DIR = FIXTURES_DIR / "expected"
 
 # Required keys for every expected output item
 REQUIRED_ITEM_KEYS = {"external_item_id", "item_type", "title"}
+
+# Pattern for detecting 7x24 flash news items in Markdown
+_FLASH_PATTERN = re.compile(r"\d{2}:\d{2}:\d{2}")
 
 
 class TestCdcFixtureFiles:
@@ -76,6 +80,33 @@ class TestSinaFixtureFiles:
             assert "text" in status, f"Status missing 'text': {status}"
 
 
+class TestSina7x24FixtureFiles:
+    """Verify Sina 7x24 Markdown fixture file exists and is valid."""
+
+    def test_sina_7x24_md_exists(self):
+        """Sina 7x24 Markdown fixture file must exist."""
+        path = RAW_DIR / "sina-7x24.md"
+        assert path.is_file(), f"Sina 7x24 fixture not found at {path}"
+
+    def test_sina_7x24_md_has_flash_items(self):
+        """Sina 7x24 fixture must contain at least 3 flash news items."""
+        path = RAW_DIR / "sina-7x24.md"
+        content = path.read_text(encoding="utf-8")
+        timestamps = _FLASH_PATTERN.findall(content)
+        assert len(timestamps) >= 3, (
+            f"Expected at least 3 flash items, found {len(timestamps)}"
+        )
+
+    def test_sina_7x24_md_has_markdown_links(self):
+        """Sina 7x24 fixture must contain wap.cj.sina.cn links."""
+        path = RAW_DIR / "sina-7x24.md"
+        content = path.read_text(encoding="utf-8")
+        links = re.findall(r"https://wap\.cj\.sina\.cn/pc/7x24/\d+", content)
+        assert len(links) >= 3, (
+            f"Expected at least 3 news links, found {len(links)}"
+        )
+
+
 class TestExpectedOutputFiles:
     """Verify expected output JSON files exist and have valid structure."""
 
@@ -118,3 +149,50 @@ class TestExpectedOutputFiles:
         for item in data:
             missing = REQUIRED_ITEM_KEYS - set(item.keys())
             assert not missing, f"Item missing keys: {missing} — item: {item}"
+
+    def test_sina_7x24_items_json_exists(self):
+        """Expected Sina 7x24 items output file must exist."""
+        path = EXPECTED_DIR / "sina-7x24-items.json"
+        assert path.is_file(), f"Expected Sina 7x24 items not found at {path}"
+
+    def test_sina_7x24_items_is_valid_list(self):
+        """Expected Sina 7x24 items must be a non-empty list."""
+        path = EXPECTED_DIR / "sina-7x24-items.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        assert isinstance(data, list)
+        assert len(data) >= 3
+
+    def test_sina_7x24_items_have_required_keys(self):
+        """Each expected Sina 7x24 item must have required keys."""
+        path = EXPECTED_DIR / "sina-7x24-items.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for item in data:
+            missing = REQUIRED_ITEM_KEYS - set(item.keys())
+            assert not missing, f"Item missing keys: {missing} — item: {item}"
+
+    def test_sina_7x24_items_have_flash_type(self):
+        """Each expected Sina 7x24 item must have item_type 'flash'."""
+        path = EXPECTED_DIR / "sina-7x24-items.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for item in data:
+            assert item["item_type"] == "flash", (
+                f"Expected item_type 'flash', got '{item['item_type']}'"
+            )
+
+    def test_sina_7x24_items_have_extra_time(self):
+        """Each expected Sina 7x24 item must have extra.time."""
+        path = EXPECTED_DIR / "sina-7x24-items.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for item in data:
+            assert "extra" in item, f"Item missing 'extra': {item}"
+            assert "time" in item["extra"], f"Item extra missing 'time': {item}"
+
+    def test_sina_7x24_items_have_read_count(self):
+        """Each expected Sina 7x24 item must have extra.read_count."""
+        path = EXPECTED_DIR / "sina-7x24-items.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for item in data:
+            assert "extra" in item, f"Item missing 'extra': {item}"
+            assert "read_count" in item["extra"], (
+                f"Item extra missing 'read_count': {item}"
+            )
