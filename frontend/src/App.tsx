@@ -4,12 +4,11 @@ import type { ApiConfig } from './types/api'
 import { AppLayout } from './components/common/app-layout'
 import { getNavItems } from './lib/navigation'
 import { OverviewPage } from './features/overview/overview-page'
+import { SourcesPage } from './features/sources/sources-page'
 import { PlaceholderPage } from './pages/placeholder-page'
 import { loadApiConfig, saveApiConfig } from './lib/api-client'
 
 const placeholderDescriptions: Record<string, string> = {
-  sources:
-    'Manage information sources for content collection. This page will be implemented in a future update.',
   recipes:
     'Configure extraction and processing recipes. This page will be implemented in a future update.',
   schedules:
@@ -35,6 +34,10 @@ export function App() {
   const renderPage = () => {
     if (activeKey === 'overview') {
       return <OverviewPage config={config} onConfigChange={handleConfigChange} />
+    }
+
+    if (activeKey === 'sources') {
+      return <SourcesPage config={config} />
     }
 
     const navItem = navItems.find((item) => item.key === activeKey)

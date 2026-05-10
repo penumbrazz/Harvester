@@ -212,3 +212,355 @@ async def test_invalid_transition_persists_rejection_audit(api_client, api_test_
     engine.dispose()
     assert row is not None, "Rejection audit event must be persisted after illegal transition"
     assert row[0] == "status_change_rejected"
+
+
+# ---------------------------------------------------------------------------
+# Task 1.1 — GET /sources API tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_list_sources_returns_created_sources(api_client):
+    """GET /sources should return sources with expected fields."""
+    # Arrange — create two sources with unique prefixes
+    tag = uuid.uuid4().hex[:6]
+    name_a = f"list-a-{tag}"
+    name_b = f"list-b-{tag}"
+    await api_client.post(
+        "/sources/propose",
+        json={"name": name_a, "kind": "web", "url": "https://a.example.com"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    await api_client.post(
+        "/sources/propose",
+        json={"name": name_b, "kind": "rss", "url": "https://b.example.com/feed"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Act
+    resp = await api_client.get(
+        "/sources",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Assert
+    assert resp.status_code == 200
+    data = resp.json()
+    assert isinstance(data, list)
+    assert len(data) >= 2
+    names = {s["name"] for s in data}
+    assert name_a in names
+    assert name_b in names
+
+    # Verify expected fields are present on our created sources
+    our_sources = [s for s in data if s["name"] in (name_a, name_b)]
+    for source in our_sources:
+        assert "id" in source
+        assert "name" in source
+        assert "kind" in source
+        assert "status" in source
+        assert "url" in source
+        assert "trust_level" in source
+        assert "failure_count" in source
+        assert "created_at" in source
+        assert "updated_at" in source
+
+
+@pytest.mark.asyncio
+async def test_list_sources_requires_auth(api_client):
+    """GET /sources without authentication should return 401."""
+    resp = await api_client.get("/sources")
+    assert resp.status_code in (401, 403)
+
+
+@pytest.mark.asyncio
+async def test_list_sources_sorted_by_created_at_desc(api_client):
+    """GET /sources should return sources sorted by created_at descending."""
+    # Arrange — create sources in order with unique tag
+    tag = uuid.uuid4().hex[:6]
+    names = [f"sort-{i}-{tag}" for i in range(3)]
+    for name in names:
+        await api_client.post(
+            "/sources/propose",
+            json={"name": name, "kind": "web"},
+            headers={"Authorization": "Bearer test-secret"},
+        )
+
+    # Act
+    resp = await api_client.get(
+        "/sources",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Assert — extract our sources and verify newest first
+    data = resp.json()
+    our_sources = [s for s in data if s["name"] in names]
+    our_sources.sort(key=lambda s: s["created_at"], reverse=True)
+    result_names = [s["name"] for s in our_sources]
+    assert result_names == list(reversed(names))
+
+
+# ---------------------------------------------------------------------------
+# Task 1.2 — Source status and kind filter tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_filter_sources_by_status(api_client):
+    """GET /sources?status=candidate should only return candidate sources."""
+    # Arrange — create and promote one source to testing
+    name_candidate = f"filt-c-{uuid.uuid4().hex[:6]}"
+    name_testing = f"filt-t-{uuid.uuid4().hex[:6]}"
+    await api_client.post(
+        "/sources/propose",
+        json={"name": name_candidate, "kind": "web"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    resp = await api_client.post(
+        "/sources/propose",
+        json={"name": name_testing, "kind": "rss"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    testing_id = resp.json()["id"]
+    await api_client.post(
+        f"/sources/{testing_id}/promote",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Act
+    resp = await api_client.get(
+        "/sources?status=candidate",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Assert — filter returns only candidate sources; ours is included
+    assert resp.status_code == 200
+    data = resp.json()
+    for source in data:
+        assert source["status"] == "candidate"
+    our_names = {s["name"] for s in data}
+    assert name_candidate in our_names
+    assert name_testing not in our_names
+
+
+@pytest.mark.asyncio
+async def test_filter_sources_by_kind(api_client):
+    """GET /sources?kind=rss should only return RSS sources."""
+    # Arrange — use unique tag to isolate our sources
+    tag = uuid.uuid4().hex[:6]
+    name_web = f"filt-web-{tag}"
+    name_rss = f"filt-rss-{tag}"
+    await api_client.post(
+        "/sources/propose",
+        json={"name": name_web, "kind": "web"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    await api_client.post(
+        "/sources/propose",
+        json={"name": name_rss, "kind": "rss"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Act
+    resp = await api_client.get(
+        "/sources?kind=rss",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Assert — filter returns only rss sources; ours is included
+    assert resp.status_code == 200
+    data = resp.json()
+    for source in data:
+        assert source["kind"] == "rss"
+    our_names = {s["name"] for s in data}
+    assert name_rss in our_names
+    assert name_web not in our_names
+
+
+# ---------------------------------------------------------------------------
+# Task 1.3 — Resume and archive API tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_resume_paused_source(api_client):
+    """POST /sources/{id}/resume should transition paused -> watched."""
+    # Arrange — create and promote to watched, then pause
+    name = f"resume-{uuid.uuid4().hex[:6]}"
+    resp = await api_client.post(
+        "/sources/propose",
+        json={"name": name, "kind": "web"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    source_id = resp.json()["id"]
+    await api_client.post(
+        f"/sources/{source_id}/promote",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    await api_client.post(
+        f"/sources/{source_id}/promote",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    await api_client.post(
+        f"/sources/{source_id}/pause",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Act — resume
+    resp = await api_client.post(
+        f"/sources/{source_id}/resume",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Assert
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "watched"
+
+
+@pytest.mark.asyncio
+async def test_archive_candidate_source(api_client):
+    """POST /sources/{id}/archive should transition candidate -> archived."""
+    # Arrange
+    name = f"archive-{uuid.uuid4().hex[:6]}"
+    resp = await api_client.post(
+        "/sources/propose",
+        json={"name": name, "kind": "web"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    source_id = resp.json()["id"]
+
+    # Act
+    resp = await api_client.post(
+        f"/sources/{source_id}/archive",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Assert
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "archived"
+
+
+@pytest.mark.asyncio
+async def test_archive_watched_source(api_client):
+    """POST /sources/{id}/archive should transition watched -> archived."""
+    # Arrange — create and promote to watched
+    name = f"arch-w-{uuid.uuid4().hex[:6]}"
+    resp = await api_client.post(
+        "/sources/propose",
+        json={"name": name, "kind": "web"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    source_id = resp.json()["id"]
+    await api_client.post(
+        f"/sources/{source_id}/promote",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    await api_client.post(
+        f"/sources/{source_id}/promote",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Act
+    resp = await api_client.post(
+        f"/sources/{source_id}/archive",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Assert
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "archived"
+
+
+@pytest.mark.asyncio
+async def test_resume_non_paused_source_rejected(api_client):
+    """POST /sources/{id}/resume on a candidate should return 400."""
+    # Arrange
+    name = f"resume-rej-{uuid.uuid4().hex[:6]}"
+    resp = await api_client.post(
+        "/sources/propose",
+        json={"name": name, "kind": "web"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    source_id = resp.json()["id"]
+
+    # Act — try to resume a candidate (illegal)
+    resp = await api_client.post(
+        f"/sources/{source_id}/resume",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Assert
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_archive_non_archivable_source_rejected(api_client):
+    """POST /sources/{id}/archive on an already archived source should return 400."""
+    # Arrange — create and archive
+    name = f"arch-rej-{uuid.uuid4().hex[:6]}"
+    resp = await api_client.post(
+        "/sources/propose",
+        json={"name": name, "kind": "web"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    source_id = resp.json()["id"]
+    await api_client.post(
+        f"/sources/{source_id}/archive",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Act — try to archive again
+    resp = await api_client.post(
+        f"/sources/{source_id}/archive",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Assert
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_resume_writes_audit_event(api_client, api_test_db):
+    """Resume transition must write an audit event."""
+    # Arrange — create, promote to watched, pause
+    name = f"resume-audit-{uuid.uuid4().hex[:6]}"
+    resp = await api_client.post(
+        "/sources/propose",
+        json={"name": name, "kind": "web"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    source_id = resp.json()["id"]
+    await api_client.post(
+        f"/sources/{source_id}/promote",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    await api_client.post(
+        f"/sources/{source_id}/promote",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    await api_client.post(
+        f"/sources/{source_id}/pause",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Act
+    await api_client.post(
+        f"/sources/{source_id}/resume",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Assert — audit event for status_change exists
+    engine = create_engine(api_test_db)
+    with engine.connect() as conn:
+        row = conn.execute(
+            sa.text(
+                "SELECT after_state FROM audit_events "
+                "WHERE entity_id = :eid AND action = 'status_change' "
+                "ORDER BY created_at DESC LIMIT 1"
+            ),
+            {"eid": source_id},
+        ).fetchone()
+    engine.dispose()
+    assert row is not None
+    after = row[0] if isinstance(row[0], dict) else __import__("json").loads(row[0])
+    assert after.get("status") == "watched"

@@ -69,12 +69,24 @@ describe('App shell', () => {
     expect(screen.getByTestId('page-audit-log')).toBeInTheDocument()
   })
 
-  it('shows placeholder text for unimplemented pages', async () => {
+  it('renders the sources page with search and filters', async () => {
     mockFetch.mockRejectedValue(new Error('Not configured'))
     const user = userEvent.setup()
     render(<App />)
 
     await user.click(screen.getByTestId('nav-sources'))
+    expect(screen.getByTestId('page-sources')).toBeInTheDocument()
+    expect(screen.getByTestId('input-source-search')).toBeInTheDocument()
+    expect(screen.getByTestId('select-status-filter')).toBeInTheDocument()
+    expect(screen.getByTestId('select-kind-filter')).toBeInTheDocument()
+  })
+
+  it('shows placeholder text for unimplemented pages', async () => {
+    mockFetch.mockRejectedValue(new Error('Not configured'))
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByTestId('nav-recipes'))
     expect(
       screen.getByText(/This page will be implemented in a future update/),
     ).toBeInTheDocument()
