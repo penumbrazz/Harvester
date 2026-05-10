@@ -305,6 +305,48 @@ HARVESTER_LIVE_QWEN_EMBEDDING=1 \
 uv run pytest tests/integration/test_vector_search_api_pipeline.py -q
 ```
 
+## 前端管理控制台
+
+Harvester 提供基于 React + TypeScript + Vite 的管理控制台，用于可视化操作和监控。
+
+### 启动前端开发服务器
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+前端默认运行在 `http://localhost:5173`，会代理 `/api` 请求到后端 `http://localhost:8001`。
+
+### 配置 API 连接
+
+在控制台的 Overview 页面配置：
+- **API Base URL**: 后端地址，如 `http://localhost:8001`
+- **API Token**: 可选的 Bearer token（对应环境变量 `HARVESTER_API_TOKEN`）
+
+配置保存在浏览器 localStorage 中。
+
+### 前端开发命令
+
+```bash
+cd frontend
+npm run format          # Prettier 格式化
+npm run lint            # ESLint 检查
+npm run typecheck       # TypeScript 类型检查
+npm run test            # 运行单元测试（Vitest）
+npm run test:e2e        # 运行 E2E 测试（Playwright，需先启动 API 和 dev server）
+npm run build           # 构建生产版本
+```
+
+### 启动后端 API
+
+前端需要后端 API 运行：
+
+```bash
+uv run uvicorn harvester.api.app:create_app --factory --host 0.0.0.0 --port 8001
+```
+
 ## 设计文档
 
 - [Harvester 个人信息采集控制平面](docs/designs/office-hours-harvester-20260508-201322.md)
