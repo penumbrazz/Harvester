@@ -89,7 +89,7 @@ describe('JobsPage', () => {
     mockFetch.mockReturnValue(new Promise(() => {}))
     render(<JobsPage config={config} />)
 
-    expect(screen.getByText('Job Queue')).toBeInTheDocument()
+    expect(screen.getByText('作业队列')).toBeInTheDocument()
     expect(screen.getByTestId('refresh-jobs')).toBeInTheDocument()
   })
 

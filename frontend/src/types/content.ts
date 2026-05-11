@@ -58,18 +58,26 @@ export const CONTENT_STATUS_VARIANTS: Record<
   error: 'error',
 }
 
+/** Human-readable labels for content item statuses. */
+export const CONTENT_STATUS_LABELS: Record<string, string> = {
+  active: '活跃',
+  deduped: '已去重',
+  archived: '已归档',
+  error: '错误',
+}
+
 /** Item type filter options. */
 export const ITEM_TYPE_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'All Types' },
-  { value: 'article', label: 'Article' },
-  { value: 'page', label: 'Page' },
-  { value: 'post', label: 'Post' },
+  { value: '', label: '全部类型' },
+  { value: 'article', label: '文章' },
+  { value: 'page', label: '页面' },
+  { value: 'post', label: '帖子' },
 ]
 
 /** Content status filter options. */
 export const CONTENT_STATUS_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'All Statuses' },
-  { value: 'active', label: 'Active' },
-  { value: 'deduped', label: 'Deduped' },
-  { value: 'archived', label: 'Archived' },
+  { value: '', label: '全部状态' },
+  { value: 'active', label: '活跃' },
+  { value: 'deduped', label: '已去重' },
+  { value: 'archived', label: '已归档' },
 ]

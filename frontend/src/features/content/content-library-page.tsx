@@ -9,6 +9,7 @@ import type {
   ViewMode,
 } from '../../types/content'
 import {
+  CONTENT_STATUS_LABELS,
   CONTENT_STATUS_OPTIONS,
   CONTENT_STATUS_VARIANTS,
   ITEM_TYPE_OPTIONS,
@@ -65,7 +66,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
       })
       setContentResponse(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load content items')
+      setError(err instanceof Error ? err.message : '加载内容项失败')
     } finally {
       setLoading(false)
     }
@@ -86,7 +87,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
       const data = await searchContentItems(config, searchQuery.trim(), searchMode)
       setSearchResults(data.items)
     } catch (err) {
-      setSearchError(err instanceof Error ? err.message : 'Search failed')
+      setSearchError(err instanceof Error ? err.message : '搜索失败')
     } finally {
       setSearchLoading(false)
     }
@@ -121,7 +122,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
             lineHeight: 'var(--line-height-tight)',
           }}
         >
-          Content Library
+          内容库
         </h2>
       </div>
 
@@ -138,7 +139,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
         <div style={{ flex: '1 1 200px', minWidth: '200px' }}>
           <Input
             id="content-search"
-            placeholder="Search content..."
+            placeholder="搜索内容..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             data-testid="search-input"
@@ -149,11 +150,11 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
           value={searchMode}
           onChange={(e) => setSearchMode(e.target.value as SearchMode)}
         >
-          <option value="keyword">Keyword</option>
-          <option value="vector">Vector</option>
+          <option value="keyword">关键词</option>
+          <option value="vector">向量</option>
         </Select>
         <Button onClick={() => void handleSearch()} data-testid="search-button">
-          Search
+          搜索
         </Button>
         {isSearching && (
           <Button
@@ -161,7 +162,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
             onClick={handleClearSearch}
             data-testid="search-clear"
           >
-            Clear
+            清除
           </Button>
         )}
       </div>
@@ -190,7 +191,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
             marginBottom: 'var(--space-4)',
           }}
         >
-          Searching...
+          搜索中...
         </p>
       )}
 
@@ -205,7 +206,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
               marginBottom: 'var(--space-3)',
             }}
           >
-            Search Results ({searchResults.length})
+            搜索结果 ({searchResults.length})
           </h3>
           {searchMode === 'vector' ? (
             <VectorResults items={searchResults} />
@@ -282,7 +283,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                       : 'var(--color-warm-gray-500)',
                 }}
               >
-                List
+                列表
               </button>
               <button
                 data-testid="view-grid"
@@ -308,7 +309,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                       : 'var(--color-warm-gray-500)',
                 }}
               >
-                Grid
+                网格
               </button>
             </div>
           </div>
@@ -322,7 +323,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                 fontSize: 'var(--font-size-sm)',
               }}
             >
-              Loading content items...
+              加载内容项中...
             </p>
           )}
 
@@ -355,12 +356,12 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                   marginBottom: 'var(--space-2)',
                 }}
               >
-                No content items found
+                未找到内容项
               </p>
               <p style={{ fontSize: 'var(--font-size-sm)' }}>
                 {hasActiveFilters
-                  ? 'Try adjusting your filters.'
-                  : 'Content items will appear here after extraction.'}
+                  ? '请尝试调整筛选条件。'
+                  : '内容项将在提取后显示在这里。'}
               </p>
             </div>
           )}
@@ -389,7 +390,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                       backgroundColor: 'var(--color-warm-white)',
                     }}
                   >
-                    {['Title', 'Type', 'Source', 'Status', 'URL', 'Updated'].map(
+                    {['标题', '类型', '信息源', '状态', 'URL', '更新时间'].map(
                       (header) => (
                         <th
                           key={header}
@@ -468,7 +469,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                     opacity: offset === 0 ? 0.5 : 1,
                   }}
                 >
-                  Previous
+                  上一页
                 </button>
                 <button
                   data-testid="pagination-next"
@@ -489,7 +490,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                     opacity: offset + PAGE_SIZE >= total ? 0.5 : 1,
                   }}
                 >
-                  Next
+                  下一页
                 </button>
               </div>
             </div>
@@ -512,7 +513,7 @@ function ContentRow({ item }: { item: ContentItem }) {
             whiteSpace: 'nowrap',
           }}
         >
-          {item.title || 'Untitled'}
+          {item.title || '无标题'}
         </div>
       </td>
       <td style={cellStyle}>
@@ -521,7 +522,7 @@ function ContentRow({ item }: { item: ContentItem }) {
       <td style={cellStyle}>{item.source_name || '-'}</td>
       <td style={cellStyle}>
         <StatusPill variant={CONTENT_STATUS_VARIANTS[item.status] || 'default'}>
-          {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+          {CONTENT_STATUS_LABELS[item.status] || item.status}
         </StatusPill>
       </td>
       <td style={cellStyle}>
@@ -561,7 +562,14 @@ function ContentRow({ item }: { item: ContentItem }) {
 /** Card for a content item in grid view. */
 function ContentCard({ item }: { item: ContentItem }) {
   return (
-    <Card style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+    <Card
+      style={{
+        padding: 'var(--space-4)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'var(--space-2)',
+      }}
+    >
       <div
         style={{
           display: 'flex',
@@ -583,12 +591,12 @@ function ContentCard({ item }: { item: ContentItem }) {
             WebkitBoxOrient: 'vertical',
           }}
         >
-          {item.title || 'Untitled'}
+          {item.title || '无标题'}
         </h4>
       </div>
       <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
         <StatusPill variant={CONTENT_STATUS_VARIANTS[item.status] || 'default'}>
-          {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+          {CONTENT_STATUS_LABELS[item.status] || item.status}
         </StatusPill>
         <StatusPill variant="default">{item.item_type}</StatusPill>
       </div>
@@ -598,7 +606,7 @@ function ContentCard({ item }: { item: ContentItem }) {
           color: 'var(--color-warm-gray-500)',
         }}
       >
-        {item.source_name || 'Unknown source'}
+        {item.source_name || '未知信息源'}
       </div>
       {item.canonical_url && (
         <a
@@ -637,7 +645,7 @@ function KeywordResults({ items }: { items: SearchResultItem[] }) {
       <p
         style={{ color: 'var(--color-warm-gray-500)', fontSize: 'var(--font-size-sm)' }}
       >
-        No results found.
+        未找到结果。
       </p>
     )
   }
@@ -664,7 +672,7 @@ function KeywordResults({ items }: { items: SearchResultItem[] }) {
               backgroundColor: 'var(--color-warm-white)',
             }}
           >
-            {['Title', 'Source', 'URL', 'Created'].map((header) => (
+            {['标题', '信息源', 'URL', '创建时间'].map((header) => (
               <th
                 key={header}
                 style={{
@@ -739,7 +747,7 @@ function VectorResults({ items }: { items: SearchResultItem[] }) {
       <p
         style={{ color: 'var(--color-warm-gray-500)', fontSize: 'var(--font-size-sm)' }}
       >
-        No results found.
+        未找到结果。
       </p>
     )
   }
@@ -791,7 +799,7 @@ function VectorResults({ items }: { items: SearchResultItem[] }) {
                   whiteSpace: 'nowrap',
                 }}
               >
-                distance: {item.distance.toFixed(4)}
+                距离: {item.distance.toFixed(4)}
               </span>
             )}
           </div>
@@ -817,9 +825,9 @@ function VectorResults({ items }: { items: SearchResultItem[] }) {
             }}
           >
             {item.content_item_id && (
-              <span>Item: {item.content_item_id.substring(0, 8)}...</span>
+              <span>内容项: {item.content_item_id.substring(0, 8)}...</span>
             )}
-            {item.chunk_id && <span>Chunk: {item.chunk_id.substring(0, 8)}...</span>}
+            {item.chunk_id && <span>分块: {item.chunk_id.substring(0, 8)}...</span>}
           </div>
         </div>
       ))}

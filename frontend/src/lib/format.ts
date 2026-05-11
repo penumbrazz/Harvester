@@ -2,7 +2,7 @@
 export function formatDate(iso: string): string {
   try {
     const d = new Date(iso)
-    return d.toLocaleDateString('en-US', {
+    return d.toLocaleDateString('zh-CN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

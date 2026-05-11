@@ -81,7 +81,7 @@ describe('ContentLibraryPage - list loading', () => {
     )
     render(<ContentLibraryPage config={config} />)
 
-    expect(screen.getByText('Content Library')).toBeInTheDocument()
+    expect(screen.getByText('内容库')).toBeInTheDocument()
   })
 
   it('shows loading state while fetching content items', () => {
@@ -126,8 +126,8 @@ describe('ContentLibraryPage - list loading', () => {
     })
 
     const table = screen.getByTestId('content-table')
-    expect(within(table).getAllByText('Active').length).toBeGreaterThanOrEqual(1)
-    expect(within(table).getAllByText('Deduped').length).toBeGreaterThanOrEqual(1)
+    expect(within(table).getAllByText('活跃').length).toBeGreaterThanOrEqual(1)
+    expect(within(table).getAllByText('已去重').length).toBeGreaterThanOrEqual(1)
   })
 })
 
@@ -142,7 +142,7 @@ describe('ContentLibraryPage - empty state', () => {
       expect(screen.getByTestId('content-empty')).toBeInTheDocument()
     })
 
-    expect(screen.getByText('No content items found')).toBeInTheDocument()
+    expect(screen.getByText('未找到内容项')).toBeInTheDocument()
   })
 
   it('shows filter hint when filters are active but no results', async () => {
@@ -160,7 +160,7 @@ describe('ContentLibraryPage - empty state', () => {
     await user.selectOptions(screen.getByTestId('select-type-filter'), 'page')
 
     await waitFor(() => {
-      expect(screen.getByText(/Try adjusting your filters/)).toBeInTheDocument()
+      expect(screen.getByText(/请尝试调整筛选条件/)).toBeInTheDocument()
     })
   })
 })

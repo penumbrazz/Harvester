@@ -69,8 +69,8 @@ describe('RecipesPage', () => {
     mockFetch.mockResolvedValue(mockJsonResponse([]))
     render(<RecipesPage config={config} />)
 
-    expect(screen.getByText('Recipes')).toBeInTheDocument()
-    expect(screen.getByText(/Pending.*Approved.*Deprecated/)).toBeInTheDocument()
+    expect(screen.getByText('采集配方')).toBeInTheDocument()
+    expect(screen.getByText(/待审批.*已批准.*已废弃/)).toBeInTheDocument()
   })
 
   it('shows loading state while fetching recipes', () => {
@@ -78,7 +78,7 @@ describe('RecipesPage', () => {
     render(<RecipesPage config={config} />)
 
     expect(screen.getByTestId('recipes-loading')).toBeInTheDocument()
-    expect(screen.getByText('Loading recipes...')).toBeInTheDocument()
+    expect(screen.getByText('加载配方中...')).toBeInTheDocument()
   })
 
   it('displays recipes in a table after loading', async () => {
@@ -103,9 +103,9 @@ describe('RecipesPage', () => {
     })
 
     const table = screen.getByTestId('recipes-table')
-    expect(within(table).getAllByText('Pending').length).toBeGreaterThanOrEqual(1)
-    expect(within(table).getAllByText('Approved').length).toBeGreaterThanOrEqual(1)
-    expect(within(table).getAllByText('Rejected').length).toBeGreaterThanOrEqual(1)
+    expect(within(table).getAllByText('待审批').length).toBeGreaterThanOrEqual(1)
+    expect(within(table).getAllByText('已批准').length).toBeGreaterThanOrEqual(1)
+    expect(within(table).getAllByText('已拒绝').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows empty state when no recipes exist', async () => {
@@ -116,10 +116,8 @@ describe('RecipesPage', () => {
       expect(screen.getByTestId('recipes-empty')).toBeInTheDocument()
     })
 
-    expect(screen.getByText('No recipes found')).toBeInTheDocument()
-    expect(
-      screen.getByText(/Click "New Recipe" to create your first recipe/),
-    ).toBeInTheDocument()
+    expect(screen.getByText('未找到配方')).toBeInTheDocument()
+    expect(screen.getByText(/点击"新建配方"来创建第一个配方/)).toBeInTheDocument()
   })
 
   it('shows error state when API fails', async () => {
@@ -293,7 +291,7 @@ describe('Create Recipe Form', () => {
     await waitFor(() => {
       expect(screen.getByTestId('create-recipe-error')).toBeInTheDocument()
     })
-    expect(screen.getByText(/Name is required/)).toBeInTheDocument()
+    expect(screen.getByText(/名称为必填项/)).toBeInTheDocument()
   })
 
   it('shows validation error for invalid JSON config', async () => {
@@ -317,7 +315,7 @@ describe('Create Recipe Form', () => {
     await waitFor(() => {
       expect(screen.getByTestId('create-recipe-error')).toBeInTheDocument()
     })
-    expect(screen.getByText(/Config must be valid JSON/)).toBeInTheDocument()
+    expect(screen.getByText(/配置必须是有效的 JSON/)).toBeInTheDocument()
   })
 
   it('shows API error when creation fails', async () => {

@@ -73,10 +73,8 @@ describe('SourcesPage', () => {
     mockFetch.mockResolvedValue(mockJsonResponse([]))
     render(<SourcesPage config={config} />)
 
-    expect(screen.getByText('Sources')).toBeInTheDocument()
-    expect(
-      screen.getByText(/Candidate.*Testing.*Watched.*Paused.*Archived/),
-    ).toBeInTheDocument()
+    expect(screen.getByText('信息源')).toBeInTheDocument()
+    expect(screen.getByText(/候选.*测试中.*监控中.*已暂停.*已归档/)).toBeInTheDocument()
   })
 
   it('shows loading state while fetching sources', () => {
@@ -85,7 +83,7 @@ describe('SourcesPage', () => {
     render(<SourcesPage config={config} />)
 
     expect(screen.getByTestId('sources-loading')).toBeInTheDocument()
-    expect(screen.getByText('Loading sources...')).toBeInTheDocument()
+    expect(screen.getByText('加载信息源中...')).toBeInTheDocument()
   })
 
   it('displays sources in a table after loading', async () => {
@@ -112,9 +110,9 @@ describe('SourcesPage', () => {
 
     // Check status pills — text may appear in both filter options and pills
     const table = screen.getByTestId('sources-table')
-    expect(within(table).getAllByText('Candidate').length).toBeGreaterThanOrEqual(1)
-    expect(within(table).getAllByText('Watched').length).toBeGreaterThanOrEqual(1)
-    expect(within(table).getAllByText('Paused').length).toBeGreaterThanOrEqual(1)
+    expect(within(table).getAllByText('候选').length).toBeGreaterThanOrEqual(1)
+    expect(within(table).getAllByText('监控中').length).toBeGreaterThanOrEqual(1)
+    expect(within(table).getAllByText('已暂停').length).toBeGreaterThanOrEqual(1)
   })
 
   it('shows empty state when no sources exist', async () => {
@@ -125,10 +123,8 @@ describe('SourcesPage', () => {
       expect(screen.getByTestId('sources-empty')).toBeInTheDocument()
     })
 
-    expect(screen.getByText('No sources found')).toBeInTheDocument()
-    expect(
-      screen.getByText(/Click "New Source" to create your first source/),
-    ).toBeInTheDocument()
+    expect(screen.getByText('未找到信息源')).toBeInTheDocument()
+    expect(screen.getByText(/点击"新建信息源"来创建第一个信息源/)).toBeInTheDocument()
   })
 
   it('shows error state when API fails', async () => {
@@ -273,7 +269,7 @@ describe('ProposeSourceForm', () => {
     await waitFor(() => {
       expect(screen.getByTestId('propose-source-error')).toBeInTheDocument()
     })
-    expect(screen.getByText(/Name is required/)).toBeInTheDocument()
+    expect(screen.getByText(/名称为必填项/)).toBeInTheDocument()
   })
 
   it('shows conflict error when name already exists', async () => {
@@ -297,7 +293,7 @@ describe('ProposeSourceForm', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('propose-source-error')).toBeInTheDocument()
-      expect(screen.getByText(/already exists/)).toBeInTheDocument()
+      expect(screen.getByText(/已存在/)).toBeInTheDocument()
     })
   })
 })

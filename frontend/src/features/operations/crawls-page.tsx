@@ -15,11 +15,11 @@ interface CrawlsPageProps {
 }
 
 const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'All Statuses' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'running', label: 'Running' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'failed', label: 'Failed' },
+  { value: '', label: '全部状态' },
+  { value: 'pending', label: '等待中' },
+  { value: 'running', label: '运行中' },
+  { value: 'completed', label: '已完成' },
+  { value: 'failed', label: '已失败' },
 ]
 
 /** Map crawl run status to StatusPill variant. */
@@ -65,7 +65,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
       setRuns(data.items)
       setTotal(data.total)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load crawl runs')
+      setError(err instanceof Error ? err.message : '加载抓取任务失败')
     } finally {
       setLoading(false)
     }
@@ -79,7 +79,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
 
   const handleTriggerCrawl = useCallback(async () => {
     if (!formSourceId.trim() || !formRecipeId.trim()) {
-      setFormError('Source ID and Recipe ID are required')
+      setFormError('信息源 ID 和配方 ID 为必填项')
       return
     }
     setFormError('')
@@ -95,7 +95,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
       setFormRecipeId('')
       void fetchRuns()
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Failed to trigger crawl')
+      setFormError(err instanceof Error ? err.message : '触发抓取失败')
     } finally {
       setFormSubmitting(false)
     }
@@ -120,13 +120,13 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
             lineHeight: 'var(--line-height-tight)',
           }}
         >
-          Crawls
+          抓取任务
         </h2>
         <Button
           onClick={() => setShowForm(!showForm)}
           data-testid="trigger-crawl-button"
         >
-          Trigger Crawl
+          触发抓取
         </Button>
       </div>
 
@@ -143,7 +143,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
             fontSize: 'var(--font-size-sm)',
           }}
         >
-          <span style={{ fontWeight: 600 }}>Crawl triggered:</span>{' '}
+          <span style={{ fontWeight: 600 }}>抓取已触发：</span>{' '}
           <StatusPill variant={crawlStatusVariant(triggerResult.status)}>
             {triggerResult.status}
           </StatusPill>
@@ -177,7 +177,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
               marginBottom: 'var(--space-3)',
             }}
           >
-            Trigger New Crawl
+            触发新抓取
           </h3>
           <div
             style={{
@@ -190,8 +190,8 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
             <div style={{ flex: '1 1 200px', minWidth: '200px' }}>
               <Input
                 id="source-id"
-                label="Source ID"
-                placeholder="UUID of the source"
+                label="信息源 ID"
+                placeholder="信息源的 UUID"
                 value={formSourceId}
                 onChange={(e) => setFormSourceId(e.target.value)}
                 data-testid="input-source-id"
@@ -200,8 +200,8 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
             <div style={{ flex: '1 1 200px', minWidth: '200px' }}>
               <Input
                 id="recipe-id"
-                label="Recipe ID"
-                placeholder="UUID of the recipe"
+                label="配方 ID"
+                placeholder="配方的 UUID"
                 value={formRecipeId}
                 onChange={(e) => setFormRecipeId(e.target.value)}
                 data-testid="input-recipe-id"
@@ -213,7 +213,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
                 disabled={formSubmitting}
                 data-testid="submit-trigger-crawl"
               >
-                {formSubmitting ? 'Running...' : 'Start'}
+                {formSubmitting ? '运行中...' : '开始'}
               </Button>
               <Button
                 variant="secondary"
@@ -225,7 +225,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
                 }}
                 data-testid="cancel-trigger-crawl"
               >
-                Cancel
+                取消
               </Button>
             </div>
           </div>
@@ -271,7 +271,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
             color: 'var(--color-warm-gray-500)',
           }}
         >
-          {total} run{total !== 1 ? 's' : ''}
+          {total} 条记录
         </span>
       </div>
 
@@ -284,7 +284,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
             fontSize: 'var(--font-size-sm)',
           }}
         >
-          Loading crawl runs...
+          加载抓取任务中...
         </p>
       )}
 
@@ -314,12 +314,10 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
               marginBottom: 'var(--space-2)',
             }}
           >
-            No crawl runs found
+            未找到抓取任务
           </p>
           <p style={{ fontSize: 'var(--font-size-sm)' }}>
-            {statusFilter
-              ? 'Try adjusting your filters.'
-              : 'Trigger a crawl to get started.'}
+            {statusFilter ? '请尝试调整筛选条件。' : '触发一次抓取以开始。'}
           </p>
         </div>
       )}
@@ -348,30 +346,24 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
                   backgroundColor: 'var(--color-warm-white)',
                 }}
               >
-                {[
-                  'ID',
-                  'Source',
-                  'Status',
-                  'HTTP',
-                  'Error',
-                  'Started',
-                  'Completed',
-                ].map((header) => (
-                  <th
-                    key={header}
-                    style={{
-                      padding: '10px var(--space-3)',
-                      fontSize: 'var(--font-size-xs)',
-                      fontWeight: 600,
-                      color: 'var(--color-warm-gray-500)',
-                      textAlign: 'left',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.125px',
-                    }}
-                  >
-                    {header}
-                  </th>
-                ))}
+                {['ID', '信息源', '状态', 'HTTP', '错误', '开始时间', '完成时间'].map(
+                  (header) => (
+                    <th
+                      key={header}
+                      style={{
+                        padding: '10px var(--space-3)',
+                        fontSize: 'var(--font-size-xs)',
+                        fontWeight: 600,
+                        color: 'var(--color-warm-gray-500)',
+                        textAlign: 'left',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.125px',
+                      }}
+                    >
+                      {header}
+                    </th>
+                  ),
+                )}
               </tr>
             </thead>
             <tbody>

@@ -15,7 +15,7 @@ uv run alembic upgrade head
 
 echo "[4/6] Checking API health..."
 for i in $(seq 1 10); do
-  if curl -sf http://localhost:8000/health > /dev/null 2>&1; then
+  if curl -sf http://localhost:8001/health > /dev/null 2>&1; then
     echo "API is healthy"
     break
   fi

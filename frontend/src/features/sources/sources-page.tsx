@@ -15,12 +15,12 @@ interface SourcesPageProps {
 }
 
 const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'All Statuses' },
+  { value: '', label: '全部状态' },
   ...Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label })),
 ]
 
 const KIND_FILTER_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'All Types' },
+  { value: '', label: '全部类型' },
   { value: 'web', label: 'Web' },
   { value: 'rss', label: 'RSS' },
   { value: 'api', label: 'API' },
@@ -46,7 +46,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
       })
       setSources(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load sources')
+      setError(err instanceof Error ? err.message : '加载信息源失败')
     } finally {
       setLoading(false)
     }
@@ -91,10 +91,10 @@ export function SourcesPage({ config }: SourcesPageProps) {
             lineHeight: 'var(--line-height-tight)',
           }}
         >
-          Sources
+          信息源
         </h2>
         <Button onClick={() => setShowForm(true)} data-testid="new-source-button">
-          New Source
+          新建信息源
         </Button>
       </div>
 
@@ -107,7 +107,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
           lineHeight: 'var(--line-height-normal)',
         }}
       >
-        Source lifecycle: Candidate → Testing → Watched ⇄ Paused → Archived
+        信息源生命周期：候选 → 测试中 → 监控中 ⇄ 已暂停 → 已归档
       </p>
 
       {/* Filter bar */}
@@ -123,7 +123,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
         <div style={{ flex: '1 1 200px', minWidth: '200px' }}>
           <Input
             id="source-search"
-            placeholder="Search by name or URL..."
+            placeholder="按名称或 URL 搜索..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             data-testid="input-source-search"
@@ -173,7 +173,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
               marginBottom: 'var(--space-3)',
             }}
           >
-            Propose New Source
+            提议新信息源
           </h3>
           <ProposeSourceForm
             config={config}
@@ -192,7 +192,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
             fontSize: 'var(--font-size-sm)',
           }}
         >
-          Loading sources...
+          加载信息源中...
         </p>
       )}
 
@@ -222,12 +222,12 @@ export function SourcesPage({ config }: SourcesPageProps) {
               marginBottom: 'var(--space-2)',
             }}
           >
-            No sources found
+            未找到信息源
           </p>
           <p style={{ fontSize: 'var(--font-size-sm)' }}>
             {search || statusFilter || kindFilter
-              ? 'Try adjusting your filters.'
-              : 'Click "New Source" to create your first source.'}
+              ? '请尝试调整筛选条件。'
+              : '点击"新建信息源"来创建第一个信息源。'}
           </p>
         </div>
       )}
@@ -257,14 +257,14 @@ export function SourcesPage({ config }: SourcesPageProps) {
                 }}
               >
                 {[
-                  'Name',
-                  'Type',
-                  'Status',
+                  '名称',
+                  '类型',
+                  '状态',
                   'URL',
-                  'Trust',
-                  'Failures',
-                  'Created',
-                  'Actions',
+                  '信任度',
+                  '失败次数',
+                  '创建时间',
+                  '操作',
                 ].map((header) => (
                   <th
                     key={header}

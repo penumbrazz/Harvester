@@ -22,6 +22,12 @@ const KIND_OPTIONS: { value: SourceKind; label: string }[] = [
 
 const TRUST_OPTIONS = ['low', 'medium', 'high'] as const
 
+const TRUST_LABELS: Record<string, string> = {
+  low: '低',
+  medium: '中',
+  high: '高',
+}
+
 export function ProposeSourceForm({
   config,
   onCreated,
@@ -40,7 +46,7 @@ export function ProposeSourceForm({
       setError('')
 
       if (!name.trim()) {
-        setError('Name is required')
+        setError('名称为必填项')
         return
       }
 
@@ -55,9 +61,9 @@ export function ProposeSourceForm({
         onCreated()
       } catch (err) {
         if (err instanceof Error && err.message.includes('409')) {
-          setError(`Source '${name.trim()}' already exists`)
+          setError(`信息源 '${name.trim()}' 已存在`)
         } else {
-          setError(err instanceof Error ? err.message : 'Failed to create source')
+          setError(err instanceof Error ? err.message : '创建信息源失败')
         }
       } finally {
         setSubmitting(false)
@@ -78,8 +84,8 @@ export function ProposeSourceForm({
     >
       <Input
         id="source-name"
-        label="Name"
-        placeholder="e.g. TechNews"
+        label="名称"
+        placeholder="例如 TechNews"
         value={name}
         onChange={(e) => setName(e.target.value)}
         data-testid="input-source-name"
@@ -87,7 +93,7 @@ export function ProposeSourceForm({
 
       <Select
         id="source-kind"
-        label="Type"
+        label="类型"
         data-testid="select-source-kind"
         value={kind}
         onChange={(e) => setKind(e.target.value as SourceKind)}
@@ -110,14 +116,14 @@ export function ProposeSourceForm({
 
       <Select
         id="source-trust"
-        label="Trust Level"
+        label="信任级别"
         data-testid="select-source-trust"
         value={trustLevel}
         onChange={(e) => setTrustLevel(e.target.value)}
       >
         {TRUST_OPTIONS.map((level) => (
           <option key={level} value={level}>
-            {level.charAt(0).toUpperCase() + level.slice(1)}
+            {TRUST_LABELS[level]}
           </option>
         ))}
       </Select>
@@ -137,7 +143,7 @@ export function ProposeSourceForm({
 
       <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
         <Button type="submit" disabled={submitting} data-testid="submit-propose-source">
-          {submitting ? 'Creating...' : 'Create Source'}
+          {submitting ? '创建中...' : '创建信息源'}
         </Button>
         <Button
           type="button"
@@ -145,7 +151,7 @@ export function ProposeSourceForm({
           onClick={onCancel}
           data-testid="cancel-propose-source"
         >
-          Cancel
+          取消
         </Button>
       </div>
     </form>

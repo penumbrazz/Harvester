@@ -14,25 +14,25 @@ interface JobsPageProps {
 }
 
 const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'All Statuses' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'running', label: 'Running' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'failed', label: 'Failed' },
-  { value: 'dead', label: 'Dead' },
+  { value: '', label: '全部状态' },
+  { value: 'pending', label: '等待中' },
+  { value: 'running', label: '运行中' },
+  { value: 'completed', label: '已完成' },
+  { value: 'failed', label: '已失败' },
+  { value: 'dead', label: '已死亡' },
 ]
 
 const JOB_TYPE_FILTER_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'All Types' },
-  { value: 'crawl', label: 'Crawl' },
-  { value: 'extract', label: 'Extract' },
-  { value: 'embed', label: 'Embed' },
+  { value: '', label: '全部类型' },
+  { value: 'crawl', label: '抓取' },
+  { value: 'extract', label: '提取' },
+  { value: 'embed', label: '嵌入' },
 ]
 
 const LANE_FILTER_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'All Lanes' },
-  { value: 'default', label: 'Default' },
-  { value: 'priority', label: 'Priority' },
+  { value: '', label: '全部通道' },
+  { value: 'default', label: '默认' },
+  { value: 'priority', label: '优先' },
 ]
 
 /** Map job status to StatusPill variant. */
@@ -76,7 +76,7 @@ export function JobsPage({ config }: JobsPageProps) {
       setJobs(data.items)
       setTotal(data.total)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load jobs')
+      setError(err instanceof Error ? err.message : '加载作业失败')
     } finally {
       setLoading(false)
     }
@@ -113,7 +113,7 @@ export function JobsPage({ config }: JobsPageProps) {
             lineHeight: 'var(--line-height-tight)',
           }}
         >
-          Job Queue
+          作业队列
         </h2>
         <button
           onClick={() => void fetchJobs()}
@@ -130,7 +130,7 @@ export function JobsPage({ config }: JobsPageProps) {
             cursor: 'pointer',
           }}
         >
-          Refresh
+          刷新
         </button>
       </div>
 
@@ -218,7 +218,7 @@ export function JobsPage({ config }: JobsPageProps) {
             color: 'var(--color-warm-gray-500)',
           }}
         >
-          {total} job{total !== 1 ? 's' : ''}
+          {total} 个作业
         </span>
       </div>
 
@@ -231,7 +231,7 @@ export function JobsPage({ config }: JobsPageProps) {
             fontSize: 'var(--font-size-sm)',
           }}
         >
-          Loading jobs...
+          加载作业中...
         </p>
       )}
 
@@ -261,12 +261,12 @@ export function JobsPage({ config }: JobsPageProps) {
               marginBottom: 'var(--space-2)',
             }}
           >
-            No jobs found
+            未找到作业
           </p>
           <p style={{ fontSize: 'var(--font-size-sm)' }}>
             {statusFilter || jobTypeFilter || laneFilter
-              ? 'Try adjusting your filters.'
-              : 'Jobs will appear as the system processes crawl runs.'}
+              ? '请尝试调整筛选条件。'
+              : '作业将在系统处理抓取任务时出现。'}
           </p>
         </div>
       )}
@@ -296,14 +296,14 @@ export function JobsPage({ config }: JobsPageProps) {
                 }}
               >
                 {[
-                  'Type',
-                  'Status',
-                  'Priority',
-                  'Attempts',
-                  'Lane',
-                  'Source',
-                  'Error',
-                  'Created',
+                  '类型',
+                  '状态',
+                  '优先级',
+                  '尝试次数',
+                  '通道',
+                  '信息源',
+                  '错误',
+                  '创建时间',
                 ].map((header) => (
                   <th
                     key={header}

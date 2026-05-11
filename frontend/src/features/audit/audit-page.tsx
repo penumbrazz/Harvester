@@ -13,24 +13,24 @@ const PAGE_SIZE = 20
 
 /** Known entity types for the filter dropdown. */
 const ENTITY_TYPES = [
-  { value: '', label: 'All Entity Types' },
-  { value: 'source', label: 'Source' },
-  { value: 'crawl_run', label: 'Crawl Run' },
-  { value: 'job', label: 'Job' },
-  { value: 'content_item', label: 'Content Item' },
-  { value: 'recipe', label: 'Recipe' },
-  { value: 'schedule', label: 'Schedule' },
-  { value: 'topic', label: 'Topic' },
+  { value: '', label: '全部实体类型' },
+  { value: 'source', label: '信息源' },
+  { value: 'crawl_run', label: '抓取任务' },
+  { value: 'job', label: '作业' },
+  { value: 'content_item', label: '内容项' },
+  { value: 'recipe', label: '配方' },
+  { value: 'schedule', label: '调度计划' },
+  { value: 'topic', label: '主题' },
 ]
 
 /** Known actions for the filter dropdown. */
 const ACTIONS = [
-  { value: '', label: 'All Actions' },
-  { value: 'source.propose', label: 'Source Propose' },
-  { value: 'status_change', label: 'Status Change' },
-  { value: 'status_change_rejected', label: 'Status Rejected' },
-  { value: 'crawl.trigger', label: 'Crawl Trigger' },
-  { value: 'crawl.complete', label: 'Crawl Complete' },
+  { value: '', label: '全部操作' },
+  { value: 'source.propose', label: '信息源提议' },
+  { value: 'status_change', label: '状态变更' },
+  { value: 'status_change_rejected', label: '状态变更拒绝' },
+  { value: 'crawl.trigger', label: '抓取触发' },
+  { value: 'crawl.complete', label: '抓取完成' },
 ]
 
 /** Determine pill variant based on action name. */
@@ -79,7 +79,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
         }
         setTotal(data.total)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load audit events')
+        setError(err instanceof Error ? err.message : '加载审计事件失败')
       } finally {
         setLoading(false)
       }
@@ -122,7 +122,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
             lineHeight: 'var(--line-height-tight)',
           }}
         >
-          Audit Log
+          审计日志
         </h2>
         <Button
           variant="ghost"
@@ -136,7 +136,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
             border: 'var(--border-whisper)',
           }}
         >
-          Refresh
+          刷新
         </Button>
       </div>
 
@@ -151,7 +151,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
         }}
       >
         <Select
-          label="Entity Type"
+          label="实体类型"
           data-testid="select-entity-type-filter"
           value={entityType}
           onChange={(e) => setEntityType((e.target as HTMLSelectElement).value)}
@@ -163,7 +163,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
           ))}
         </Select>
         <Select
-          label="Action"
+          label="操作"
           data-testid="select-action-filter"
           value={actionFilter}
           onChange={(e) => setActionFilter((e.target as HTMLSelectElement).value)}
@@ -185,7 +185,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
             fontSize: 'var(--font-size-sm)',
           }}
         >
-          Loading audit events...
+          加载审计事件中...
         </p>
       )}
 
@@ -210,7 +210,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
             padding: 'var(--space-5)',
           }}
         >
-          No audit events found
+          未找到审计事件
         </p>
       )}
 
@@ -298,8 +298,8 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
                     gap: '2px',
                   }}
                 >
-                  {event.before_summary && <span>Before: {event.before_summary}</span>}
-                  {event.after_summary && <span>After: {event.after_summary}</span>}
+                  {event.before_summary && <span>变更前: {event.before_summary}</span>}
+                  {event.after_summary && <span>变更后: {event.after_summary}</span>}
                 </div>
               )}
 
@@ -313,7 +313,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
                     fontStyle: 'italic',
                   }}
                 >
-                  Reason: {event.reason}
+                  原因: {event.reason}
                 </div>
               )}
             </Card>
@@ -328,9 +328,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
                 onClick={handleLoadMore}
                 disabled={loading}
               >
-                {loading
-                  ? 'Loading...'
-                  : `Load More (${total - events.length} remaining)`}
+                {loading ? '加载中...' : `加载更多（剩余 ${total - events.length} 条）`}
               </Button>
             </div>
           )}

@@ -186,7 +186,7 @@ uv run uvicorn harvester.api.app:create_app --factory --reload
 检查 API：
 
 ```bash
-uv run harvester --base-url http://localhost:8000
+uv run harvester --base-url http://localhost:8001
 ```
 
 Docker Compose smoke：
@@ -206,7 +206,7 @@ FIRECRAWL_API_URL=http://localhost:3002
 uv run harvester crawl run --source-id <source-id> --recipe-id <recipe-id>
 
 # 通过 API 触发抓取
-curl -X POST http://localhost:8000/crawl/run \
+curl -X POST http://localhost:8001/crawl/run \
   -H "Authorization: Bearer $HARVESTER_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"source_id": "...", "recipe_id": "..."}'
@@ -263,7 +263,7 @@ uv run harvester queue status
 
 # 通过 API
 curl -H "Authorization: Bearer $HARVESTER_API_TOKEN" \
-  http://localhost:8000/queue/status
+  http://localhost:8001/queue/status
 ```
 
 ## Embedding 适配器

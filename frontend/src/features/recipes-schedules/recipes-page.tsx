@@ -21,12 +21,12 @@ interface RecipesPageProps {
 }
 
 const APPROVAL_FILTER_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'All Statuses' },
+  { value: '', label: '全部状态' },
   ...Object.entries(APPROVAL_STATUS_LABELS).map(([value, label]) => ({ value, label })),
 ]
 
 const EXECUTOR_FILTER_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: 'All Executors' },
+  { value: '', label: '全部执行器' },
   ...EXECUTOR_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label })),
 ]
 
@@ -57,7 +57,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
       })
       setRecipes(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load recipes')
+      setError(err instanceof Error ? err.message : '加载配方失败')
     } finally {
       setLoading(false)
     }
@@ -84,7 +84,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
       setFormError('')
 
       if (!formName.trim()) {
-        setFormError('Name is required')
+        setFormError('名称为必填项')
         return
       }
 
@@ -94,7 +94,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
         try {
           parsedConfig = JSON.parse(formConfig.trim())
         } catch {
-          setFormError('Config must be valid JSON')
+          setFormError('配置必须是有效的 JSON')
           return
         }
       }
@@ -114,7 +114,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
         setFormRiskLevel('low')
         void fetchRecipes()
       } catch (err) {
-        setFormError(err instanceof Error ? err.message : 'Failed to create recipe')
+        setFormError(err instanceof Error ? err.message : '创建配方失败')
       } finally {
         setFormSubmitting(false)
       }
@@ -128,7 +128,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
         await approveRecipe(config, recipeId)
         void fetchRecipes()
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to approve recipe')
+        setError(err instanceof Error ? err.message : '批准配方失败')
       }
     },
     [config, fetchRecipes],
@@ -153,10 +153,10 @@ export function RecipesPage({ config }: RecipesPageProps) {
             lineHeight: 'var(--line-height-tight)',
           }}
         >
-          Recipes
+          采集配方
         </h2>
         <Button onClick={() => setShowForm(true)} data-testid="new-recipe-button">
-          New Recipe
+          新建配方
         </Button>
       </div>
 
@@ -169,8 +169,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
           lineHeight: 'var(--line-height-normal)',
         }}
       >
-        Recipe lifecycle: Pending → Approved → Deprecated. Only approved recipes can be
-        used in schedules.
+        配方生命周期：待审批 → 已批准 → 已废弃。只有已批准的配方才能用于调度计划。
       </p>
 
       {/* Filter bar */}
@@ -186,7 +185,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
         <div style={{ flex: '1 1 200px', minWidth: '200px' }}>
           <Input
             id="recipe-search"
-            placeholder="Search by name or executor..."
+            placeholder="按名称或执行器搜索..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             data-testid="input-recipe-search"
@@ -236,7 +235,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
               marginBottom: 'var(--space-3)',
             }}
           >
-            Create New Recipe
+            创建新配方
           </h3>
           <form
             data-testid="create-recipe-form"
@@ -249,8 +248,8 @@ export function RecipesPage({ config }: RecipesPageProps) {
           >
             <Input
               id="recipe-name"
-              label="Name"
-              placeholder="e.g. TechNews Scraper"
+              label="名称"
+              placeholder="例如 TechNews Scraper"
               value={formName}
               onChange={(e) => setFormName(e.target.value)}
               data-testid="input-recipe-name"
@@ -258,7 +257,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
 
             <Select
               id="recipe-executor"
-              label="Executor"
+              label="执行器"
               data-testid="select-recipe-executor"
               value={formExecutor}
               onChange={(e) => setFormExecutor(e.target.value)}
@@ -280,7 +279,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
                   color: 'var(--color-warm-gray-500)',
                 }}
               >
-                Config (JSON)
+                配置 (JSON)
               </label>
               <textarea
                 id="recipe-config"
@@ -305,7 +304,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
 
             <Select
               id="recipe-risk"
-              label="Risk Level"
+              label="风险级别"
               data-testid="select-recipe-risk"
               value={formRiskLevel}
               onChange={(e) => setFormRiskLevel(e.target.value)}
@@ -336,7 +335,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
                 disabled={formSubmitting}
                 data-testid="submit-create-recipe"
               >
-                {formSubmitting ? 'Creating...' : 'Create Recipe'}
+                {formSubmitting ? '创建中...' : '创建配方'}
               </Button>
               <Button
                 type="button"
@@ -347,7 +346,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
                 }}
                 data-testid="cancel-create-recipe"
               >
-                Cancel
+                取消
               </Button>
             </div>
           </form>
@@ -363,7 +362,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
             fontSize: 'var(--font-size-sm)',
           }}
         >
-          Loading recipes...
+          加载配方中...
         </p>
       )}
 
@@ -393,12 +392,12 @@ export function RecipesPage({ config }: RecipesPageProps) {
               marginBottom: 'var(--space-2)',
             }}
           >
-            No recipes found
+            未找到配方
           </p>
           <p style={{ fontSize: 'var(--font-size-sm)' }}>
             {search || approvalFilter || executorFilter
-              ? 'Try adjusting your filters.'
-              : 'Click "New Recipe" to create your first recipe.'}
+              ? '请尝试调整筛选条件。'
+              : '点击"新建配方"来创建第一个配方。'}
           </p>
         </div>
       )}
@@ -427,30 +426,24 @@ export function RecipesPage({ config }: RecipesPageProps) {
                   backgroundColor: 'var(--color-warm-white)',
                 }}
               >
-                {[
-                  'Name',
-                  'Executor',
-                  'Approval',
-                  'Risk',
-                  'Version',
-                  'Created',
-                  'Actions',
-                ].map((header) => (
-                  <th
-                    key={header}
-                    style={{
-                      padding: '10px var(--space-3)',
-                      fontSize: 'var(--font-size-xs)',
-                      fontWeight: 600,
-                      color: 'var(--color-warm-gray-500)',
-                      textAlign: 'left',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.125px',
-                    }}
-                  >
-                    {header}
-                  </th>
-                ))}
+                {['名称', '执行器', '审批状态', '风险', '版本', '创建时间', '操作'].map(
+                  (header) => (
+                    <th
+                      key={header}
+                      style={{
+                        padding: '10px var(--space-3)',
+                        fontSize: 'var(--font-size-xs)',
+                        fontWeight: 600,
+                        color: 'var(--color-warm-gray-500)',
+                        textAlign: 'left',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.125px',
+                      }}
+                    >
+                      {header}
+                    </th>
+                  ),
+                )}
               </tr>
             </thead>
             <tbody>
@@ -507,7 +500,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
                             fontSize: 'var(--font-size-xs)',
                           }}
                         >
-                          Approve
+                          批准
                         </Button>
                       )}
                     </div>

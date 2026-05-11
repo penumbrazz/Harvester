@@ -56,7 +56,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
       })
       setSchedules(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load schedules')
+      setError(err instanceof Error ? err.message : '加载调度计划失败')
     } finally {
       setLoading(false)
     }
@@ -82,17 +82,17 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
       setFormError('')
 
       if (!formSourceId) {
-        setFormError('Source is required')
+        setFormError('信息源为必填项')
         return
       }
       if (!formRecipeId) {
-        setFormError('Recipe is required')
+        setFormError('配方为必填项')
         return
       }
 
       const interval = parseInt(formInterval, 10)
       if (isNaN(interval) || interval < 60) {
-        setFormError('Interval must be at least 60 seconds')
+        setFormError('间隔时间至少为 60 秒')
         return
       }
 
@@ -113,7 +113,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
         setFormLane('')
         void fetchSchedules()
       } catch (err) {
-        setFormError(err instanceof Error ? err.message : 'Failed to create schedule')
+        setFormError(err instanceof Error ? err.message : '创建调度计划失败')
       } finally {
         setFormSubmitting(false)
       }
@@ -148,10 +148,10 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
             lineHeight: 'var(--line-height-tight)',
           }}
         >
-          Schedules
+          调度计划
         </h2>
         <Button onClick={() => setShowForm(true)} data-testid="new-schedule-button">
-          New Schedule
+          新建调度
         </Button>
       </div>
 
@@ -164,8 +164,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
           lineHeight: 'var(--line-height-normal)',
         }}
       >
-        Watch schedules define when and how sources are crawled. Only watched/active
-        sources and approved recipes can be scheduled.
+        监控调度定义了信息源的抓取时间和方式。只有监控中/活跃的信息源和已批准的配方才能被调度。
       </p>
 
       {/* Filter bar */}
@@ -211,7 +210,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
               marginBottom: 'var(--space-3)',
             }}
           >
-            Create New Schedule
+            创建新调度
           </h3>
           <form
             data-testid="create-schedule-form"
@@ -231,7 +230,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
                   color: 'var(--color-warm-gray-500)',
                 }}
               >
-                Source (schedulable only)
+                信息源（仅可调度的）
               </label>
               <SourceSelector
                 config={config}
@@ -251,7 +250,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
                   color: 'var(--color-warm-gray-500)',
                 }}
               >
-                Recipe (approved only)
+                配方（仅已批准的）
               </label>
               <ApprovedRecipeSelector
                 config={config}
@@ -263,7 +262,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
 
             <Input
               id="schedule-interval"
-              label="Interval (seconds)"
+              label="间隔时间（秒）"
               placeholder="3600"
               value={formInterval}
               onChange={(e) => setFormInterval(e.target.value)}
@@ -274,7 +273,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
 
             <Input
               id="schedule-priority"
-              label="Priority"
+              label="优先级"
               placeholder="0"
               value={formPriority}
               onChange={(e) => setFormPriority(e.target.value)}
@@ -284,8 +283,8 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
 
             <Input
               id="schedule-lane"
-              label="Lane (optional)"
-              placeholder="e.g. default"
+              label="通道（可选）"
+              placeholder="例如 default"
               value={formLane}
               onChange={(e) => setFormLane(e.target.value)}
               data-testid="input-schedule-lane"
@@ -310,7 +309,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
                 disabled={formSubmitting}
                 data-testid="submit-create-schedule"
               >
-                {formSubmitting ? 'Creating...' : 'Create Schedule'}
+                {formSubmitting ? '创建中...' : '创建调度'}
               </Button>
               <Button
                 type="button"
@@ -321,7 +320,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
                 }}
                 data-testid="cancel-create-schedule"
               >
-                Cancel
+                取消
               </Button>
             </div>
           </form>
@@ -337,7 +336,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
             fontSize: 'var(--font-size-sm)',
           }}
         >
-          Loading schedules...
+          加载调度计划中...
         </p>
       )}
 
@@ -367,12 +366,12 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
               marginBottom: 'var(--space-2)',
             }}
           >
-            No schedules found
+            未找到调度计划
           </p>
           <p style={{ fontSize: 'var(--font-size-sm)' }}>
             {statusFilter
-              ? 'Try adjusting your filters.'
-              : 'Click "New Schedule" to create your first schedule.'}
+              ? '请尝试调整筛选条件。'
+              : '点击"新建调度"来创建第一个调度计划。'}
           </p>
         </div>
       )}
@@ -402,15 +401,15 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
                 }}
               >
                 {[
-                  'Key',
-                  'Source',
-                  'Recipe',
-                  'Status',
-                  'Interval',
-                  'Next Run',
-                  'Priority',
-                  'Lane',
-                  'Created',
+                  '标识',
+                  '信息源',
+                  '配方',
+                  '状态',
+                  '间隔',
+                  '下次运行',
+                  '优先级',
+                  '通道',
+                  '创建时间',
                 ].map((header) => (
                   <th
                     key={header}

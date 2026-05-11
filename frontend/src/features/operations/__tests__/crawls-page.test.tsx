@@ -65,7 +65,7 @@ describe('CrawlsPage', () => {
     mockFetch.mockReturnValue(new Promise(() => {}))
     render(<CrawlsPage config={config} />)
 
-    expect(screen.getByText('Crawls')).toBeInTheDocument()
+    expect(screen.getByText('抓取任务')).toBeInTheDocument()
     expect(screen.getByTestId('trigger-crawl-button')).toBeInTheDocument()
   })
 

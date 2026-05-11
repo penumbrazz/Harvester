@@ -6,6 +6,14 @@
 
 Harvester 是个人 home lab 信息采集控制平面。第一版目标是公开网页抓取、raw evidence 保存、content item 抽取、去重、索引、搜索、审计和可部署基座。
 
+## 端口约定
+
+- **Harvester API（后端）**：`8001`（所有文档、脚本、配置统一使用此端口）
+- **Frontend（Vite dev server）**：`5173`
+- **omlx（LLM 服务）**：`8000`（外部服务，非 Harvester）
+
+启动：`./start.sh`（同时启动前后端，Ctrl+C 停止）
+
 ## 工作方式
 
 - 按 OpenSpec change 工作。实现前先读对应 `openspec/changes/<change>/proposal.md`、`design.md`、`specs/**/spec.md`、`tasks.md`。

@@ -56,7 +56,7 @@ export function SourceSelector({
         outline: 'none',
       }}
     >
-      <option value="">Select a source...</option>
+      <option value="">选择信息源...</option>
       {filtered.map((s) => (
         <option key={s.id} value={s.id}>
           {s.name} ({s.status})
@@ -109,7 +109,7 @@ export function ApprovedRecipeSelector({
         outline: 'none',
       }}
     >
-      <option value="">Select a recipe...</option>
+      <option value="">选择配方...</option>
       {recipes.map((r) => (
         <option key={r.id} value={r.id} disabled={r.approval_status !== 'approved'}>
           {r.name} ({r.executor})

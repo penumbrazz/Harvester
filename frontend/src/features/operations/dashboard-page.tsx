@@ -99,7 +99,7 @@ function FailurePanel({ items, title }: { items: FailureItem[]; title: string })
                 backgroundColor: 'var(--color-warm-white)',
               }}
             >
-              {['ID', 'Status', 'Error', 'Created'].map((header) => (
+              {['ID', '状态', '错误', '创建时间'].map((header) => (
                 <th
                   key={header}
                   style={{
@@ -195,7 +195,7 @@ export function DashboardPage({ config }: DashboardPageProps) {
       setSummary(summaryData)
       setFailures([...failuresData.crawl_runs, ...failuresData.jobs])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load dashboard')
+      setError(err instanceof Error ? err.message : '加载仪表盘失败')
     } finally {
       setLoading(false)
     }
@@ -226,7 +226,7 @@ export function DashboardPage({ config }: DashboardPageProps) {
             lineHeight: 'var(--line-height-tight)',
           }}
         >
-          Dashboard
+          仪表盘
         </h2>
         <button
           onClick={() => void fetchData()}
@@ -243,7 +243,7 @@ export function DashboardPage({ config }: DashboardPageProps) {
             cursor: 'pointer',
           }}
         >
-          Refresh
+          刷新
         </button>
       </div>
 
@@ -255,7 +255,7 @@ export function DashboardPage({ config }: DashboardPageProps) {
             fontSize: 'var(--font-size-sm)',
           }}
         >
-          Loading dashboard...
+          加载仪表盘中...
         </p>
       )}
 
@@ -281,27 +281,27 @@ export function DashboardPage({ config }: DashboardPageProps) {
             }}
           >
             <MetricCard
-              label="Sources"
+              label="信息源"
               value={summary.sources.total}
               sublabel={formatBreakdown(summary.sources.by_status)}
             />
             <MetricCard
-              label="Crawl Runs"
+              label="抓取任务"
               value={summary.crawl_runs.total}
               sublabel={formatBreakdown(summary.crawl_runs.by_status)}
             />
             <MetricCard
-              label="Jobs"
+              label="作业"
               value={summary.jobs.total}
               sublabel={formatBreakdown(summary.jobs.by_status)}
             />
-            <MetricCard label="Content Items" value={summary.content_items.total} />
+            <MetricCard label="内容项" value={summary.content_items.total} />
             <MetricCard
-              label="Failures"
+              label="失败"
               value={summary.failures.total}
               sublabel={formatBreakdown(summary.failures.by_status)}
             />
-            <MetricCard label="Audit Events" value={summary.audit_events.total} />
+            <MetricCard label="审计事件" value={summary.audit_events.total} />
           </div>
 
           {/* Recent failures */}
@@ -314,7 +314,7 @@ export function DashboardPage({ config }: DashboardPageProps) {
                 marginBottom: 'var(--space-3)',
               }}
             >
-              Recent Failures
+              近期失败
             </h3>
             {failures.length === 0 ? (
               <p
@@ -326,10 +326,10 @@ export function DashboardPage({ config }: DashboardPageProps) {
                   padding: 'var(--space-4)',
                 }}
               >
-                No recent failures
+                暂无近期失败记录
               </p>
             ) : (
-              <FailurePanel items={failures.slice(0, 5)} title="Recent Failures" />
+              <FailurePanel items={failures.slice(0, 5)} title="近期失败" />
             )}
           </Card>
         </>

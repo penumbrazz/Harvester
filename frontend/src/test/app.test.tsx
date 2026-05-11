@@ -129,7 +129,7 @@ describe('API connection status', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('Connected')).toBeInTheDocument()
+      expect(screen.getByText('已连接')).toBeInTheDocument()
     })
   })
 
@@ -143,7 +143,7 @@ describe('API connection status', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('Disconnected')).toBeInTheDocument()
+      expect(screen.getByText('已断开')).toBeInTheDocument()
     })
   })
 
@@ -153,7 +153,7 @@ describe('API connection status', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('Disconnected')).toBeInTheDocument()
+      expect(screen.getByText('已断开')).toBeInTheDocument()
     })
   })
 
@@ -232,14 +232,14 @@ describe('API connection status', () => {
     render(<App />)
 
     await waitFor(() => {
-      expect(screen.getByText('Disconnected')).toBeInTheDocument()
+      expect(screen.getByText('已断开')).toBeInTheDocument()
     })
 
     const retryButton = screen.getByTestId('retry-connection-button')
     await user.click(retryButton)
 
     await waitFor(() => {
-      expect(screen.getByText('Connected')).toBeInTheDocument()
+      expect(screen.getByText('已连接')).toBeInTheDocument()
     })
   })
 })

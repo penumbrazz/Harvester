@@ -26,6 +26,6 @@ export interface CreateScheduleRequest {
 
 /** Schedule status options. */
 export const SCHEDULE_STATUS_OPTIONS = [
-  { value: '', label: 'All Statuses' },
-  { value: 'active', label: 'Active' },
+  { value: '', label: '全部状态' },
+  { value: 'active', label: '活跃' },
 ] as const

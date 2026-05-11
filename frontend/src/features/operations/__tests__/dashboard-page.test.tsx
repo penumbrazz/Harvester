@@ -66,7 +66,7 @@ describe('DashboardPage', () => {
     mockFetch.mockReturnValue(new Promise(() => {}))
     render(<DashboardPage config={config} />)
 
-    expect(screen.getByText('Dashboard')).toBeInTheDocument()
+    expect(screen.getByText('仪表盘')).toBeInTheDocument()
     expect(screen.getByTestId('refresh-dashboard')).toBeInTheDocument()
   })
 
@@ -88,12 +88,12 @@ describe('DashboardPage', () => {
       expect(screen.getByTestId('dashboard-metrics')).toBeInTheDocument()
     })
 
-    expect(screen.getByText('Sources')).toBeInTheDocument()
-    expect(screen.getByText('Crawl Runs')).toBeInTheDocument()
-    expect(screen.getByText('Jobs')).toBeInTheDocument()
-    expect(screen.getByText('Content Items')).toBeInTheDocument()
-    expect(screen.getByText('Failures')).toBeInTheDocument()
-    expect(screen.getByText('Audit Events')).toBeInTheDocument()
+    expect(screen.getByText('信息源')).toBeInTheDocument()
+    expect(screen.getByText('抓取任务')).toBeInTheDocument()
+    expect(screen.getByText('作业')).toBeInTheDocument()
+    expect(screen.getByText('内容项')).toBeInTheDocument()
+    expect(screen.getByText('失败')).toBeInTheDocument()
+    expect(screen.getByText('审计事件')).toBeInTheDocument()
   })
 
   it('shows metric values from API response', async () => {
@@ -122,7 +122,7 @@ describe('DashboardPage', () => {
     render(<DashboardPage config={config} />)
 
     await waitFor(() => {
-      expect(screen.getAllByText('Recent Failures').length).toBeGreaterThanOrEqual(1)
+      expect(screen.getAllByText('近期失败').length).toBeGreaterThanOrEqual(1)
     })
 
     expect(screen.getByText('Connection timeout')).toBeInTheDocument()

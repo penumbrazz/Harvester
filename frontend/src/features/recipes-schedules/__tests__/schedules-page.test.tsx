@@ -67,8 +67,8 @@ describe('SchedulesPage', () => {
     mockFetch.mockResolvedValue(mockJsonResponse([]))
     render(<SchedulesPage config={config} />)
 
-    expect(screen.getByText('Schedules')).toBeInTheDocument()
-    expect(screen.getByText(/watched\/active sources/)).toBeInTheDocument()
+    expect(screen.getByText('调度计划')).toBeInTheDocument()
+    expect(screen.getByText(/监控中\/活跃的信息源/)).toBeInTheDocument()
   })
 
   it('shows loading state while fetching schedules', () => {
@@ -76,7 +76,7 @@ describe('SchedulesPage', () => {
     render(<SchedulesPage config={config} />)
 
     expect(screen.getByTestId('schedules-loading')).toBeInTheDocument()
-    expect(screen.getByText('Loading schedules...')).toBeInTheDocument()
+    expect(screen.getByText('加载调度计划中...')).toBeInTheDocument()
   })
 
   it('displays schedules in a table after loading', async () => {
@@ -111,10 +111,8 @@ describe('SchedulesPage', () => {
       expect(screen.getByTestId('schedules-empty')).toBeInTheDocument()
     })
 
-    expect(screen.getByText('No schedules found')).toBeInTheDocument()
-    expect(
-      screen.getByText(/Click "New Schedule" to create your first schedule/),
-    ).toBeInTheDocument()
+    expect(screen.getByText('未找到调度计划')).toBeInTheDocument()
+    expect(screen.getByText(/点击"新建调度"来创建第一个调度计划/)).toBeInTheDocument()
   })
 
   it('shows error state when API fails', async () => {
@@ -240,7 +238,7 @@ describe('Create Schedule Form', () => {
     await waitFor(() => {
       expect(screen.getByTestId('create-schedule-error')).toBeInTheDocument()
     })
-    expect(screen.getByText(/Source is required/)).toBeInTheDocument()
+    expect(screen.getByText(/信息源为必填项/)).toBeInTheDocument()
   })
 
   it('shows validation error when recipe is not selected', async () => {
@@ -298,7 +296,7 @@ describe('Create Schedule Form', () => {
     await waitFor(() => {
       expect(screen.getByTestId('create-schedule-error')).toBeInTheDocument()
     })
-    expect(screen.getByText(/Recipe is required/)).toBeInTheDocument()
+    expect(screen.getByText(/配方为必填项/)).toBeInTheDocument()
   })
 
   it('shows validation error for interval less than 60', async () => {

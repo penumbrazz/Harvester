@@ -11,6 +11,7 @@ import {
   promoteSource,
   resumeSource,
 } from '../../../lib/source-api'
+import { formatDate } from '../../../lib/format'
 
 interface SourceRowProps {
   source: Source
@@ -18,27 +19,11 @@ interface SourceRowProps {
   onStatusChanged: () => void
 }
 
-/** Format an ISO date string to a readable format. */
-function formatDate(iso: string): string {
-  try {
-    const d = new Date(iso)
-    return d.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  } catch {
-    return iso
-  }
-}
-
 const ACTION_LABELS: Record<string, string> = {
-  promote: 'Promote',
-  pause: 'Pause',
-  resume: 'Resume',
-  archive: 'Archive',
+  promote: '提升',
+  pause: '暂停',
+  resume: '恢复',
+  archive: '归档',
 }
 
 export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
@@ -65,7 +50,7 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
         }
         onStatusChanged()
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Action failed')
+        setError(err instanceof Error ? err.message : '操作失败')
       } finally {
         setLoading(false)
       }
@@ -141,7 +126,7 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
                 fontSize: 'var(--font-size-xs)',
               }}
             >
-              Error
+              错误
             </span>
           )}
         </div>

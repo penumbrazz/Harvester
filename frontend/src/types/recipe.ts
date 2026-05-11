@@ -24,10 +24,10 @@ export type RecipeApprovalStatus = 'pending' | 'approved' | 'rejected' | 'deprec
 
 /** Human-readable labels for recipe approval statuses. */
 export const APPROVAL_STATUS_LABELS: Record<RecipeApprovalStatus, string> = {
-  pending: 'Pending',
-  approved: 'Approved',
-  rejected: 'Rejected',
-  deprecated: 'Deprecated',
+  pending: '待审批',
+  approved: '已批准',
+  rejected: '已拒绝',
+  deprecated: '已废弃',
 }
 
 /** StatusPill variant mapping for recipe approval statuses. */
@@ -51,7 +51,7 @@ export const EXECUTOR_OPTIONS = [
 
 /** Risk level options. */
 export const RISK_LEVEL_OPTIONS = [
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
+  { value: 'low', label: '低' },
+  { value: 'medium', label: '中' },
+  { value: 'high', label: '高' },
 ] as const

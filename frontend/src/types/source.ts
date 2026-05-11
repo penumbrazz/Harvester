@@ -37,11 +37,11 @@ export const SOURCE_ACTIONS: Record<SourceStatus, string[]> = {
 
 /** Human-readable labels for source statuses. */
 export const STATUS_LABELS: Record<SourceStatus, string> = {
-  candidate: 'Candidate',
-  testing: 'Testing',
-  watched: 'Watched',
-  paused: 'Paused',
-  archived: 'Archived',
+  candidate: '候选',
+  testing: '测试中',
+  watched: '监控中',
+  paused: '已暂停',
+  archived: '已归档',
 }
 
 /** StatusPill variant mapping for source statuses. */

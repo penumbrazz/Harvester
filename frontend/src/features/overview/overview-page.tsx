@@ -14,10 +14,10 @@ interface OverviewPageProps {
 }
 
 const statusLabels: Record<ConnectionStatus, string> = {
-  unknown: 'Not checked',
-  checking: 'Checking...',
-  connected: 'Connected',
-  error: 'Disconnected',
+  unknown: '未检测',
+  checking: '检测中...',
+  connected: '已连接',
+  error: '已断开',
 }
 
 const statusVariants: Record<
@@ -57,7 +57,7 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
           marginBottom: 'var(--space-5)',
         }}
       >
-        Overview
+        概览
       </h2>
 
       {/* Connection Status Card */}
@@ -77,7 +77,7 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
               fontWeight: 600,
             }}
           >
-            API Connection
+            API 连接
           </h3>
           <StatusPill variant={statusVariants[status]}>
             {statusLabels[status]}
@@ -108,7 +108,7 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
           >
             <Input
               id="api-base-url"
-              label="API Base URL"
+              label="API 地址"
               placeholder="http://localhost:8001"
               value={editConfig.baseUrl}
               onChange={(e) =>
@@ -118,9 +118,9 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
             />
             <Input
               id="api-token"
-              label="API Token"
+              label="API 令牌"
               type="password"
-              placeholder="Optional Bearer token"
+              placeholder="可选的 Bearer 令牌"
               value={editConfig.token}
               onChange={(e) =>
                 setEditConfig((prev) => ({ ...prev, token: e.target.value }))
@@ -129,14 +129,14 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
             />
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
               <Button onClick={handleSave} data-testid="save-config-button">
-                Save &amp; Connect
+                保存并连接
               </Button>
               <Button
                 variant="secondary"
                 onClick={handleCancel}
                 data-testid="cancel-config-button"
               >
-                Cancel
+                取消
               </Button>
             </div>
           </div>
@@ -155,7 +155,7 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
                 color: 'var(--color-warm-gray-500)',
               }}
             >
-              {config.baseUrl || 'No URL configured'}
+              {config.baseUrl || '未配置地址'}
             </span>
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
               <Button
@@ -163,14 +163,14 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
                 onClick={() => setEditing(true)}
                 data-testid="edit-config-button"
               >
-                Configure
+                配置
               </Button>
               <Button
                 variant="secondary"
                 onClick={() => void check()}
                 data-testid="retry-connection-button"
               >
-                Retry
+                重试
               </Button>
             </div>
           </div>
@@ -193,7 +193,7 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
               marginBottom: 'var(--space-2)',
             }}
           >
-            Sources
+            信息源
           </p>
           <p
             style={{
@@ -212,7 +212,7 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
               marginBottom: 'var(--space-2)',
             }}
           >
-            Active Crawls
+            活跃抓取
           </p>
           <p
             style={{
@@ -231,7 +231,7 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
               marginBottom: 'var(--space-2)',
             }}
           >
-            Content Items
+            内容项
           </p>
           <p
             style={{

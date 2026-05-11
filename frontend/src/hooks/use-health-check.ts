@@ -36,7 +36,7 @@ export function useHealthCheck(config: ApiConfig): UseHealthCheckReturn {
   const check = useCallback(async () => {
     if (!config.baseUrl) {
       safeSetStatus('error')
-      safeSetErrorMessage('API base URL is not configured')
+      safeSetErrorMessage('API 地址未配置')
       return
     }
 
@@ -49,13 +49,11 @@ export function useHealthCheck(config: ApiConfig): UseHealthCheckReturn {
         safeSetStatus('connected')
       } else {
         safeSetStatus('error')
-        safeSetErrorMessage(`Unexpected health status: ${result.status}`)
+        safeSetErrorMessage(`意外的健康状态: ${result.status}`)
       }
     } catch (err) {
       safeSetStatus('error')
-      safeSetErrorMessage(
-        err instanceof Error ? err.message : 'Failed to connect to API',
-      )
+      safeSetErrorMessage(err instanceof Error ? err.message : '连接 API 失败')
     }
   }, [config, safeSetStatus, safeSetErrorMessage])
 

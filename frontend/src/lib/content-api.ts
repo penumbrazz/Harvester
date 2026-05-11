@@ -1,9 +1,5 @@
 import type { ApiConfig } from '../types/api'
-import type {
-  ContentListResponse,
-  SearchMode,
-  SearchResponse,
-} from '../types/content'
+import type { ContentListResponse, SearchMode, SearchResponse } from '../types/content'
 import { apiRequest } from './api-client'
 
 /** Fetch paginated content items with optional filters. */

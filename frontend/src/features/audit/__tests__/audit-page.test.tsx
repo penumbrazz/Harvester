@@ -76,7 +76,7 @@ describe('AuditPage', () => {
     render(<AuditPage config={config} />)
 
     expect(screen.getByTestId('page-audit-log')).toBeInTheDocument()
-    expect(screen.getByText('Audit Log')).toBeInTheDocument()
+    expect(screen.getByText('审计日志')).toBeInTheDocument()
   })
 
   it('shows loading state while fetching events', () => {
