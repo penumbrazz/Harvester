@@ -60,6 +60,43 @@ const mockRuns = {
   total: 2,
 }
 
+const mockSources = {
+  items: [
+    {
+      id: 'src-001',
+      name: 'Test Source',
+      kind: 'web',
+      status: 'watched',
+      url: 'https://example.com',
+      trust_level: 'medium',
+      failure_count: 0,
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+    },
+  ],
+  total: 1,
+  limit: 100,
+  offset: 0,
+}
+
+const mockRecipes = {
+  items: [
+    {
+      id: 'recipe-001',
+      name: 'Test Recipe',
+      executor: 'firecrawl',
+      risk_level: 'low',
+      approval_status: 'approved',
+      version: 1,
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: null,
+    },
+  ],
+  total: 1,
+  limit: 100,
+  offset: 0,
+}
+
 describe('CrawlsPage', () => {
   it('renders the page title and trigger crawl button', () => {
     mockFetch.mockReturnValue(new Promise(() => {}))
@@ -134,7 +171,10 @@ describe('CrawlsPage', () => {
   })
 
   it('shows the trigger crawl form when button is clicked', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse(mockRuns))
+    mockFetch
+      .mockResolvedValueOnce(mockJsonResponse(mockRuns))
+      .mockResolvedValueOnce(mockJsonResponse(mockSources))
+      .mockResolvedValueOnce(mockJsonResponse(mockRecipes))
     const user = userEvent.setup()
     render(<CrawlsPage config={config} />)
 
@@ -144,8 +184,8 @@ describe('CrawlsPage', () => {
 
     await user.click(screen.getByTestId('trigger-crawl-button'))
     expect(screen.getByTestId('trigger-crawl-form')).toBeInTheDocument()
-    expect(screen.getByTestId('input-source-id')).toBeInTheDocument()
-    expect(screen.getByTestId('input-recipe-id')).toBeInTheDocument()
+    expect(screen.getByTestId('select-source')).toBeInTheDocument()
+    expect(screen.getByTestId('select-approved-recipe')).toBeInTheDocument()
   })
 
   it('shows validation error when submitting with empty fields', async () => {
@@ -184,6 +224,8 @@ describe('CrawlsPage', () => {
   it('submits trigger crawl and shows result', async () => {
     mockFetch
       .mockResolvedValueOnce(mockJsonResponse(mockRuns))
+      .mockResolvedValueOnce(mockJsonResponse(mockSources))
+      .mockResolvedValueOnce(mockJsonResponse(mockRecipes))
       .mockResolvedValueOnce(
         mockJsonResponse({
           crawl_run_id: 'new-run-001',
@@ -202,8 +244,8 @@ describe('CrawlsPage', () => {
     })
 
     await user.click(screen.getByTestId('trigger-crawl-button'))
-    await user.type(screen.getByTestId('input-source-id'), 'src-001')
-    await user.type(screen.getByTestId('input-recipe-id'), 'recipe-001')
+    await user.selectOptions(screen.getByTestId('select-source'), 'src-001')
+    await user.selectOptions(screen.getByTestId('select-approved-recipe'), 'recipe-001')
     await user.click(screen.getByTestId('submit-trigger-crawl'))
 
     await waitFor(() => {
@@ -212,12 +254,16 @@ describe('CrawlsPage', () => {
   })
 
   it('shows error when trigger crawl API fails', async () => {
-    mockFetch.mockResolvedValueOnce(mockJsonResponse(mockRuns)).mockResolvedValueOnce({
-      ok: false,
-      status: 400,
-      statusText: 'Bad Request',
-      text: () => Promise.resolve('Invalid source'),
-    })
+    mockFetch
+      .mockResolvedValueOnce(mockJsonResponse(mockRuns))
+      .mockResolvedValueOnce(mockJsonResponse(mockSources))
+      .mockResolvedValueOnce(mockJsonResponse(mockRecipes))
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        text: () => Promise.resolve('Invalid source'),
+      })
 
     const user = userEvent.setup()
     render(<CrawlsPage config={config} />)
@@ -227,8 +273,8 @@ describe('CrawlsPage', () => {
     })
 
     await user.click(screen.getByTestId('trigger-crawl-button'))
-    await user.type(screen.getByTestId('input-source-id'), 'bad-id')
-    await user.type(screen.getByTestId('input-recipe-id'), 'bad-recipe')
+    await user.selectOptions(screen.getByTestId('select-source'), 'src-001')
+    await user.selectOptions(screen.getByTestId('select-approved-recipe'), 'recipe-001')
     await user.click(screen.getByTestId('submit-trigger-crawl'))
 
     await waitFor(() => {

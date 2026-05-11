@@ -1,11 +1,30 @@
 """Harvester FastAPI application."""
 
+import logging
+import os
+import sys
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+LOG_FORMAT = "%(asctime)s %(levelname)-8s %(name)s  %(message)s"
+
+
+def _setup_logging() -> None:
+    """Configure root logger for the harvester namespace."""
+    level_name = os.environ.get("HARVESTER_LOG_LEVEL", "INFO").upper()
+    level = getattr(logging, level_name, logging.INFO)
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(logging.Formatter(LOG_FORMAT))
+    root = logging.getLogger("harvester")
+    root.setLevel(level)
+    root.addHandler(handler)
 
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
+    _setup_logging()
+
     app = FastAPI(
         title="Harvester",
         description="Personal home lab information collection control plane",

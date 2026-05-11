@@ -37,8 +37,8 @@ test.describe('Operations Observability E2E', () => {
 
     await page.getByTestId('trigger-crawl-button').click()
     await expect(page.getByTestId('trigger-crawl-form')).toBeVisible()
-    await expect(page.getByTestId('input-source-id')).toBeVisible()
-    await expect(page.getByTestId('input-recipe-id')).toBeVisible()
+    await expect(page.getByTestId('select-source')).toBeVisible()
+    await expect(page.getByTestId('select-approved-recipe')).toBeVisible()
   })
 
   test('crawls page form can be cancelled', async ({ page }) => {

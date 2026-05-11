@@ -121,6 +121,11 @@ def execute_crawl(
             f"Recipe {recipe_id} has high risk_level, not allowed for crawl"
         )
 
+    logger.info(
+        "crawl.start source=%s recipe=%s url=%s actor=%s",
+        source_id, recipe_id, source.url, actor,
+    )
+
     # 3. Create pending crawl run
     run_id = uuid.uuid4()
     now = datetime.now(UTC)
@@ -140,7 +145,9 @@ def execute_crawl(
         # 4. Check fetch policy
         policy = check_fetch_policy(source.url)
         if not policy.allowed:
-            _fail_crawl_run(session, crawl_run, f"Fetch policy denied: {policy.reason}")
+            reason = f"Fetch policy denied: {policy.reason}"
+            logger.warning("crawl.policy_denied run=%s %s", run_id, reason)
+            _fail_crawl_run(session, crawl_run, reason)
             write_audit(
                 session,
                 actor=actor,
@@ -153,7 +160,7 @@ def execute_crawl(
             return CrawlExecutionResult(
                 crawl_run_id=run_id,
                 status="failed",
-                error_message=f"Fetch policy denied: {policy.reason}",
+                error_message=reason,
             )
 
         # 5. Transition to running
@@ -166,11 +173,15 @@ def execute_crawl(
             "crawl_run",
         )
         session.flush()
+        logger.info("crawl.running run=%s fetching %s", run_id, source.url)
 
         # 6. Execute adapter crawl
         crawl_result = execute_adapter_crawl(source.url)
 
         if crawl_result.error:
+            logger.error(
+                "crawl.adapter_failed run=%s error=%s", run_id, crawl_result.error,
+            )
             _fail_crawl_run(session, crawl_run, crawl_result.error)
             write_audit(
                 session,
@@ -181,8 +192,6 @@ def execute_crawl(
                 reason=crawl_result.error,
             )
             session.commit()
-            # Adapter/network errors are retryable — let worker use fail_job
-            # for retry/dead-letter flow instead of dead-lettering directly.
             raise CrawlExecutionError(
                 crawl_result.error, retryable=True
             )
@@ -191,20 +200,22 @@ def execute_crawl(
         if crawl_result.final_url and crawl_result.final_url != source.url:
             redirect_policy = check_fetch_policy(crawl_result.final_url)
             if not redirect_policy.allowed:
-                _fail_crawl_run(
-                    session,
-                    crawl_run,
-                    f"Redirect target denied: {redirect_policy.reason}",
-                )
+                reason = f"Redirect target denied: {redirect_policy.reason}"
+                logger.warning("crawl.redirect_denied run=%s %s", run_id, reason)
+                _fail_crawl_run(session, crawl_run, reason)
                 session.commit()
                 return CrawlExecutionResult(
                     crawl_run_id=run_id,
                     status="failed",
-                    error_message=f"Redirect target denied: {redirect_policy.reason}",
+                    error_message=reason,
                 )
 
         # 8. Write payload to archive
         payload_bytes = (crawl_result.payload_text or "").encode("utf-8")
+        logger.info(
+            "crawl.archiving run=%s payload_size=%d content_type=%s",
+            run_id, len(payload_bytes), crawl_result.content_type,
+        )
         archive_result = write_archive(
             payload=payload_bytes,
             source_id=source_id,
@@ -261,6 +272,10 @@ def execute_crawl(
         )
 
         session.commit()
+        logger.info(
+            "crawl.completed run=%s raw_object=%s http_status=%s bytes=%d",
+            run_id, raw_id, crawl_result.status_code, archive_result.byte_size,
+        )
         return CrawlExecutionResult(
             crawl_run_id=run_id,
             status="completed",
@@ -270,9 +285,9 @@ def execute_crawl(
     except CrawlExecutionError:
         raise
     except Exception as exc:
+        logger.exception("crawl.unexpected_error run=%s", run_id)
         _fail_crawl_run(session, crawl_run, str(exc))
         session.commit()
-        # Unexpected errors are retryable (network, adapter, archive)
         raise CrawlExecutionError(str(exc), retryable=True) from exc
 
 

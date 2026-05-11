@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import datetime
 
@@ -14,6 +15,8 @@ from harvester.api.auth import require_api_token
 from harvester.api.deps import get_db_session
 from harvester.db.models import CrawlRun
 from harvester.jobs.crawl_execution import CrawlExecutionError, execute_crawl
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/crawl", tags=["crawl"])
 
@@ -78,6 +81,10 @@ def run_crawl(
             actor="api",
         )
     except CrawlExecutionError as exc:
+        logger.warning(
+            "crawl.run_failed source=%s recipe=%s error=%s",
+            source_id, recipe_id, exc,
+        )
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return CrawlRunResponse(

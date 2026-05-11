@@ -3,10 +3,10 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ApiConfig } from '../../types/api'
 import type { CrawlRun, TriggerCrawlResponse } from '../../types/observability'
 import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
 import { Select } from '../../components/ui/select'
 import { StatusPill } from '../../components/ui/status-pill'
 import { PaginationControls } from '../../components/common/pagination-controls'
+import { ApprovedRecipeSelector, SourceSelector } from '../recipes-schedules/components/selectors'
 import { listCrawlRuns, triggerCrawlRun } from '../../lib/observability-api'
 import { formatDate } from '../../lib/format'
 import { cellStyle } from '../../lib/table-styles'
@@ -84,16 +84,16 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
   }, [config.baseUrl, fetchRuns])
 
   const handleTriggerCrawl = useCallback(async () => {
-    if (!formSourceId.trim() || !formRecipeId.trim()) {
-      setFormError('信息源 ID 和配方 ID 为必填项')
+    if (!formSourceId || !formRecipeId) {
+      setFormError('请选择信息源和配方')
       return
     }
     setFormError('')
     setFormSubmitting(true)
     try {
       const result = await triggerCrawlRun(config, {
-        source_id: formSourceId.trim(),
-        recipe_id: formRecipeId.trim(),
+        source_id: formSourceId,
+        recipe_id: formRecipeId,
       })
       setTriggerResult(result)
       setShowForm(false)
@@ -200,23 +200,45 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
             }}
           >
             <div style={{ flex: '1 1 200px', minWidth: '200px' }}>
-              <Input
-                id="source-id"
-                label="信息源 ID"
-                placeholder="信息源的 UUID"
+              <label
+                htmlFor="source-id"
+                style={{
+                  display: 'block',
+                  fontSize: 'var(--font-size-xs)',
+                  fontWeight: 600,
+                  color: 'var(--color-warm-gray-500)',
+                  marginBottom: 'var(--space-1)',
+                }}
+              >
+                信息源
+              </label>
+              <SourceSelector
+                config={config}
                 value={formSourceId}
                 onChange={(e) => setFormSourceId(e.target.value)}
-                data-testid="input-source-id"
+                id="source-id"
+                data-testid="select-source"
               />
             </div>
             <div style={{ flex: '1 1 200px', minWidth: '200px' }}>
-              <Input
-                id="recipe-id"
-                label="配方 ID"
-                placeholder="配方的 UUID"
+              <label
+                htmlFor="recipe-id"
+                style={{
+                  display: 'block',
+                  fontSize: 'var(--font-size-xs)',
+                  fontWeight: 600,
+                  color: 'var(--color-warm-gray-500)',
+                  marginBottom: 'var(--space-1)',
+                }}
+              >
+                配方
+              </label>
+              <ApprovedRecipeSelector
+                config={config}
                 value={formRecipeId}
                 onChange={(e) => setFormRecipeId(e.target.value)}
-                data-testid="input-recipe-id"
+                id="recipe-id"
+                data-testid="select-approved-recipe"
               />
             </div>
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
