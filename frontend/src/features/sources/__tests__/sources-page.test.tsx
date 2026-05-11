@@ -68,9 +68,14 @@ function mockJsonResponse(data: unknown, status = 200) {
   })
 }
 
+/** Wrap an array in a paginated response shape. */
+function paginate<T>(items: T[]) {
+  return { items, total: items.length, limit: 20, offset: 0 }
+}
+
 describe('SourcesPage', () => {
   it('renders the page title and lifecycle hint', () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([])))
     render(<SourcesPage config={config} />)
 
     expect(screen.getByText('信息源')).toBeInTheDocument()
@@ -87,7 +92,7 @@ describe('SourcesPage', () => {
   })
 
   it('displays sources in a table after loading', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse(mockSources))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate(mockSources)))
     render(<SourcesPage config={config} />)
 
     await waitFor(() => {
@@ -101,7 +106,7 @@ describe('SourcesPage', () => {
   })
 
   it('shows status pills with correct variants', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse(mockSources))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate(mockSources)))
     render(<SourcesPage config={config} />)
 
     await waitFor(() => {
@@ -116,7 +121,7 @@ describe('SourcesPage', () => {
   })
 
   it('shows empty state when no sources exist', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([])))
     render(<SourcesPage config={config} />)
 
     await waitFor(() => {
@@ -142,7 +147,7 @@ describe('SourcesPage', () => {
   })
 
   it('filters sources by search text on client side', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse(mockSources))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate(mockSources)))
     const user = userEvent.setup()
     render(<SourcesPage config={config} />)
 
@@ -161,7 +166,7 @@ describe('SourcesPage', () => {
   })
 
   it('sends status filter parameter to the API', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([mockSources[0]]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([mockSources[0]])))
     const user = userEvent.setup()
     render(<SourcesPage config={config} />)
 
@@ -181,7 +186,7 @@ describe('SourcesPage', () => {
   })
 
   it('shows the propose source form when New Source is clicked', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([])))
     const user = userEvent.setup()
     render(<SourcesPage config={config} />)
 
@@ -196,7 +201,7 @@ describe('SourcesPage', () => {
   })
 
   it('hides the form when cancel is clicked', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([])))
     const user = userEvent.setup()
     render(<SourcesPage config={config} />)
 
@@ -214,22 +219,24 @@ describe('SourcesPage', () => {
 
 describe('ProposeSourceForm', () => {
   it('submits the form with valid data', async () => {
-    mockFetch.mockResolvedValue(
-      mockJsonResponse(
-        {
-          id: 'new-1',
-          name: 'NewSource',
-          kind: 'web',
-          status: 'candidate',
-          url: 'https://new.example.com',
-          trust_level: 'medium',
-          failure_count: 0,
-          created_at: '2026-01-01T10:00:00Z',
-          updated_at: '2026-01-01T10:00:00Z',
-        },
-        201,
-      ),
-    )
+    mockFetch
+      .mockResolvedValueOnce(mockJsonResponse(paginate([])))
+      .mockResolvedValueOnce(
+        mockJsonResponse(
+          {
+            id: 'new-1',
+            name: 'NewSource',
+            kind: 'web',
+            status: 'candidate',
+            url: 'https://new.example.com',
+            trust_level: 'medium',
+            failure_count: 0,
+            created_at: '2026-01-01T10:00:00Z',
+            updated_at: '2026-01-01T10:00:00Z',
+          },
+          201,
+        ),
+      )
     const user = userEvent.setup()
     render(<SourcesPage config={config} />)
 
@@ -253,7 +260,7 @@ describe('ProposeSourceForm', () => {
   })
 
   it('shows validation error when name is empty', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([])))
     const user = userEvent.setup()
     render(<SourcesPage config={config} />)
 
@@ -274,12 +281,14 @@ describe('ProposeSourceForm', () => {
 
   it('shows conflict error when name already exists', async () => {
     // First call: list sources. Second call: propose (returns 409).
-    mockFetch.mockResolvedValueOnce(mockJsonResponse([])).mockResolvedValueOnce({
-      ok: false,
-      status: 409,
-      statusText: 'Conflict',
-      text: () => Promise.resolve("Source 'ExistingSource' already exists"),
-    })
+    mockFetch
+      .mockResolvedValueOnce(mockJsonResponse(paginate([])))
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 409,
+        statusText: 'Conflict',
+        text: () => Promise.resolve("Source 'ExistingSource' already exists"),
+      })
     const user = userEvent.setup()
     render(<SourcesPage config={config} />)
 
@@ -300,7 +309,7 @@ describe('ProposeSourceForm', () => {
 
 describe('SourceRow actions', () => {
   it('shows promote and archive buttons for candidate sources', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([mockSources[0]]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([mockSources[0]])))
     render(<SourcesPage config={config} />)
 
     await waitFor(() => {
@@ -312,7 +321,7 @@ describe('SourceRow actions', () => {
   })
 
   it('shows resume and archive buttons for paused sources', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([mockSources[2]]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([mockSources[2]])))
     render(<SourcesPage config={config} />)
 
     await waitFor(() => {
@@ -330,7 +339,7 @@ describe('SourceRow actions', () => {
       name: 'ArchivedSource',
       status: 'archived',
     }
-    mockFetch.mockResolvedValue(mockJsonResponse([archivedSource]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([archivedSource])))
     render(<SourcesPage config={config} />)
 
     await waitFor(() => {
@@ -347,7 +356,7 @@ describe('SourceRow actions', () => {
   it('calls promote API and refreshes list', async () => {
     // First call: list sources. Second call: promote. Third call: refresh list.
     mockFetch
-      .mockResolvedValueOnce(mockJsonResponse([mockSources[0]]))
+      .mockResolvedValueOnce(mockJsonResponse(paginate([mockSources[0]])))
       .mockResolvedValueOnce(
         mockJsonResponse({
           ...mockSources[0],
@@ -355,7 +364,7 @@ describe('SourceRow actions', () => {
         }),
       )
       .mockResolvedValueOnce(
-        mockJsonResponse([{ ...mockSources[0], status: 'testing' }]),
+        mockJsonResponse(paginate([{ ...mockSources[0], status: 'testing' }])),
       )
 
     const user = userEvent.setup()
@@ -373,5 +382,85 @@ describe('SourceRow actions', () => {
         expect.objectContaining({ method: 'POST' }),
       )
     })
+  })
+
+  it('shows edit button for candidate source and opens edit form', async () => {
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([mockSources[0]])))
+    const user = userEvent.setup()
+    render(<SourcesPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sources-table')).toBeInTheDocument()
+    })
+
+    expect(screen.getByTestId('action-edit-src-1')).toBeInTheDocument()
+
+    await user.click(screen.getByTestId('action-edit-src-1'))
+    expect(screen.getByTestId('source-edit-row-src-1')).toBeInTheDocument()
+    expect(screen.getByTestId('edit-source-name')).toBeInTheDocument()
+    expect(screen.getByTestId('edit-source-url')).toBeInTheDocument()
+  })
+
+  it('cancels edit form without making API call', async () => {
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([mockSources[0]])))
+    const user = userEvent.setup()
+    render(<SourcesPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sources-table')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByTestId('action-edit-src-1'))
+    await user.click(screen.getByTestId('edit-source-cancel'))
+
+    expect(screen.queryByTestId('source-edit-row-src-1')).not.toBeInTheDocument()
+    expect(screen.getByTestId('source-row-src-1')).toBeInTheDocument()
+  })
+
+  it('submits edit form and refreshes list', async () => {
+    mockFetch
+      .mockResolvedValueOnce(mockJsonResponse(paginate([mockSources[0]])))
+      .mockResolvedValueOnce(
+        mockJsonResponse({ ...mockSources[0], name: 'UpdatedName' }),
+      )
+      .mockResolvedValueOnce(
+        mockJsonResponse(paginate([{ ...mockSources[0], name: 'UpdatedName' }])),
+      )
+
+    const user = userEvent.setup()
+    render(<SourcesPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sources-table')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByTestId('action-edit-src-1'))
+    const nameInput = screen.getByTestId('edit-source-name')
+    await user.clear(nameInput)
+    await user.type(nameInput, 'UpdatedName')
+    await user.click(screen.getByTestId('edit-source-save'))
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/sources/src-1'),
+        expect.objectContaining({ method: 'PATCH' }),
+      )
+    })
+  })
+
+  it('shows confirm dialog for archive action', async () => {
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([mockSources[0]])))
+    const user = userEvent.setup()
+    render(<SourcesPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sources-table')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByTestId('action-archive-src-1'))
+
+    // ConfirmDialog should appear
+    expect(screen.getByTestId('confirm-ok')).toBeInTheDocument()
+    expect(screen.getByText(/归档.*TechNews/)).toBeInTheDocument()
   })
 })

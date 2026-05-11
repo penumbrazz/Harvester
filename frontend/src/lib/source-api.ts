@@ -1,5 +1,10 @@
 import type { ApiConfig } from '../types/api'
-import type { ProposeSourceRequest, Source, SourceListResponse } from '../types/source'
+import type {
+  ProposeSourceRequest,
+  Source,
+  SourceListResponse,
+  UpdateSourceRequest,
+} from '../types/source'
 import { apiRequest } from './api-client'
 
 /** Fetch the list of sources with pagination and optional filters. */
@@ -54,5 +59,18 @@ export function resumeSource(config: ApiConfig, sourceId: string): Promise<Sourc
 export function archiveSource(config: ApiConfig, sourceId: string): Promise<Source> {
   return apiRequest<Source>(config, `/sources/${sourceId}/archive`, {
     method: 'POST',
+  })
+}
+
+/** Update editable fields on a source. */
+export function updateSource(
+  config: ApiConfig,
+  sourceId: string,
+  data: UpdateSourceRequest,
+): Promise<Source> {
+  return apiRequest<Source>(config, `/sources/${sourceId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
   })
 }

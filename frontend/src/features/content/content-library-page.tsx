@@ -105,13 +105,17 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
   const hasActiveFilters = statusFilter !== '' || typeFilter !== ''
 
   return (
-    <div data-testid="page-content-library">
+    <div
+      data-testid="page-content-library"
+      style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
+    >
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           marginBottom: 'var(--space-5)',
+          flexShrink: 0,
         }}
       >
         <h2
@@ -135,6 +139,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
           marginBottom: 'var(--space-4)',
           flexWrap: 'wrap',
           alignItems: 'flex-end',
+          flexShrink: 0,
         }}
       >
         <div style={{ flex: '1 1 200px', minWidth: '200px' }}>
@@ -176,6 +181,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
             color: 'var(--color-orange)',
             fontSize: 'var(--font-size-sm)',
             marginBottom: 'var(--space-4)',
+            flexShrink: 0,
           }}
         >
           {searchError}
@@ -190,6 +196,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
             color: 'var(--color-warm-gray-500)',
             fontSize: 'var(--font-size-sm)',
             marginBottom: 'var(--space-4)',
+            flexShrink: 0,
           }}
         >
           搜索中...
@@ -198,7 +205,10 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
 
       {/* Search results */}
       {isSearching && !searchLoading && (
-        <div data-testid="search-results" style={{ marginBottom: 'var(--space-4)' }}>
+        <div
+          data-testid="search-results"
+          style={{ marginBottom: 'var(--space-4)', flexShrink: 0 }}
+        >
           <h3
             style={{
               fontFamily: 'var(--font-family)',
@@ -228,6 +238,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
               marginBottom: 'var(--space-4)',
               flexWrap: 'wrap',
               alignItems: 'flex-end',
+              flexShrink: 0,
             }}
           >
             <Select
@@ -322,6 +333,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
               style={{
                 color: 'var(--color-warm-gray-500)',
                 fontSize: 'var(--font-size-sm)',
+                flexShrink: 0,
               }}
             >
               加载内容项中...
@@ -335,6 +347,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
               style={{
                 color: 'var(--color-orange)',
                 fontSize: 'var(--font-size-sm)',
+                flexShrink: 0,
               }}
             >
               {error}
@@ -349,6 +362,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                 textAlign: 'center',
                 padding: 'var(--space-8) var(--space-4)',
                 color: 'var(--color-warm-gray-300)',
+                flexShrink: 0,
               }}
             >
               <p
@@ -371,7 +385,9 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
           {!loading && !error && items.length > 0 && viewMode === 'list' && (
             <div
               style={{
-                overflowX: 'auto',
+                overflow: 'auto',
+                flex: 1,
+                minHeight: 0,
                 border: 'var(--border-whisper)',
                 borderRadius: 'var(--radius-lg)',
               }}
@@ -428,6 +444,9 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
                 gap: 'var(--space-4)',
+                flex: 1,
+                minHeight: 0,
+                overflow: 'auto',
               }}
             >
               {items.map((item) => (
@@ -439,12 +458,14 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
           {/* Pagination */}
           {/* Pagination */}
           {!loading && !error && (
-            <PaginationControls
-              total={total}
-              offset={offset}
-              pageSize={PAGE_SIZE}
-              onPageChange={setOffset}
-            />
+            <div style={{ flexShrink: 0 }}>
+              <PaginationControls
+                total={total}
+                offset={offset}
+                pageSize={PAGE_SIZE}
+                onPageChange={setOffset}
+              />
+            </div>
           )}
         </>
       )}

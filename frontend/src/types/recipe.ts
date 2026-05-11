@@ -27,6 +27,13 @@ export interface CreateRecipeRequest {
   auth_profile?: Record<string, unknown> | null
 }
 
+/** Request payload for updating an existing recipe. */
+export interface UpdateRecipeRequest {
+  name?: string
+  executor?: string
+  risk_level?: string
+}
+
 /** All valid recipe approval statuses. */
 export type RecipeApprovalStatus = 'pending' | 'approved' | 'rejected' | 'deprecated'
 
@@ -63,3 +70,11 @@ export const RISK_LEVEL_OPTIONS = [
   { value: 'medium', label: '中' },
   { value: 'high', label: '高' },
 ] as const
+
+/** Mapping from recipe approval status to allowed management actions. */
+export const RECIPE_ACTIONS: Record<RecipeApprovalStatus, string[]> = {
+  pending: ['approve', 'reject', 'edit'],
+  approved: ['deprecate'],
+  rejected: ['resubmit', 'edit'],
+  deprecated: [],
+}

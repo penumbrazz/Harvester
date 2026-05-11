@@ -17,7 +17,7 @@ export function AppLayout({
   children,
 }: AppLayoutProps) {
   return (
-    <div data-testid="app-layout" style={{ display: 'flex', minHeight: '100vh' }}>
+    <div data-testid="app-layout" style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
       <Sidebar items={navItems} activeKey={activeKey} onNavigate={onNavigate} />
       <main
         style={{
@@ -25,6 +25,8 @@ export function AppLayout({
           padding: 'var(--space-6)',
           maxWidth: 'var(--content-max-width)',
           overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         {children}

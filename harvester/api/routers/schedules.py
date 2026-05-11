@@ -14,6 +14,7 @@ from harvester.api.deps import get_db_session
 from harvester.api.schemas import PaginatedResponse
 from harvester.db.models import Recipe, Source, TopicSource, TopicWatch, WatchSchedule
 from harvester.domain.audit import write_audit
+from harvester.domain.state import SCHEDULE_TRANSITIONS, transition_entity
 
 router = APIRouter(prefix="/schedules", tags=["schedules"])
 
@@ -197,6 +198,133 @@ def create_schedule(
     session.commit()
     session.refresh(schedule)
 
+    return _to_schedule_response(schedule)
+
+
+class ScheduleUpdateRequest(BaseModel):
+    interval_seconds: int | None = None
+    priority: int | None = None
+    lane: str | None = None
+
+
+def _resolve_schedule(schedule_id: str, session: Session) -> WatchSchedule:
+    """Parse schedule_id to UUID and fetch the WatchSchedule, or raise 404/422."""
+    try:
+        parsed_uuid = uuid.UUID(schedule_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Invalid schedule_id format") from None
+    schedule = session.get(WatchSchedule, parsed_uuid)
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    return schedule
+
+
+@router.post("/{schedule_id}/pause", response_model=ScheduleResponse)
+def pause_schedule(
+    schedule_id: str,
+    _token: str = _Token,
+    session: Session = _Session,
+):
+    """Pause an active schedule."""
+    schedule = _resolve_schedule(schedule_id, session)
+
+    try:
+        transition_entity(
+            session, schedule, SCHEDULE_TRANSITIONS, "paused", "api", "watch_schedule",
+        )
+    except ValueError as e:
+        session.commit()
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    session.commit()
+    session.refresh(schedule)
+    return _to_schedule_response(schedule)
+
+
+@router.post("/{schedule_id}/resume", response_model=ScheduleResponse)
+def resume_schedule(
+    schedule_id: str,
+    _token: str = _Token,
+    session: Session = _Session,
+):
+    """Resume a paused schedule back to active."""
+    schedule = _resolve_schedule(schedule_id, session)
+
+    try:
+        transition_entity(
+            session, schedule, SCHEDULE_TRANSITIONS, "active", "api", "watch_schedule",
+        )
+    except ValueError as e:
+        session.commit()
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    session.commit()
+    session.refresh(schedule)
+    return _to_schedule_response(schedule)
+
+
+@router.post("/{schedule_id}/disable", response_model=ScheduleResponse)
+def disable_schedule(
+    schedule_id: str,
+    _token: str = _Token,
+    session: Session = _Session,
+):
+    """Disable a schedule (terminal state)."""
+    schedule = _resolve_schedule(schedule_id, session)
+
+    try:
+        transition_entity(
+            session, schedule, SCHEDULE_TRANSITIONS, "disabled", "api", "watch_schedule",
+        )
+    except ValueError as e:
+        session.commit()
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    session.commit()
+    session.refresh(schedule)
+    return _to_schedule_response(schedule)
+
+
+@router.patch("/{schedule_id}", response_model=ScheduleResponse)
+def update_schedule(
+    schedule_id: str,
+    req: ScheduleUpdateRequest,
+    _token: str = _Token,
+    session: Session = _Session,
+):
+    """Update editable fields on a schedule."""
+    schedule = _resolve_schedule(schedule_id, session)
+
+    if schedule.status == "disabled":
+        raise HTTPException(status_code=400, detail="Cannot edit a disabled schedule")
+
+    if req.interval_seconds is not None:
+        if req.interval_seconds < 60:
+            raise HTTPException(
+                status_code=422,
+                detail="interval_seconds must be at least 60",
+            )
+        schedule.interval_seconds = req.interval_seconds
+    if req.priority is not None:
+        schedule.priority = req.priority
+    if req.lane is not None:
+        schedule.lane = req.lane
+
+    schedule.updated_at = datetime.now(UTC)
+    write_audit(
+        session,
+        actor="api",
+        action="schedule.update",
+        entity_type="watch_schedule",
+        entity_id=schedule.id,
+        after_state={
+            "interval_seconds": schedule.interval_seconds,
+            "priority": schedule.priority,
+            "lane": schedule.lane,
+        },
+    )
+    session.commit()
+    session.refresh(schedule)
     return _to_schedule_response(schedule)
 
 

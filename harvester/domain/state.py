@@ -39,6 +39,12 @@ RECIPE_TRANSITIONS: dict[str, list[str]] = {
     "deprecated": [],
 }
 
+SCHEDULE_TRANSITIONS: dict[str, list[str]] = {
+    "active": ["paused", "disabled"],
+    "paused": ["active", "disabled"],
+    "disabled": [],
+}
+
 CRAWL_RUN_TRANSITIONS: dict[str, list[str]] = {
     "pending": ["running", "failed"],
     "running": ["completed", "failed"],

@@ -1,39 +1,50 @@
 import { useCallback, useState } from 'react'
 
 import type { ApiConfig } from '../../../types/api'
-import type { Source, SourceStatus, UpdateSourceRequest } from '../../../types/source'
-import { SOURCE_ACTIONS, STATUS_LABELS, STATUS_VARIANTS } from '../../../types/source'
+import type {
+  Recipe,
+  RecipeApprovalStatus,
+  UpdateRecipeRequest,
+} from '../../../types/recipe'
+import {
+  APPROVAL_STATUS_LABELS,
+  APPROVAL_STATUS_VARIANTS,
+  EXECUTOR_OPTIONS,
+  RECIPE_ACTIONS,
+  RISK_LEVEL_OPTIONS,
+} from '../../../types/recipe'
 import { Button } from '../../../components/ui/button'
 import { ConfirmDialog } from '../../../components/ui/confirm-dialog'
 import { Input } from '../../../components/ui/input'
+import { Select } from '../../../components/ui/select'
 import { StatusPill } from '../../../components/ui/status-pill'
 import {
-  archiveSource,
-  pauseSource,
-  promoteSource,
-  resumeSource,
-  updateSource,
-} from '../../../lib/source-api'
+  approveRecipe,
+  deprecateRecipe,
+  rejectRecipe,
+  resubmitRecipe,
+  updateRecipe,
+} from '../../../lib/recipe-api'
 import { formatDate } from '../../../lib/format'
 import { cellStyle } from '../../../lib/table-styles'
 
-interface SourceRowProps {
-  source: Source
+interface RecipeRowProps {
+  recipe: Recipe
   config: ApiConfig
-  onStatusChanged: () => void
+  onChanged: () => void
 }
 
 const ACTION_LABELS: Record<string, string> = {
   edit: '编辑',
-  promote: '提升',
-  pause: '暂停',
-  resume: '恢复',
-  archive: '归档',
+  approve: '批准',
+  reject: '拒绝',
+  resubmit: '重新提交',
+  deprecate: '废弃',
 }
 
-const DANGEROUS_ACTIONS = new Set(['archive'])
+const DANGEROUS_ACTIONS = new Set(['reject', 'deprecate'])
 
-export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
+export function RecipeRow({ recipe, config, onChanged }: RecipeRowProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [editing, setEditing] = useState(false)
@@ -41,64 +52,66 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [confirmAction, setConfirmAction] = useState<string | null>(null)
 
-  const [editName, setEditName] = useState(source.name)
-  const [editUrl, setEditUrl] = useState(source.url || '')
+  const [editName, setEditName] = useState(recipe.name)
+  const [editExecutor, setEditExecutor] = useState(recipe.executor)
+  const [editRiskLevel, setEditRiskLevel] = useState(recipe.risk_level)
 
-  const status = source.status as SourceStatus
-  const allowedActions = SOURCE_ACTIONS[status] || []
+  const status = recipe.approval_status as RecipeApprovalStatus
+  const allowedActions = RECIPE_ACTIONS[status] || []
 
   const handleAction = useCallback(
     async (action: string) => {
       setLoading(true)
       setError('')
       try {
-        const apiCall: Record<string, (c: ApiConfig, id: string) => Promise<Source>> = {
-          promote: promoteSource,
-          pause: pauseSource,
-          resume: resumeSource,
-          archive: archiveSource,
+        const apiCall: Record<string, (c: ApiConfig, id: string) => Promise<Recipe>> = {
+          approve: approveRecipe,
+          reject: rejectRecipe,
+          resubmit: resubmitRecipe,
+          deprecate: deprecateRecipe,
         }
         const fn = apiCall[action]
         if (fn) {
-          await fn(config, source.id)
+          await fn(config, recipe.id)
         }
-        onStatusChanged()
+        onChanged()
       } catch (err) {
         setError(err instanceof Error ? err.message : '操作失败')
       } finally {
         setLoading(false)
       }
     },
-    [config, source.id, onStatusChanged],
+    [config, recipe.id, onChanged],
   )
 
   const handleEditSubmit = useCallback(async () => {
     setEditSubmitting(true)
     setEditError('')
     try {
-      const data: UpdateSourceRequest = {}
-      if (editName !== source.name) data.name = editName
-      const url = editUrl.trim() || null
-      if (url !== source.url) data.url = url
+      const data: UpdateRecipeRequest = {}
+      if (editName !== recipe.name) data.name = editName
+      if (editExecutor !== recipe.executor) data.executor = editExecutor
+      if (editRiskLevel !== recipe.risk_level) data.risk_level = editRiskLevel
 
       if (Object.keys(data).length > 0) {
-        await updateSource(config, source.id, data)
+        await updateRecipe(config, recipe.id, data)
       }
       setEditing(false)
-      onStatusChanged()
+      onChanged()
     } catch (err) {
       setEditError(err instanceof Error ? err.message : '保存失败')
     } finally {
       setEditSubmitting(false)
     }
-  }, [config, source, editName, editUrl, onStatusChanged])
+  }, [config, recipe, editName, editExecutor, editRiskLevel, onChanged])
 
   const startEdit = useCallback(() => {
-    setEditName(source.name)
-    setEditUrl(source.url || '')
+    setEditName(recipe.name)
+    setEditExecutor(recipe.executor)
+    setEditRiskLevel(recipe.risk_level)
     setEditError('')
     setEditing(true)
-  }, [source])
+  }, [recipe])
 
   const handleConfirmOk = useCallback(() => {
     if (confirmAction) {
@@ -109,8 +122,8 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
 
   if (editing) {
     return (
-      <tr data-testid={`source-edit-row-${source.id}`}>
-        <td colSpan={8}>
+      <tr data-testid={`recipe-edit-row-${recipe.id}`}>
+        <td colSpan={7}>
           <div
             style={{
               padding: 'var(--space-3)',
@@ -129,19 +142,36 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
                 label="名称"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                data-testid="edit-source-name"
+                data-testid="edit-recipe-name"
               />
-              <Input
-                label="URL"
-                value={editUrl}
-                onChange={(e) => setEditUrl(e.target.value)}
-                data-testid="edit-source-url"
-                placeholder="https://..."
-              />
+              <Select
+                label="执行器"
+                value={editExecutor}
+                onChange={(e) => setEditExecutor(e.target.value)}
+                data-testid="edit-recipe-executor"
+              >
+                {EXECUTOR_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </Select>
+              <Select
+                label="风险级别"
+                value={editRiskLevel}
+                onChange={(e) => setEditRiskLevel(e.target.value)}
+                data-testid="edit-recipe-risk"
+              >
+                {RISK_LEVEL_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </Select>
               <Button
                 onClick={() => void handleEditSubmit()}
                 disabled={editSubmitting}
-                data-testid="edit-source-save"
+                data-testid="edit-recipe-save"
               >
                 {editSubmitting ? '保存中...' : '保存'}
               </Button>
@@ -149,14 +179,14 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
                 variant="ghost"
                 onClick={() => setEditing(false)}
                 disabled={editSubmitting}
-                data-testid="edit-source-cancel"
+                data-testid="edit-recipe-cancel"
               >
                 取消
               </Button>
             </div>
             {editError && (
               <p
-                data-testid="edit-source-error"
+                data-testid="edit-recipe-error"
                 style={{
                   color: 'var(--color-orange)',
                   fontSize: 'var(--font-size-xs)',
@@ -174,41 +204,25 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
 
   return (
     <>
-      <tr data-testid={`source-row-${source.id}`}>
+      <tr data-testid={`recipe-row-${recipe.id}`}>
         <td style={cellStyle}>
-          <span
-            style={{
-              fontWeight: 600,
-              color: 'var(--color-primary-text)',
-            }}
-          >
-            {source.name}
+          <span style={{ fontWeight: 600, color: 'var(--color-primary-text)' }}>
+            {recipe.name}
           </span>
         </td>
         <td style={cellStyle}>
           <span style={{ textTransform: 'uppercase', fontSize: 'var(--font-size-xs)' }}>
-            {source.kind}
+            {recipe.executor}
           </span>
         </td>
         <td style={cellStyle}>
-          <StatusPill variant={STATUS_VARIANTS[status] || 'default'}>
-            {STATUS_LABELS[status] || status}
+          <StatusPill variant={APPROVAL_STATUS_VARIANTS[status] || 'default'}>
+            {APPROVAL_STATUS_LABELS[status] || status}
           </StatusPill>
         </td>
-        <td
-          style={{
-            ...cellStyle,
-            maxWidth: '200px',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {source.url || '—'}
-        </td>
-        <td style={cellStyle}>{source.trust_level}</td>
-        <td style={cellStyle}>{source.failure_count}</td>
-        <td style={cellStyle}>{formatDate(source.created_at)}</td>
+        <td style={cellStyle}>{recipe.risk_level}</td>
+        <td style={cellStyle}>{recipe.version}</td>
+        <td style={cellStyle}>{formatDate(recipe.created_at)}</td>
         <td style={cellStyle}>
           <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
             {allowedActions.map((action) => (
@@ -225,7 +239,7 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
                     void handleAction(action)
                   }
                 }}
-                data-testid={`action-${action}-${source.id}`}
+                data-testid={`action-${action}-${recipe.id}`}
                 style={{
                   padding: '4px 8px',
                   fontSize: 'var(--font-size-xs)',
@@ -236,7 +250,7 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
             ))}
             {error && (
               <span
-                data-testid={`action-error-${source.id}`}
+                data-testid={`action-error-${recipe.id}`}
                 style={{
                   color: 'var(--color-orange)',
                   fontSize: 'var(--font-size-xs)',
@@ -251,7 +265,7 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
       <ConfirmDialog
         open={confirmAction !== null}
         title="确认操作"
-        message={`确定要${confirmAction ? ACTION_LABELS[confirmAction] : ''}信息源「${source.name}」吗？`}
+        message={`确定要${confirmAction ? ACTION_LABELS[confirmAction] : ''}配方「${recipe.name}」吗？`}
         confirmLabel={confirmAction ? ACTION_LABELS[confirmAction] : '确认'}
         loading={loading}
         onConfirm={handleConfirmOk}

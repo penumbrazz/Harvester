@@ -50,7 +50,9 @@ export function PaginationControls({
           onClick={() => onPageChange(Math.max(0, offset - pageSize))}
           style={{
             ...buttonBase,
-            backgroundColor: isPrevDisabled ? 'var(--color-warm-white)' : 'var(--color-white)',
+            backgroundColor: isPrevDisabled
+              ? 'var(--color-warm-white)'
+              : 'var(--color-white)',
             cursor: isPrevDisabled ? 'not-allowed' : 'pointer',
             opacity: isPrevDisabled ? 0.5 : 1,
           }}
@@ -63,7 +65,9 @@ export function PaginationControls({
           onClick={() => onPageChange(offset + pageSize)}
           style={{
             ...buttonBase,
-            backgroundColor: isNextDisabled ? 'var(--color-warm-white)' : 'var(--color-white)',
+            backgroundColor: isNextDisabled
+              ? 'var(--color-warm-white)'
+              : 'var(--color-white)',
             cursor: isNextDisabled ? 'not-allowed' : 'pointer',
             opacity: isNextDisabled ? 0.5 : 1,
           }}

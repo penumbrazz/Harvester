@@ -30,33 +30,40 @@ function mockJsonResponse(data: unknown) {
   })
 }
 
+/** Wrap an array in a paginated response shape. */
+function paginate<T>(items: T[]) {
+  return { items, total: items.length, limit: 20, offset: 0 }
+}
+
 describe('SourceSelector', () => {
   it('renders and fetches sources', async () => {
     mockFetch.mockResolvedValue(
-      mockJsonResponse([
-        {
-          id: 'src-1',
-          name: 'WatchedSource',
-          status: 'watched',
-          kind: 'rss',
-          url: null,
-          trust_level: 'medium',
-          failure_count: 0,
-          created_at: '2026-01-01T00:00:00Z',
-          updated_at: '2026-01-01T00:00:00Z',
-        },
-        {
-          id: 'src-2',
-          name: 'CandidateSource',
-          status: 'candidate',
-          kind: 'web',
-          url: null,
-          trust_level: 'low',
-          failure_count: 0,
-          created_at: '2026-01-01T00:00:00Z',
-          updated_at: '2026-01-01T00:00:00Z',
-        },
-      ]),
+      mockJsonResponse(
+        paginate([
+          {
+            id: 'src-1',
+            name: 'WatchedSource',
+            status: 'watched',
+            kind: 'rss',
+            url: null,
+            trust_level: 'medium',
+            failure_count: 0,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
+          },
+          {
+            id: 'src-2',
+            name: 'CandidateSource',
+            status: 'candidate',
+            kind: 'web',
+            url: null,
+            trust_level: 'low',
+            failure_count: 0,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
+          },
+        ]),
+      ),
     )
 
     const onChange = vi.fn()
@@ -70,41 +77,43 @@ describe('SourceSelector', () => {
 
   it('filters to schedulable sources only when schedulableOnly is true', async () => {
     mockFetch.mockResolvedValue(
-      mockJsonResponse([
-        {
-          id: 'src-1',
-          name: 'WatchedSource',
-          status: 'watched',
-          kind: 'rss',
-          url: null,
-          trust_level: 'medium',
-          failure_count: 0,
-          created_at: '2026-01-01T00:00:00Z',
-          updated_at: '2026-01-01T00:00:00Z',
-        },
-        {
-          id: 'src-2',
-          name: 'CandidateSource',
-          status: 'candidate',
-          kind: 'web',
-          url: null,
-          trust_level: 'low',
-          failure_count: 0,
-          created_at: '2026-01-01T00:00:00Z',
-          updated_at: '2026-01-01T00:00:00Z',
-        },
-        {
-          id: 'src-3',
-          name: 'ActiveSource',
-          status: 'active',
-          kind: 'api',
-          url: null,
-          trust_level: 'high',
-          failure_count: 0,
-          created_at: '2026-01-01T00:00:00Z',
-          updated_at: '2026-01-01T00:00:00Z',
-        },
-      ]),
+      mockJsonResponse(
+        paginate([
+          {
+            id: 'src-1',
+            name: 'WatchedSource',
+            status: 'watched',
+            kind: 'rss',
+            url: null,
+            trust_level: 'medium',
+            failure_count: 0,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
+          },
+          {
+            id: 'src-2',
+            name: 'CandidateSource',
+            status: 'candidate',
+            kind: 'web',
+            url: null,
+            trust_level: 'low',
+            failure_count: 0,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
+          },
+          {
+            id: 'src-3',
+            name: 'ActiveSource',
+            status: 'active',
+            kind: 'api',
+            url: null,
+            trust_level: 'high',
+            failure_count: 0,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
+          },
+        ]),
+      ),
     )
 
     const onChange = vi.fn()
@@ -124,19 +133,21 @@ describe('SourceSelector', () => {
 
   it('calls onChange when a source is selected', async () => {
     mockFetch.mockResolvedValue(
-      mockJsonResponse([
-        {
-          id: 'src-1',
-          name: 'TestSource',
-          status: 'watched',
-          kind: 'rss',
-          url: null,
-          trust_level: 'medium',
-          failure_count: 0,
-          created_at: '2026-01-01T00:00:00Z',
-          updated_at: '2026-01-01T00:00:00Z',
-        },
-      ]),
+      mockJsonResponse(
+        paginate([
+          {
+            id: 'src-1',
+            name: 'TestSource',
+            status: 'watched',
+            kind: 'rss',
+            url: null,
+            trust_level: 'medium',
+            failure_count: 0,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: '2026-01-01T00:00:00Z',
+          },
+        ]),
+      ),
     )
 
     const onChange = vi.fn()
@@ -155,28 +166,30 @@ describe('SourceSelector', () => {
 describe('ApprovedRecipeSelector', () => {
   it('renders and fetches recipes, marking non-approved as disabled', async () => {
     mockFetch.mockResolvedValue(
-      mockJsonResponse([
-        {
-          id: 'recipe-1',
-          name: 'ApprovedRecipe',
-          executor: 'http_fetch',
-          approval_status: 'approved',
-          risk_level: 'low',
-          version: 1,
-          created_at: '2026-01-01T00:00:00Z',
-          updated_at: null,
-        },
-        {
-          id: 'recipe-2',
-          name: 'PendingRecipe',
-          executor: 'rss_parse',
-          approval_status: 'pending',
-          risk_level: 'low',
-          version: 1,
-          created_at: '2026-01-01T00:00:00Z',
-          updated_at: null,
-        },
-      ]),
+      mockJsonResponse(
+        paginate([
+          {
+            id: 'recipe-1',
+            name: 'ApprovedRecipe',
+            executor: 'http_fetch',
+            approval_status: 'approved',
+            risk_level: 'low',
+            version: 1,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: null,
+          },
+          {
+            id: 'recipe-2',
+            name: 'PendingRecipe',
+            executor: 'rss_parse',
+            approval_status: 'pending',
+            risk_level: 'low',
+            version: 1,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: null,
+          },
+        ]),
+      ),
     )
 
     const onChange = vi.fn()
@@ -193,18 +206,20 @@ describe('ApprovedRecipeSelector', () => {
 
   it('calls onChange when an approved recipe is selected', async () => {
     mockFetch.mockResolvedValue(
-      mockJsonResponse([
-        {
-          id: 'recipe-1',
-          name: 'ApprovedRecipe',
-          executor: 'http_fetch',
-          approval_status: 'approved',
-          risk_level: 'low',
-          version: 1,
-          created_at: '2026-01-01T00:00:00Z',
-          updated_at: null,
-        },
-      ]),
+      mockJsonResponse(
+        paginate([
+          {
+            id: 'recipe-1',
+            name: 'ApprovedRecipe',
+            executor: 'http_fetch',
+            approval_status: 'approved',
+            risk_level: 'low',
+            version: 1,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: null,
+          },
+        ]),
+      ),
     )
 
     const onChange = vi.fn()

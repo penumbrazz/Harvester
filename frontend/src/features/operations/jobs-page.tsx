@@ -101,13 +101,17 @@ export function JobsPage({ config }: JobsPageProps) {
   }, {})
 
   return (
-    <div data-testid="page-jobs">
+    <div
+      data-testid="page-jobs"
+      style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
+    >
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           marginBottom: 'var(--space-5)',
+          flexShrink: 0,
         }}
       >
         <h2
@@ -149,6 +153,7 @@ export function JobsPage({ config }: JobsPageProps) {
             gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
             gap: 'var(--space-3)',
             marginBottom: 'var(--space-5)',
+            flexShrink: 0,
           }}
         >
           {STATUS_FILTER_OPTIONS.filter((opt) => opt.value).map((opt) => (
@@ -183,12 +188,16 @@ export function JobsPage({ config }: JobsPageProps) {
           marginBottom: 'var(--space-4)',
           alignItems: 'flex-end',
           flexWrap: 'wrap',
+          flexShrink: 0,
         }}
       >
         <Select
           data-testid="select-job-type-filter"
           value={jobTypeFilter}
-          onChange={(e) => { setJobTypeFilter(e.target.value); setOffset(0) }}
+          onChange={(e) => {
+            setJobTypeFilter(e.target.value)
+            setOffset(0)
+          }}
         >
           {JOB_TYPE_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -199,7 +208,10 @@ export function JobsPage({ config }: JobsPageProps) {
         <Select
           data-testid="select-job-status-filter"
           value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setOffset(0) }}
+          onChange={(e) => {
+            setStatusFilter(e.target.value)
+            setOffset(0)
+          }}
         >
           {STATUS_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -210,7 +222,10 @@ export function JobsPage({ config }: JobsPageProps) {
         <Select
           data-testid="select-job-lane-filter"
           value={laneFilter}
-          onChange={(e) => { setLaneFilter(e.target.value); setOffset(0) }}
+          onChange={(e) => {
+            setLaneFilter(e.target.value)
+            setOffset(0)
+          }}
         >
           {LANE_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -235,6 +250,7 @@ export function JobsPage({ config }: JobsPageProps) {
           style={{
             color: 'var(--color-warm-gray-500)',
             fontSize: 'var(--font-size-sm)',
+            flexShrink: 0,
           }}
         >
           加载作业中...
@@ -245,7 +261,11 @@ export function JobsPage({ config }: JobsPageProps) {
       {!loading && error && (
         <p
           data-testid="jobs-error"
-          style={{ color: 'var(--color-orange)', fontSize: 'var(--font-size-sm)' }}
+          style={{
+            color: 'var(--color-orange)',
+            fontSize: 'var(--font-size-sm)',
+            flexShrink: 0,
+          }}
         >
           {error}
         </p>
@@ -259,6 +279,7 @@ export function JobsPage({ config }: JobsPageProps) {
             textAlign: 'center',
             padding: 'var(--space-8) var(--space-4)',
             color: 'var(--color-warm-gray-300)',
+            flexShrink: 0,
           }}
         >
           <p
@@ -281,7 +302,9 @@ export function JobsPage({ config }: JobsPageProps) {
       {!loading && !error && jobs.length > 0 && (
         <div
           style={{
-            overflowX: 'auto',
+            overflow: 'auto',
+            flex: 1,
+            minHeight: 0,
             border: 'var(--border-whisper)',
             borderRadius: 'var(--radius-lg)',
           }}
@@ -382,12 +405,14 @@ export function JobsPage({ config }: JobsPageProps) {
 
       {/* Pagination */}
       {!loading && !error && (
-        <PaginationControls
-          total={total}
-          offset={offset}
-          pageSize={PAGE_SIZE}
-          onPageChange={setOffset}
-        />
+        <div style={{ flexShrink: 0 }}>
+          <PaginationControls
+            total={total}
+            offset={offset}
+            pageSize={PAGE_SIZE}
+            onPageChange={setOffset}
+          />
+        </div>
       )}
     </div>
   )

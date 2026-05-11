@@ -108,13 +108,17 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
   }, [config, formSourceId, formRecipeId, fetchRuns])
 
   return (
-    <div data-testid="page-crawls">
+    <div
+      data-testid="page-crawls"
+      style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
+    >
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           marginBottom: 'var(--space-5)',
+          flexShrink: 0,
         }}
       >
         <h2
@@ -147,6 +151,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
             border: 'var(--border-whisper)',
             backgroundColor: 'var(--color-warm-white)',
             fontSize: 'var(--font-size-sm)',
+            flexShrink: 0,
           }}
         >
           <span style={{ fontWeight: 600 }}>抓取已触发：</span>{' '}
@@ -173,6 +178,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
             backgroundColor: 'var(--color-warm-white)',
             borderRadius: 'var(--radius-lg)',
             border: 'var(--border-whisper)',
+            flexShrink: 0,
           }}
         >
           <h3
@@ -258,12 +264,16 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
           marginBottom: 'var(--space-4)',
           alignItems: 'flex-end',
           flexWrap: 'wrap',
+          flexShrink: 0,
         }}
       >
         <Select
           data-testid="select-crawl-status-filter"
           value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setOffset(0) }}
+          onChange={(e) => {
+            setStatusFilter(e.target.value)
+            setOffset(0)
+          }}
         >
           {STATUS_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -288,6 +298,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
           style={{
             color: 'var(--color-warm-gray-500)',
             fontSize: 'var(--font-size-sm)',
+            flexShrink: 0,
           }}
         >
           加载抓取任务中...
@@ -298,7 +309,11 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
       {!loading && error && (
         <p
           data-testid="crawls-error"
-          style={{ color: 'var(--color-orange)', fontSize: 'var(--font-size-sm)' }}
+          style={{
+            color: 'var(--color-orange)',
+            fontSize: 'var(--font-size-sm)',
+            flexShrink: 0,
+          }}
         >
           {error}
         </p>
@@ -312,6 +327,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
             textAlign: 'center',
             padding: 'var(--space-8) var(--space-4)',
             color: 'var(--color-warm-gray-300)',
+            flexShrink: 0,
           }}
         >
           <p
@@ -332,7 +348,9 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
       {!loading && !error && runs.length > 0 && (
         <div
           style={{
-            overflowX: 'auto',
+            overflow: 'auto',
+            flex: 1,
+            minHeight: 0,
             border: 'var(--border-whisper)',
             borderRadius: 'var(--radius-lg)',
           }}
@@ -435,12 +453,14 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
 
       {/* Pagination */}
       {!loading && !error && (
-        <PaginationControls
-          total={total}
-          offset={offset}
-          pageSize={PAGE_SIZE}
-          onPageChange={setOffset}
-        />
+        <div style={{ flexShrink: 0 }}>
+          <PaginationControls
+            total={total}
+            offset={offset}
+            pageSize={PAGE_SIZE}
+            onPageChange={setOffset}
+          />
+        </div>
       )}
     </div>
   )

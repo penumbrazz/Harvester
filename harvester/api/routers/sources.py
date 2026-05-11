@@ -214,6 +214,50 @@ def resume_source(
     return _source_to_response(source)
 
 
+class SourceUpdateRequest(BaseModel):
+    name: str | None = None
+    url: str | None = None
+    trust_level: str | None = None
+
+
+@router.patch("/{source_id}", response_model=SourceResponse)
+def update_source(
+    source_id: str,
+    req: SourceUpdateRequest,
+    _token: str = _Token,
+    session: Session = _Session,
+):
+    """Update editable fields on a source."""
+    source = _resolve_source(source_id, session)
+
+    if source.status == "archived":
+        raise HTTPException(status_code=400, detail="Cannot edit an archived source")
+
+    if req.name is not None and req.name != source.name:
+        conflict = session.query(Source).filter(Source.name == req.name).first()
+        if conflict:
+            raise HTTPException(status_code=409, detail=f"Source '{req.name}' already exists")
+        source.name = req.name
+
+    if req.url is not None:
+        source.url = req.url
+    if req.trust_level is not None:
+        source.trust_level = req.trust_level
+
+    source.updated_at = datetime.now(UTC)
+    write_audit(
+        session,
+        actor="api",
+        action="source.update",
+        entity_type="source",
+        entity_id=source.id,
+        after_state={"name": source.name, "url": source.url, "trust_level": source.trust_level},
+    )
+    session.commit()
+    session.refresh(source)
+    return _source_to_response(source)
+
+
 @router.post("/{source_id}/archive", response_model=SourceResponse)
 def archive_source(
     source_id: str,

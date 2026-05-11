@@ -1,39 +1,58 @@
 import { useCallback, useState } from 'react'
 
 import type { ApiConfig } from '../../../types/api'
-import type { Source, SourceStatus, UpdateSourceRequest } from '../../../types/source'
-import { SOURCE_ACTIONS, STATUS_LABELS, STATUS_VARIANTS } from '../../../types/source'
+import type {
+  Schedule,
+  ScheduleStatus,
+  UpdateScheduleRequest,
+} from '../../../types/schedule'
+import {
+  SCHEDULE_ACTIONS,
+  SCHEDULE_STATUS_LABELS,
+  SCHEDULE_STATUS_VARIANTS,
+} from '../../../types/schedule'
 import { Button } from '../../../components/ui/button'
 import { ConfirmDialog } from '../../../components/ui/confirm-dialog'
 import { Input } from '../../../components/ui/input'
 import { StatusPill } from '../../../components/ui/status-pill'
 import {
-  archiveSource,
-  pauseSource,
-  promoteSource,
-  resumeSource,
-  updateSource,
-} from '../../../lib/source-api'
+  disableSchedule,
+  pauseSchedule,
+  resumeSchedule,
+  updateSchedule,
+} from '../../../lib/schedule-api'
 import { formatDate } from '../../../lib/format'
 import { cellStyle } from '../../../lib/table-styles'
 
-interface SourceRowProps {
-  source: Source
+interface ScheduleRowProps {
+  schedule: Schedule
   config: ApiConfig
-  onStatusChanged: () => void
+  onChanged: () => void
 }
 
 const ACTION_LABELS: Record<string, string> = {
   edit: '编辑',
-  promote: '提升',
   pause: '暂停',
   resume: '恢复',
-  archive: '归档',
+  disable: '停用',
 }
 
-const DANGEROUS_ACTIONS = new Set(['archive'])
+const DANGEROUS_ACTIONS = new Set(['disable'])
 
-export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
+function formatInterval(seconds: number): string {
+  if (seconds >= 3600) {
+    const hours = Math.floor(seconds / 3600)
+    const mins = Math.floor((seconds % 3600) / 60)
+    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
+  }
+  if (seconds >= 60) {
+    const mins = Math.floor(seconds / 60)
+    return `${mins}m`
+  }
+  return `${seconds}s`
+}
+
+export function ScheduleRow({ schedule, config, onChanged }: ScheduleRowProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [editing, setEditing] = useState(false)
@@ -41,64 +60,75 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [confirmAction, setConfirmAction] = useState<string | null>(null)
 
-  const [editName, setEditName] = useState(source.name)
-  const [editUrl, setEditUrl] = useState(source.url || '')
+  const [editInterval, setEditInterval] = useState(String(schedule.interval_seconds))
+  const [editPriority, setEditPriority] = useState(String(schedule.priority))
+  const [editLane, setEditLane] = useState(schedule.lane || '')
 
-  const status = source.status as SourceStatus
-  const allowedActions = SOURCE_ACTIONS[status] || []
+  const status = schedule.status as ScheduleStatus
+  const allowedActions = SCHEDULE_ACTIONS[status] || []
 
   const handleAction = useCallback(
     async (action: string) => {
       setLoading(true)
       setError('')
       try {
-        const apiCall: Record<string, (c: ApiConfig, id: string) => Promise<Source>> = {
-          promote: promoteSource,
-          pause: pauseSource,
-          resume: resumeSource,
-          archive: archiveSource,
-        }
+        const apiCall: Record<string, (c: ApiConfig, id: string) => Promise<Schedule>> =
+          {
+            pause: pauseSchedule,
+            resume: resumeSchedule,
+            disable: disableSchedule,
+          }
         const fn = apiCall[action]
         if (fn) {
-          await fn(config, source.id)
+          await fn(config, schedule.id)
         }
-        onStatusChanged()
+        onChanged()
       } catch (err) {
         setError(err instanceof Error ? err.message : '操作失败')
       } finally {
         setLoading(false)
       }
     },
-    [config, source.id, onStatusChanged],
+    [config, schedule.id, onChanged],
   )
 
   const handleEditSubmit = useCallback(async () => {
     setEditSubmitting(true)
     setEditError('')
     try {
-      const data: UpdateSourceRequest = {}
-      if (editName !== source.name) data.name = editName
-      const url = editUrl.trim() || null
-      if (url !== source.url) data.url = url
+      const interval = parseInt(editInterval, 10)
+      if (isNaN(interval) || interval < 60) {
+        setEditError('间隔时间至少为 60 秒')
+        setEditSubmitting(false)
+        return
+      }
+
+      const data: UpdateScheduleRequest = {}
+      if (interval !== schedule.interval_seconds) data.interval_seconds = interval
+      const priority = parseInt(editPriority, 10) || 0
+      if (priority !== schedule.priority) data.priority = priority
+      const lane = editLane.trim() || null
+      if (lane !== schedule.lane) data.lane = lane
 
       if (Object.keys(data).length > 0) {
-        await updateSource(config, source.id, data)
+        await updateSchedule(config, schedule.id, data)
       }
       setEditing(false)
-      onStatusChanged()
+      onChanged()
     } catch (err) {
       setEditError(err instanceof Error ? err.message : '保存失败')
     } finally {
       setEditSubmitting(false)
     }
-  }, [config, source, editName, editUrl, onStatusChanged])
+  }, [config, schedule, editInterval, editPriority, editLane, onChanged])
 
   const startEdit = useCallback(() => {
-    setEditName(source.name)
-    setEditUrl(source.url || '')
+    setEditInterval(String(schedule.interval_seconds))
+    setEditPriority(String(schedule.priority))
+    setEditLane(schedule.lane || '')
     setEditError('')
     setEditing(true)
-  }, [source])
+  }, [schedule])
 
   const handleConfirmOk = useCallback(() => {
     if (confirmAction) {
@@ -109,8 +139,8 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
 
   if (editing) {
     return (
-      <tr data-testid={`source-edit-row-${source.id}`}>
-        <td colSpan={8}>
+      <tr data-testid={`schedule-edit-row-${schedule.id}`}>
+        <td colSpan={10}>
           <div
             style={{
               padding: 'var(--space-3)',
@@ -126,22 +156,30 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
               }}
             >
               <Input
-                label="名称"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                data-testid="edit-source-name"
+                label="间隔（秒）"
+                value={editInterval}
+                onChange={(e) => setEditInterval(e.target.value)}
+                data-testid="edit-schedule-interval"
+                type="number"
+                min={60}
               />
               <Input
-                label="URL"
-                value={editUrl}
-                onChange={(e) => setEditUrl(e.target.value)}
-                data-testid="edit-source-url"
-                placeholder="https://..."
+                label="优先级"
+                value={editPriority}
+                onChange={(e) => setEditPriority(e.target.value)}
+                data-testid="edit-schedule-priority"
+                type="number"
+              />
+              <Input
+                label="通道"
+                value={editLane}
+                onChange={(e) => setEditLane(e.target.value)}
+                data-testid="edit-schedule-lane"
               />
               <Button
                 onClick={() => void handleEditSubmit()}
                 disabled={editSubmitting}
-                data-testid="edit-source-save"
+                data-testid="edit-schedule-save"
               >
                 {editSubmitting ? '保存中...' : '保存'}
               </Button>
@@ -149,14 +187,14 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
                 variant="ghost"
                 onClick={() => setEditing(false)}
                 disabled={editSubmitting}
-                data-testid="edit-source-cancel"
+                data-testid="edit-schedule-cancel"
               >
                 取消
               </Button>
             </div>
             {editError && (
               <p
-                data-testid="edit-source-error"
+                data-testid="edit-schedule-error"
                 style={{
                   color: 'var(--color-orange)',
                   fontSize: 'var(--font-size-xs)',
@@ -174,27 +212,7 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
 
   return (
     <>
-      <tr data-testid={`source-row-${source.id}`}>
-        <td style={cellStyle}>
-          <span
-            style={{
-              fontWeight: 600,
-              color: 'var(--color-primary-text)',
-            }}
-          >
-            {source.name}
-          </span>
-        </td>
-        <td style={cellStyle}>
-          <span style={{ textTransform: 'uppercase', fontSize: 'var(--font-size-xs)' }}>
-            {source.kind}
-          </span>
-        </td>
-        <td style={cellStyle}>
-          <StatusPill variant={STATUS_VARIANTS[status] || 'default'}>
-            {STATUS_LABELS[status] || status}
-          </StatusPill>
-        </td>
+      <tr data-testid={`schedule-row-${schedule.id}`}>
         <td
           style={{
             ...cellStyle,
@@ -204,11 +222,30 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
             whiteSpace: 'nowrap',
           }}
         >
-          {source.url || '—'}
+          <span style={{ fontWeight: 600, color: 'var(--color-primary-text)' }}>
+            {schedule.schedule_key}
+          </span>
         </td>
-        <td style={cellStyle}>{source.trust_level}</td>
-        <td style={cellStyle}>{source.failure_count}</td>
-        <td style={cellStyle}>{formatDate(source.created_at)}</td>
+        <td style={cellStyle}>
+          <span style={{ fontSize: 'var(--font-size-xs)', fontFamily: 'monospace' }}>
+            {schedule.source_id.slice(0, 8)}...
+          </span>
+        </td>
+        <td style={cellStyle}>
+          <span style={{ fontSize: 'var(--font-size-xs)', fontFamily: 'monospace' }}>
+            {schedule.recipe_id.slice(0, 8)}...
+          </span>
+        </td>
+        <td style={cellStyle}>
+          <StatusPill variant={SCHEDULE_STATUS_VARIANTS[status] || 'default'}>
+            {SCHEDULE_STATUS_LABELS[status] || status}
+          </StatusPill>
+        </td>
+        <td style={cellStyle}>{formatInterval(schedule.interval_seconds)}</td>
+        <td style={cellStyle}>{formatDate(schedule.next_run_at)}</td>
+        <td style={cellStyle}>{schedule.priority}</td>
+        <td style={cellStyle}>{schedule.lane || '—'}</td>
+        <td style={cellStyle}>{formatDate(schedule.created_at)}</td>
         <td style={cellStyle}>
           <div style={{ display: 'flex', gap: 'var(--space-1)', alignItems: 'center' }}>
             {allowedActions.map((action) => (
@@ -225,7 +262,7 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
                     void handleAction(action)
                   }
                 }}
-                data-testid={`action-${action}-${source.id}`}
+                data-testid={`action-${action}-${schedule.id}`}
                 style={{
                   padding: '4px 8px',
                   fontSize: 'var(--font-size-xs)',
@@ -236,7 +273,7 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
             ))}
             {error && (
               <span
-                data-testid={`action-error-${source.id}`}
+                data-testid={`action-error-${schedule.id}`}
                 style={{
                   color: 'var(--color-orange)',
                   fontSize: 'var(--font-size-xs)',
@@ -251,7 +288,7 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
       <ConfirmDialog
         open={confirmAction !== null}
         title="确认操作"
-        message={`确定要${confirmAction ? ACTION_LABELS[confirmAction] : ''}信息源「${source.name}」吗？`}
+        message={`确定要${confirmAction ? ACTION_LABELS[confirmAction] : ''}调度计划「${schedule.schedule_key.slice(0, 24)}...」吗？`}
         confirmLabel={confirmAction ? ACTION_LABELS[confirmAction] : '确认'}
         loading={loading}
         onConfirm={handleConfirmOk}

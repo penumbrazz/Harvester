@@ -64,9 +64,14 @@ function mockJsonResponse(data: unknown, status = 200) {
   })
 }
 
+/** Wrap an array in a paginated response shape. */
+function paginate<T>(items: T[]) {
+  return { items, total: items.length, limit: 20, offset: 0 }
+}
+
 describe('RecipesPage', () => {
   it('renders the page title and lifecycle hint', () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([])))
     render(<RecipesPage config={config} />)
 
     expect(screen.getByText('采集配方')).toBeInTheDocument()
@@ -82,7 +87,7 @@ describe('RecipesPage', () => {
   })
 
   it('displays recipes in a table after loading', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse(mockRecipes))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate(mockRecipes)))
     render(<RecipesPage config={config} />)
 
     await waitFor(() => {
@@ -95,7 +100,7 @@ describe('RecipesPage', () => {
   })
 
   it('shows approval status pills with correct text', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse(mockRecipes))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate(mockRecipes)))
     render(<RecipesPage config={config} />)
 
     await waitFor(() => {
@@ -109,7 +114,7 @@ describe('RecipesPage', () => {
   })
 
   it('shows empty state when no recipes exist', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([])))
     render(<RecipesPage config={config} />)
 
     await waitFor(() => {
@@ -135,7 +140,7 @@ describe('RecipesPage', () => {
   })
 
   it('filters recipes by search text on client side', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse(mockRecipes))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate(mockRecipes)))
     const user = userEvent.setup()
     render(<RecipesPage config={config} />)
 
@@ -152,7 +157,7 @@ describe('RecipesPage', () => {
   })
 
   it('sends approval_status filter parameter to the API', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([mockRecipes[1]]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([mockRecipes[1]])))
     const user = userEvent.setup()
     render(<RecipesPage config={config} />)
 
@@ -171,7 +176,7 @@ describe('RecipesPage', () => {
   })
 
   it('sends executor filter parameter to the API', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([mockRecipes[0]]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([mockRecipes[0]])))
     const user = userEvent.setup()
     render(<RecipesPage config={config} />)
 
@@ -190,7 +195,7 @@ describe('RecipesPage', () => {
   })
 
   it('shows the create recipe form when New Recipe is clicked', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([])))
     const user = userEvent.setup()
     render(<RecipesPage config={config} />)
 
@@ -205,7 +210,7 @@ describe('RecipesPage', () => {
   })
 
   it('hides the form when cancel is clicked', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([])))
     const user = userEvent.setup()
     render(<RecipesPage config={config} />)
 
@@ -221,22 +226,22 @@ describe('RecipesPage', () => {
   })
 
   it('shows approve button for pending recipes', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([mockRecipes[0]]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([mockRecipes[0]])))
     render(<RecipesPage config={config} />)
 
     await waitFor(() => {
       expect(screen.getByTestId('recipes-table')).toBeInTheDocument()
     })
 
-    expect(screen.getByTestId('approve-recipe-recipe-1')).toBeInTheDocument()
-    expect(screen.queryByTestId('approve-recipe-recipe-2')).not.toBeInTheDocument()
+    expect(screen.getByTestId('action-approve-recipe-1')).toBeInTheDocument()
+    expect(screen.queryByTestId('action-approve-recipe-2')).not.toBeInTheDocument()
   })
 })
 
 describe('Create Recipe Form', () => {
   it('submits the form with valid data', async () => {
     mockFetch
-      .mockResolvedValueOnce(mockJsonResponse([]))
+      .mockResolvedValueOnce(mockJsonResponse(paginate([])))
       .mockResolvedValueOnce(
         mockJsonResponse(
           {
@@ -252,7 +257,7 @@ describe('Create Recipe Form', () => {
           201,
         ),
       )
-      .mockResolvedValueOnce(mockJsonResponse([]))
+      .mockResolvedValueOnce(mockJsonResponse(paginate([])))
 
     const user = userEvent.setup()
     render(<RecipesPage config={config} />)
@@ -275,7 +280,7 @@ describe('Create Recipe Form', () => {
   })
 
   it('shows validation error when name is empty', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([])))
     const user = userEvent.setup()
     render(<RecipesPage config={config} />)
 
@@ -295,7 +300,7 @@ describe('Create Recipe Form', () => {
   })
 
   it('shows validation error for invalid JSON config', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([])))
     const user = userEvent.setup()
     render(<RecipesPage config={config} />)
 
@@ -319,12 +324,14 @@ describe('Create Recipe Form', () => {
   })
 
   it('shows API error when creation fails', async () => {
-    mockFetch.mockResolvedValueOnce(mockJsonResponse([])).mockResolvedValueOnce({
-      ok: false,
-      status: 400,
-      statusText: 'Bad Request',
-      text: () => Promise.resolve("Unknown executor 'bad'"),
-    })
+    mockFetch
+      .mockResolvedValueOnce(mockJsonResponse(paginate([])))
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        text: () => Promise.resolve("Unknown executor 'bad'"),
+      })
 
     const user = userEvent.setup()
     render(<RecipesPage config={config} />)
@@ -340,5 +347,100 @@ describe('Create Recipe Form', () => {
     await waitFor(() => {
       expect(screen.getByTestId('create-recipe-error')).toBeInTheDocument()
     })
+  })
+})
+
+describe('RecipeRow management actions', () => {
+  it('shows reject and edit buttons for pending recipe', async () => {
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([mockRecipes[0]])))
+    render(<RecipesPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('recipes-table')).toBeInTheDocument()
+    })
+
+    expect(screen.getByTestId('action-approve-recipe-1')).toBeInTheDocument()
+    expect(screen.getByTestId('action-reject-recipe-1')).toBeInTheDocument()
+    expect(screen.getByTestId('action-edit-recipe-1')).toBeInTheDocument()
+  })
+
+  it('opens edit form and submits changes', async () => {
+    mockFetch
+      .mockResolvedValueOnce(mockJsonResponse(paginate([mockRecipes[0]])))
+      .mockResolvedValueOnce(
+        mockJsonResponse({ ...mockRecipes[0], name: 'RenamedScraper' }),
+      )
+      .mockResolvedValueOnce(
+        mockJsonResponse(paginate([{ ...mockRecipes[0], name: 'RenamedScraper' }])),
+      )
+
+    const user = userEvent.setup()
+    render(<RecipesPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('recipes-table')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByTestId('action-edit-recipe-1'))
+    expect(screen.getByTestId('recipe-edit-row-recipe-1')).toBeInTheDocument()
+
+    const nameInput = screen.getByTestId('edit-recipe-name')
+    await user.clear(nameInput)
+    await user.type(nameInput, 'RenamedScraper')
+    await user.click(screen.getByTestId('edit-recipe-save'))
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/recipes/recipe-1'),
+        expect.objectContaining({ method: 'PATCH' }),
+      )
+    })
+  })
+
+  it('cancels edit without making API call', async () => {
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([mockRecipes[0]])))
+    const user = userEvent.setup()
+    render(<RecipesPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('recipes-table')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByTestId('action-edit-recipe-1'))
+    await user.click(screen.getByTestId('edit-recipe-cancel'))
+
+    expect(screen.queryByTestId('recipe-edit-row-recipe-1')).not.toBeInTheDocument()
+  })
+
+  it('shows confirm dialog for reject action', async () => {
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([mockRecipes[0]])))
+    const user = userEvent.setup()
+    render(<RecipesPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('recipes-table')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByTestId('action-reject-recipe-1'))
+    expect(screen.getByTestId('confirm-ok')).toBeInTheDocument()
+    expect(screen.getByText(/拒绝.*TechNews Scraper/)).toBeInTheDocument()
+  })
+
+  it('shows no action buttons for deprecated recipe', async () => {
+    const deprecatedRecipe: Recipe = {
+      ...mockRecipes[0],
+      id: 'recipe-dep',
+      approval_status: 'deprecated',
+    }
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([deprecatedRecipe])))
+    render(<RecipesPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('recipes-table')).toBeInTheDocument()
+    })
+
+    const row = screen.getByTestId('recipe-row-recipe-dep')
+    expect(row).toBeInTheDocument()
+    expect(within(row).queryByRole('button')).not.toBeInTheDocument()
   })
 })

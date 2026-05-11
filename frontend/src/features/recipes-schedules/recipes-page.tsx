@@ -1,21 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import type { ApiConfig } from '../../types/api'
-import type { Recipe, RecipeApprovalStatus } from '../../types/recipe'
+import type { Recipe } from '../../types/recipe'
 import {
   APPROVAL_STATUS_LABELS,
-  APPROVAL_STATUS_VARIANTS,
   EXECUTOR_OPTIONS,
   RISK_LEVEL_OPTIONS,
 } from '../../types/recipe'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Select } from '../../components/ui/select'
-import { StatusPill } from '../../components/ui/status-pill'
 import { PaginationControls } from '../../components/common/pagination-controls'
-import { formatDate } from '../../lib/format'
-import { approveRecipe, createRecipe, listRecipes } from '../../lib/recipe-api'
-import { cellStyle } from '../../lib/table-styles'
+import { createRecipe, listRecipes } from '../../lib/recipe-api'
+import { RecipeRow } from './components/recipe-row'
 
 interface RecipesPageProps {
   config: ApiConfig
@@ -130,26 +127,15 @@ export function RecipesPage({ config }: RecipesPageProps) {
     [config, formName, formExecutor, formConfig, formRiskLevel, fetchRecipes],
   )
 
-  const handleApprove = useCallback(
-    async (recipeId: string) => {
-      try {
-        await approveRecipe(config, recipeId)
-        void fetchRecipes()
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '批准配方失败')
-      }
-    },
-    [config, fetchRecipes],
-  )
-
   return (
-    <div data-testid="page-recipes">
+    <div data-testid="page-recipes" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           marginBottom: 'var(--space-5)',
+          flexShrink: 0,
         }}
       >
         <h2
@@ -175,6 +161,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
           color: 'var(--color-warm-gray-500)',
           marginBottom: 'var(--space-4)',
           lineHeight: 'var(--line-height-normal)',
+          flexShrink: 0,
         }}
       >
         配方生命周期：待审批 → 已批准 → 已废弃。只有已批准的配方才能用于调度计划。
@@ -187,6 +174,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
           gap: 'var(--space-3)',
           marginBottom: 'var(--space-4)',
           flexWrap: 'wrap',
+          flexShrink: 0,
           alignItems: 'flex-end',
         }}
       >
@@ -202,7 +190,10 @@ export function RecipesPage({ config }: RecipesPageProps) {
         <Select
           data-testid="select-approval-filter"
           value={approvalFilter}
-          onChange={(e) => { setApprovalFilter(e.target.value); setOffset(0) }}
+          onChange={(e) => {
+            setApprovalFilter(e.target.value)
+            setOffset(0)
+          }}
         >
           {APPROVAL_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -213,7 +204,10 @@ export function RecipesPage({ config }: RecipesPageProps) {
         <Select
           data-testid="select-executor-filter"
           value={executorFilter}
-          onChange={(e) => { setExecutorFilter(e.target.value); setOffset(0) }}
+          onChange={(e) => {
+            setExecutorFilter(e.target.value)
+            setOffset(0)
+          }}
         >
           {EXECUTOR_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -368,6 +362,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
           style={{
             color: 'var(--color-warm-gray-500)',
             fontSize: 'var(--font-size-sm)',
+            flexShrink: 0,
           }}
         >
           加载配方中...
@@ -378,7 +373,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
       {!loading && error && (
         <p
           data-testid="recipes-error"
-          style={{ color: 'var(--color-orange)', fontSize: 'var(--font-size-sm)' }}
+          style={{ color: 'var(--color-orange)', fontSize: 'var(--font-size-sm)', flexShrink: 0 }}
         >
           {error}
         </p>
@@ -392,6 +387,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
             textAlign: 'center',
             padding: 'var(--space-8) var(--space-4)',
             color: 'var(--color-warm-gray-300)',
+            flexShrink: 0,
           }}
         >
           <p
@@ -414,9 +410,11 @@ export function RecipesPage({ config }: RecipesPageProps) {
       {!loading && !error && filtered.length > 0 && (
         <div
           style={{
-            overflowX: 'auto',
+            flex: 1,
+            overflow: 'auto',
             border: 'var(--border-whisper)',
             borderRadius: 'var(--radius-lg)',
+            minHeight: 0,
           }}
         >
           <table
@@ -456,64 +454,12 @@ export function RecipesPage({ config }: RecipesPageProps) {
             </thead>
             <tbody>
               {filtered.map((recipe) => (
-                <tr key={recipe.id} data-testid={`recipe-row-${recipe.id}`}>
-                  <td style={cellStyle}>
-                    <span
-                      style={{ fontWeight: 600, color: 'var(--color-primary-text)' }}
-                    >
-                      {recipe.name}
-                    </span>
-                  </td>
-                  <td style={cellStyle}>
-                    <span
-                      style={{
-                        textTransform: 'uppercase',
-                        fontSize: 'var(--font-size-xs)',
-                      }}
-                    >
-                      {recipe.executor}
-                    </span>
-                  </td>
-                  <td style={cellStyle}>
-                    <StatusPill
-                      variant={
-                        APPROVAL_STATUS_VARIANTS[
-                          recipe.approval_status as RecipeApprovalStatus
-                        ] || 'default'
-                      }
-                    >
-                      {APPROVAL_STATUS_LABELS[
-                        recipe.approval_status as RecipeApprovalStatus
-                      ] || recipe.approval_status}
-                    </StatusPill>
-                  </td>
-                  <td style={cellStyle}>{recipe.risk_level}</td>
-                  <td style={cellStyle}>{recipe.version}</td>
-                  <td style={cellStyle}>{formatDate(recipe.created_at)}</td>
-                  <td style={cellStyle}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        gap: 'var(--space-1)',
-                        alignItems: 'center',
-                      }}
-                    >
-                      {recipe.approval_status === 'pending' && (
-                        <Button
-                          variant="secondary"
-                          data-testid={`approve-recipe-${recipe.id}`}
-                          onClick={() => void handleApprove(recipe.id)}
-                          style={{
-                            padding: '4px 8px',
-                            fontSize: 'var(--font-size-xs)',
-                          }}
-                        >
-                          批准
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+                <RecipeRow
+                  key={recipe.id}
+                  recipe={recipe}
+                  config={config}
+                  onChanged={() => void fetchRecipes()}
+                />
               ))}
             </tbody>
           </table>
@@ -522,12 +468,14 @@ export function RecipesPage({ config }: RecipesPageProps) {
 
       {/* Pagination */}
       {!loading && !error && (
-        <PaginationControls
-          total={total}
-          offset={offset}
-          pageSize={PAGE_SIZE}
-          onPageChange={setOffset}
-        />
+        <div style={{ flexShrink: 0 }}>
+          <PaginationControls
+            total={total}
+            offset={offset}
+            pageSize={PAGE_SIZE}
+            onPageChange={setOffset}
+          />
+        </div>
       )}
     </div>
   )

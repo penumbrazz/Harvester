@@ -81,13 +81,14 @@ export function SourcesPage({ config }: SourcesPageProps) {
   }, [fetchSources])
 
   return (
-    <div data-testid="page-sources">
+    <div data-testid="page-sources" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           marginBottom: 'var(--space-5)',
+          flexShrink: 0,
         }}
       >
         <h2
@@ -113,6 +114,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
           color: 'var(--color-warm-gray-500)',
           marginBottom: 'var(--space-4)',
           lineHeight: 'var(--line-height-normal)',
+          flexShrink: 0,
         }}
       >
         信息源生命周期：候选 → 测试中 → 监控中 ⇄ 已暂停 → 已归档
@@ -126,6 +128,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
           marginBottom: 'var(--space-4)',
           flexWrap: 'wrap',
           alignItems: 'flex-end',
+          flexShrink: 0,
         }}
       >
         <div style={{ flex: '1 1 200px', minWidth: '200px' }}>
@@ -140,7 +143,10 @@ export function SourcesPage({ config }: SourcesPageProps) {
         <Select
           data-testid="select-status-filter"
           value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setOffset(0) }}
+          onChange={(e) => {
+            setStatusFilter(e.target.value)
+            setOffset(0)
+          }}
         >
           {STATUS_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -151,7 +157,10 @@ export function SourcesPage({ config }: SourcesPageProps) {
         <Select
           data-testid="select-kind-filter"
           value={kindFilter}
-          onChange={(e) => { setKindFilter(e.target.value); setOffset(0) }}
+          onChange={(e) => {
+            setKindFilter(e.target.value)
+            setOffset(0)
+          }}
         >
           {KIND_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -171,6 +180,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
             backgroundColor: 'var(--color-warm-white)',
             borderRadius: 'var(--radius-lg)',
             border: 'var(--border-whisper)',
+            flexShrink: 0,
           }}
         >
           <h3
@@ -198,6 +208,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
           style={{
             color: 'var(--color-warm-gray-500)',
             fontSize: 'var(--font-size-sm)',
+            flexShrink: 0,
           }}
         >
           加载信息源中...
@@ -208,7 +219,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
       {!loading && error && (
         <p
           data-testid="sources-error"
-          style={{ color: 'var(--color-orange)', fontSize: 'var(--font-size-sm)' }}
+          style={{ color: 'var(--color-orange)', fontSize: 'var(--font-size-sm)', flexShrink: 0 }}
         >
           {error}
         </p>
@@ -222,6 +233,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
             textAlign: 'center',
             padding: 'var(--space-8) var(--space-4)',
             color: 'var(--color-warm-gray-300)',
+            flexShrink: 0,
           }}
         >
           <p
@@ -244,9 +256,11 @@ export function SourcesPage({ config }: SourcesPageProps) {
       {!loading && !error && filtered.length > 0 && (
         <div
           style={{
-            overflowX: 'auto',
+            flex: 1,
+            overflow: 'auto',
             border: 'var(--border-whisper)',
             borderRadius: 'var(--radius-lg)',
+            minHeight: 0,
           }}
         >
           <table
@@ -307,12 +321,14 @@ export function SourcesPage({ config }: SourcesPageProps) {
 
       {/* Pagination */}
       {!loading && !error && (
-        <PaginationControls
-          total={total}
-          offset={offset}
-          pageSize={PAGE_SIZE}
-          onPageChange={setOffset}
-        />
+        <div style={{ flexShrink: 0 }}>
+          <PaginationControls
+            total={total}
+            offset={offset}
+            pageSize={PAGE_SIZE}
+            onPageChange={setOffset}
+          />
+        </div>
       )}
     </div>
   )

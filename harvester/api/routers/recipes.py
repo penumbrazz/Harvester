@@ -103,9 +103,7 @@ def approve_recipe(
     session: Session = _Session,
 ):
     """Approve a pending recipe."""
-    recipe = session.get(Recipe, recipe_id)
-    if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
+    recipe = _resolve_recipe(recipe_id, session)
 
     try:
         transition_entity(
@@ -116,6 +114,139 @@ def approve_recipe(
         session.rollback()
         raise HTTPException(status_code=400, detail=str(e)) from e
 
+    session.commit()
+    session.refresh(recipe)
+    return _to_recipe_response(recipe)
+
+
+class RecipeUpdateRequest(BaseModel):
+    name: str | None = None
+    executor: str | None = None
+    config: dict | None = None
+    risk_level: str | None = None
+
+
+def _resolve_recipe(recipe_id: str, session: Session) -> Recipe:
+    """Parse recipe_id to UUID and fetch the Recipe, or raise 404/422."""
+    try:
+        parsed_uuid = uuid.UUID(recipe_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Invalid recipe_id format") from None
+    recipe = session.get(Recipe, parsed_uuid)
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    return recipe
+
+
+@router.post("/{recipe_id}/reject", response_model=RecipeResponse)
+def reject_recipe(
+    recipe_id: str,
+    _token: str = _Token,
+    session: Session = _Session,
+):
+    """Reject a pending recipe."""
+    recipe = _resolve_recipe(recipe_id, session)
+
+    try:
+        transition_entity(
+            session, recipe, RECIPE_TRANSITIONS, "rejected", "api", "recipe",
+            status_attr="approval_status",
+        )
+    except ValueError as e:
+        session.commit()
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    session.commit()
+    session.refresh(recipe)
+    return _to_recipe_response(recipe)
+
+
+@router.post("/{recipe_id}/resubmit", response_model=RecipeResponse)
+def resubmit_recipe(
+    recipe_id: str,
+    _token: str = _Token,
+    session: Session = _Session,
+):
+    """Resubmit a rejected recipe back to pending."""
+    recipe = _resolve_recipe(recipe_id, session)
+
+    try:
+        transition_entity(
+            session, recipe, RECIPE_TRANSITIONS, "pending", "api", "recipe",
+            status_attr="approval_status",
+        )
+    except ValueError as e:
+        session.commit()
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    session.commit()
+    session.refresh(recipe)
+    return _to_recipe_response(recipe)
+
+
+@router.post("/{recipe_id}/deprecate", response_model=RecipeResponse)
+def deprecate_recipe(
+    recipe_id: str,
+    _token: str = _Token,
+    session: Session = _Session,
+):
+    """Deprecate an approved recipe (terminal state)."""
+    recipe = _resolve_recipe(recipe_id, session)
+
+    try:
+        transition_entity(
+            session, recipe, RECIPE_TRANSITIONS, "deprecated", "api", "recipe",
+            status_attr="approval_status",
+        )
+    except ValueError as e:
+        session.commit()
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    session.commit()
+    session.refresh(recipe)
+    return _to_recipe_response(recipe)
+
+
+@router.patch("/{recipe_id}", response_model=RecipeResponse)
+def update_recipe(
+    recipe_id: str,
+    req: RecipeUpdateRequest,
+    _token: str = _Token,
+    session: Session = _Session,
+):
+    """Update editable fields on a recipe."""
+    recipe = _resolve_recipe(recipe_id, session)
+
+    if recipe.approval_status in ("deprecated",):
+        raise HTTPException(status_code=400, detail="Cannot edit a deprecated recipe")
+
+    if req.name is not None:
+        recipe.name = req.name
+    if req.executor is not None:
+        if req.executor not in APPROVED_EXECUTORS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown executor '{req.executor}'. Approved: {sorted(APPROVED_EXECUTORS)}",
+            )
+        recipe.executor = req.executor
+    if req.config is not None:
+        recipe.config = req.config
+    if req.risk_level is not None:
+        recipe.risk_level = req.risk_level
+
+    recipe.updated_at = datetime.now(UTC)
+    write_audit(
+        session,
+        actor="api",
+        action="recipe.update",
+        entity_type="recipe",
+        entity_id=recipe.id,
+        after_state={
+            "name": recipe.name,
+            "executor": recipe.executor,
+            "risk_level": recipe.risk_level,
+        },
+    )
     session.commit()
     session.refresh(recipe)
     return _to_recipe_response(recipe)

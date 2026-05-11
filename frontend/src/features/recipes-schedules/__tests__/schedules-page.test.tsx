@@ -62,9 +62,14 @@ function mockJsonResponse(data: unknown, status = 200) {
   })
 }
 
+/** Wrap an array in a paginated response shape. */
+function paginate<T>(items: T[]) {
+  return { items, total: items.length, limit: 20, offset: 0 }
+}
+
 describe('SchedulesPage', () => {
   it('renders the page title and hint text', () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([])))
     render(<SchedulesPage config={config} />)
 
     expect(screen.getByText('调度计划')).toBeInTheDocument()
@@ -80,7 +85,7 @@ describe('SchedulesPage', () => {
   })
 
   it('displays schedules in a table after loading', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse(mockSchedules))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate(mockSchedules)))
     render(<SchedulesPage config={config} />)
 
     await waitFor(() => {
@@ -92,7 +97,7 @@ describe('SchedulesPage', () => {
   })
 
   it('shows interval in human-readable format', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse(mockSchedules))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate(mockSchedules)))
     render(<SchedulesPage config={config} />)
 
     await waitFor(() => {
@@ -104,7 +109,7 @@ describe('SchedulesPage', () => {
   })
 
   it('shows empty state when no schedules exist', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([])))
     render(<SchedulesPage config={config} />)
 
     await waitFor(() => {
@@ -130,7 +135,7 @@ describe('SchedulesPage', () => {
   })
 
   it('sends status filter parameter to the API', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([mockSchedules[0]]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([mockSchedules[0]])))
     const user = userEvent.setup()
     render(<SchedulesPage config={config} />)
 
@@ -152,7 +157,7 @@ describe('SchedulesPage', () => {
   })
 
   it('shows the create schedule form when New Schedule is clicked', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([])))
     const user = userEvent.setup()
     render(<SchedulesPage config={config} />)
 
@@ -167,7 +172,7 @@ describe('SchedulesPage', () => {
   })
 
   it('hides the form when cancel is clicked', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse([]))
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([])))
     const user = userEvent.setup()
     render(<SchedulesPage config={config} />)
 
@@ -187,35 +192,39 @@ describe('Create Schedule Form', () => {
   it('shows validation error when source is not selected', async () => {
     // Mock schedule list + source list (for selector) + recipe list (for selector)
     mockFetch
-      .mockResolvedValueOnce(mockJsonResponse([]))
+      .mockResolvedValueOnce(mockJsonResponse(paginate([])))
       .mockResolvedValueOnce(
-        mockJsonResponse([
-          {
-            id: 'src-1',
-            name: 'TestSource',
-            status: 'watched',
-            kind: 'rss',
-            url: null,
-            trust_level: 'medium',
-            failure_count: 0,
-            created_at: '2026-01-01T00:00:00Z',
-            updated_at: '2026-01-01T00:00:00Z',
-          },
-        ]),
+        mockJsonResponse(
+          paginate([
+            {
+              id: 'src-1',
+              name: 'TestSource',
+              status: 'watched',
+              kind: 'rss',
+              url: null,
+              trust_level: 'medium',
+              failure_count: 0,
+              created_at: '2026-01-01T00:00:00Z',
+              updated_at: '2026-01-01T00:00:00Z',
+            },
+          ]),
+        ),
       )
       .mockResolvedValueOnce(
-        mockJsonResponse([
-          {
-            id: 'recipe-1',
-            name: 'TestRecipe',
-            executor: 'http_fetch',
-            approval_status: 'approved',
-            risk_level: 'low',
-            version: 1,
-            created_at: '2026-01-01T00:00:00Z',
-            updated_at: null,
-          },
-        ]),
+        mockJsonResponse(
+          paginate([
+            {
+              id: 'recipe-1',
+              name: 'TestRecipe',
+              executor: 'http_fetch',
+              approval_status: 'approved',
+              risk_level: 'low',
+              version: 1,
+              created_at: '2026-01-01T00:00:00Z',
+              updated_at: null,
+            },
+          ]),
+        ),
       )
 
     const user = userEvent.setup()
@@ -244,35 +253,39 @@ describe('Create Schedule Form', () => {
   it('shows validation error when recipe is not selected', async () => {
     // Mock schedule list + source list + recipe list
     mockFetch
-      .mockResolvedValueOnce(mockJsonResponse([]))
+      .mockResolvedValueOnce(mockJsonResponse(paginate([])))
       .mockResolvedValueOnce(
-        mockJsonResponse([
-          {
-            id: 'src-1',
-            name: 'TestSource',
-            status: 'watched',
-            kind: 'rss',
-            url: null,
-            trust_level: 'medium',
-            failure_count: 0,
-            created_at: '2026-01-01T00:00:00Z',
-            updated_at: '2026-01-01T00:00:00Z',
-          },
-        ]),
+        mockJsonResponse(
+          paginate([
+            {
+              id: 'src-1',
+              name: 'TestSource',
+              status: 'watched',
+              kind: 'rss',
+              url: null,
+              trust_level: 'medium',
+              failure_count: 0,
+              created_at: '2026-01-01T00:00:00Z',
+              updated_at: '2026-01-01T00:00:00Z',
+            },
+          ]),
+        ),
       )
       .mockResolvedValueOnce(
-        mockJsonResponse([
-          {
-            id: 'recipe-1',
-            name: 'TestRecipe',
-            executor: 'http_fetch',
-            approval_status: 'approved',
-            risk_level: 'low',
-            version: 1,
-            created_at: '2026-01-01T00:00:00Z',
-            updated_at: null,
-          },
-        ]),
+        mockJsonResponse(
+          paginate([
+            {
+              id: 'recipe-1',
+              name: 'TestRecipe',
+              executor: 'http_fetch',
+              approval_status: 'approved',
+              risk_level: 'low',
+              version: 1,
+              created_at: '2026-01-01T00:00:00Z',
+              updated_at: null,
+            },
+          ]),
+        ),
       )
 
     const user = userEvent.setup()
@@ -304,35 +317,39 @@ describe('Create Schedule Form', () => {
     // by checking the form does NOT allow submission with interval < 60
     // We test this by directly checking the validation logic
     mockFetch
-      .mockResolvedValueOnce(mockJsonResponse([]))
+      .mockResolvedValueOnce(mockJsonResponse(paginate([])))
       .mockResolvedValueOnce(
-        mockJsonResponse([
-          {
-            id: 'src-1',
-            name: 'TestSource',
-            status: 'watched',
-            kind: 'rss',
-            url: null,
-            trust_level: 'medium',
-            failure_count: 0,
-            created_at: '2026-01-01T00:00:00Z',
-            updated_at: '2026-01-01T00:00:00Z',
-          },
-        ]),
+        mockJsonResponse(
+          paginate([
+            {
+              id: 'src-1',
+              name: 'TestSource',
+              status: 'watched',
+              kind: 'rss',
+              url: null,
+              trust_level: 'medium',
+              failure_count: 0,
+              created_at: '2026-01-01T00:00:00Z',
+              updated_at: '2026-01-01T00:00:00Z',
+            },
+          ]),
+        ),
       )
       .mockResolvedValueOnce(
-        mockJsonResponse([
-          {
-            id: 'recipe-1',
-            name: 'TestRecipe',
-            executor: 'http_fetch',
-            approval_status: 'approved',
-            risk_level: 'low',
-            version: 1,
-            created_at: '2026-01-01T00:00:00Z',
-            updated_at: null,
-          },
-        ]),
+        mockJsonResponse(
+          paginate([
+            {
+              id: 'recipe-1',
+              name: 'TestRecipe',
+              executor: 'http_fetch',
+              approval_status: 'approved',
+              risk_level: 'low',
+              version: 1,
+              created_at: '2026-01-01T00:00:00Z',
+              updated_at: null,
+            },
+          ]),
+        ),
       )
       .mockResolvedValueOnce({
         ok: false,
@@ -372,35 +389,39 @@ describe('Create Schedule Form', () => {
   it('shows API error when backend rejects the schedule', async () => {
     // Mock for: 1) schedule list, 2) source list (selector), 3) recipe list (selector), 4) create schedule
     mockFetch
-      .mockResolvedValueOnce(mockJsonResponse([]))
+      .mockResolvedValueOnce(mockJsonResponse(paginate([])))
       .mockResolvedValueOnce(
-        mockJsonResponse([
-          {
-            id: 'src-1',
-            name: 'TestSource',
-            status: 'watched',
-            kind: 'rss',
-            url: null,
-            trust_level: 'medium',
-            failure_count: 0,
-            created_at: '2026-01-01T00:00:00Z',
-            updated_at: '2026-01-01T00:00:00Z',
-          },
-        ]),
+        mockJsonResponse(
+          paginate([
+            {
+              id: 'src-1',
+              name: 'TestSource',
+              status: 'watched',
+              kind: 'rss',
+              url: null,
+              trust_level: 'medium',
+              failure_count: 0,
+              created_at: '2026-01-01T00:00:00Z',
+              updated_at: '2026-01-01T00:00:00Z',
+            },
+          ]),
+        ),
       )
       .mockResolvedValueOnce(
-        mockJsonResponse([
-          {
-            id: 'recipe-1',
-            name: 'TestRecipe',
-            executor: 'http_fetch',
-            approval_status: 'approved',
-            risk_level: 'low',
-            version: 1,
-            created_at: '2026-01-01T00:00:00Z',
-            updated_at: null,
-          },
-        ]),
+        mockJsonResponse(
+          paginate([
+            {
+              id: 'recipe-1',
+              name: 'TestRecipe',
+              executor: 'http_fetch',
+              approval_status: 'approved',
+              risk_level: 'low',
+              version: 1,
+              created_at: '2026-01-01T00:00:00Z',
+              updated_at: null,
+            },
+          ]),
+        ),
       )
       .mockResolvedValueOnce({
         ok: false,
@@ -433,6 +454,110 @@ describe('Create Schedule Form', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('create-schedule-error')).toBeInTheDocument()
+    })
+  })
+})
+
+describe('ScheduleRow management actions', () => {
+  it('shows edit, pause, and disable buttons for active schedule', async () => {
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate(mockSchedules)))
+    render(<SchedulesPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('schedules-table')).toBeInTheDocument()
+    })
+
+    expect(screen.getByTestId('action-edit-sched-1')).toBeInTheDocument()
+    expect(screen.getByTestId('action-pause-sched-1')).toBeInTheDocument()
+    expect(screen.getByTestId('action-disable-sched-1')).toBeInTheDocument()
+  })
+
+  it('opens edit form and submits changes', async () => {
+    mockFetch
+      .mockResolvedValueOnce(mockJsonResponse(paginate([mockSchedules[0]])))
+      .mockResolvedValueOnce(
+        mockJsonResponse({ ...mockSchedules[0], interval_seconds: 7200 }),
+      )
+      .mockResolvedValueOnce(
+        mockJsonResponse(paginate([{ ...mockSchedules[0], interval_seconds: 7200 }])),
+      )
+
+    const user = userEvent.setup()
+    render(<SchedulesPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('schedules-table')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByTestId('action-edit-sched-1'))
+    expect(screen.getByTestId('schedule-edit-row-sched-1')).toBeInTheDocument()
+
+    const intervalInput = screen.getByTestId('edit-schedule-interval')
+    await user.clear(intervalInput)
+    await user.type(intervalInput, '7200')
+    await user.click(screen.getByTestId('edit-schedule-save'))
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/schedules/sched-1'),
+        expect.objectContaining({ method: 'PATCH' }),
+      )
+    })
+  })
+
+  it('cancels edit without making API call', async () => {
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([mockSchedules[0]])))
+    const user = userEvent.setup()
+    render(<SchedulesPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('schedules-table')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByTestId('action-edit-sched-1'))
+    await user.click(screen.getByTestId('edit-schedule-cancel'))
+
+    expect(screen.queryByTestId('schedule-edit-row-sched-1')).not.toBeInTheDocument()
+  })
+
+  it('shows confirm dialog for disable action', async () => {
+    mockFetch.mockResolvedValue(mockJsonResponse(paginate([mockSchedules[0]])))
+    const user = userEvent.setup()
+    render(<SchedulesPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('schedules-table')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByTestId('action-disable-sched-1'))
+    expect(screen.getByTestId('confirm-ok')).toBeInTheDocument()
+    expect(screen.getByRole('dialog')).toHaveTextContent(/停用/)
+  })
+
+  it('calls pause API and refreshes list', async () => {
+    mockFetch
+      .mockResolvedValueOnce(mockJsonResponse(paginate([mockSchedules[0]])))
+      .mockResolvedValueOnce(
+        mockJsonResponse({ ...mockSchedules[0], status: 'paused' }),
+      )
+      .mockResolvedValueOnce(
+        mockJsonResponse(paginate([{ ...mockSchedules[0], status: 'paused' }])),
+      )
+
+    const user = userEvent.setup()
+    render(<SchedulesPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('schedules-table')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByTestId('action-pause-sched-1'))
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/schedules/sched-1/pause'),
+        expect.objectContaining({ method: 'POST' }),
+      )
     })
   })
 })

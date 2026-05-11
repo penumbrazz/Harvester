@@ -6,33 +6,17 @@ import { SCHEDULE_STATUS_OPTIONS } from '../../types/schedule'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Select } from '../../components/ui/select'
-import { StatusPill } from '../../components/ui/status-pill'
 import { PaginationControls } from '../../components/common/pagination-controls'
-import { formatDate } from '../../lib/format'
 import { listSchedules, createSchedule } from '../../lib/schedule-api'
-import { cellStyle } from '../../lib/table-styles'
 import { ApprovedRecipeSelector } from './components/selectors'
 import { SourceSelector } from './components/selectors'
+import { ScheduleRow } from './components/schedule-row'
 
 interface SchedulesPageProps {
   config: ApiConfig
 }
 
 const PAGE_SIZE = 20
-
-/** Format interval seconds to a human-readable string. */
-function formatInterval(seconds: number): string {
-  if (seconds >= 3600) {
-    const hours = Math.floor(seconds / 3600)
-    const mins = Math.floor((seconds % 3600) / 60)
-    return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
-  }
-  if (seconds >= 60) {
-    const mins = Math.floor(seconds / 60)
-    return `${mins}m`
-  }
-  return `${seconds}s`
-}
 
 export function SchedulesPage({ config }: SchedulesPageProps) {
   const [schedules, setSchedules] = useState<Schedule[]>([])
@@ -138,13 +122,14 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
   )
 
   return (
-    <div data-testid="page-schedules">
+    <div data-testid="page-schedules" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           marginBottom: 'var(--space-5)',
+          flexShrink: 0,
         }}
       >
         <h2
@@ -170,6 +155,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
           color: 'var(--color-warm-gray-500)',
           marginBottom: 'var(--space-4)',
           lineHeight: 'var(--line-height-normal)',
+          flexShrink: 0,
         }}
       >
         监控调度定义了信息源的抓取时间和方式。只有监控中/活跃的信息源和已批准的配方才能被调度。
@@ -182,13 +168,17 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
           gap: 'var(--space-3)',
           marginBottom: 'var(--space-4)',
           flexWrap: 'wrap',
+          flexShrink: 0,
           alignItems: 'flex-end',
         }}
       >
         <Select
           data-testid="select-schedule-status-filter"
           value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setOffset(0) }}
+          onChange={(e) => {
+            setStatusFilter(e.target.value)
+            setOffset(0)
+          }}
         >
           {SCHEDULE_STATUS_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -208,6 +198,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
             backgroundColor: 'var(--color-warm-white)',
             borderRadius: 'var(--radius-lg)',
             border: 'var(--border-whisper)',
+            flexShrink: 0,
           }}
         >
           <h3
@@ -342,6 +333,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
           style={{
             color: 'var(--color-warm-gray-500)',
             fontSize: 'var(--font-size-sm)',
+            flexShrink: 0,
           }}
         >
           加载调度计划中...
@@ -352,7 +344,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
       {!loading && error && (
         <p
           data-testid="schedules-error"
-          style={{ color: 'var(--color-orange)', fontSize: 'var(--font-size-sm)' }}
+          style={{ color: 'var(--color-orange)', fontSize: 'var(--font-size-sm)', flexShrink: 0 }}
         >
           {error}
         </p>
@@ -366,6 +358,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
             textAlign: 'center',
             padding: 'var(--space-8) var(--space-4)',
             color: 'var(--color-warm-gray-300)',
+            flexShrink: 0,
           }}
         >
           <p
@@ -388,9 +381,11 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
       {!loading && !error && schedules.length > 0 && (
         <div
           style={{
-            overflowX: 'auto',
+            flex: 1,
+            overflow: 'auto',
             border: 'var(--border-whisper)',
             borderRadius: 'var(--radius-lg)',
+            minHeight: 0,
           }}
         >
           <table
@@ -418,6 +413,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
                   '优先级',
                   '通道',
                   '创建时间',
+                  '操作',
                 ].map((header) => (
                   <th
                     key={header}
@@ -438,55 +434,12 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
             </thead>
             <tbody>
               {schedules.map((schedule) => (
-                <tr key={schedule.id} data-testid={`schedule-row-${schedule.id}`}>
-                  <td
-                    style={{
-                      ...cellStyle,
-                      maxWidth: '200px',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    <span
-                      style={{ fontWeight: 600, color: 'var(--color-primary-text)' }}
-                    >
-                      {schedule.schedule_key}
-                    </span>
-                  </td>
-                  <td style={cellStyle}>
-                    <span
-                      style={{
-                        fontSize: 'var(--font-size-xs)',
-                        fontFamily: 'monospace',
-                      }}
-                    >
-                      {schedule.source_id.slice(0, 8)}...
-                    </span>
-                  </td>
-                  <td style={cellStyle}>
-                    <span
-                      style={{
-                        fontSize: 'var(--font-size-xs)',
-                        fontFamily: 'monospace',
-                      }}
-                    >
-                      {schedule.recipe_id.slice(0, 8)}...
-                    </span>
-                  </td>
-                  <td style={cellStyle}>
-                    <StatusPill
-                      variant={schedule.status === 'active' ? 'success' : 'default'}
-                    >
-                      {schedule.status}
-                    </StatusPill>
-                  </td>
-                  <td style={cellStyle}>{formatInterval(schedule.interval_seconds)}</td>
-                  <td style={cellStyle}>{formatDate(schedule.next_run_at)}</td>
-                  <td style={cellStyle}>{schedule.priority}</td>
-                  <td style={cellStyle}>{schedule.lane || '—'}</td>
-                  <td style={cellStyle}>{formatDate(schedule.created_at)}</td>
-                </tr>
+                <ScheduleRow
+                  key={schedule.id}
+                  schedule={schedule}
+                  config={config}
+                  onChanged={() => void fetchSchedules()}
+                />
               ))}
             </tbody>
           </table>
@@ -495,12 +448,14 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
 
       {/* Pagination */}
       {!loading && !error && (
-        <PaginationControls
-          total={total}
-          offset={offset}
-          pageSize={PAGE_SIZE}
-          onPageChange={setOffset}
-        />
+        <div style={{ flexShrink: 0 }}>
+          <PaginationControls
+            total={total}
+            offset={offset}
+            pageSize={PAGE_SIZE}
+            onPageChange={setOffset}
+          />
+        </div>
       )}
     </div>
   )

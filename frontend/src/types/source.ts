@@ -28,6 +28,13 @@ export interface ProposeSourceRequest {
   auth_required?: boolean
 }
 
+/** Request payload for updating an existing source. */
+export interface UpdateSourceRequest {
+  name?: string
+  url?: string | null
+  trust_level?: string
+}
+
 /** All valid source statuses from the state machine. */
 export type SourceStatus = 'candidate' | 'testing' | 'watched' | 'paused' | 'archived'
 
@@ -36,10 +43,10 @@ export type SourceKind = 'web' | 'rss' | 'api' | 'file'
 
 /** Mapping from source status to the allowed actions. */
 export const SOURCE_ACTIONS: Record<SourceStatus, string[]> = {
-  candidate: ['promote', 'archive'],
-  testing: ['promote', 'archive'],
-  watched: ['pause', 'archive'],
-  paused: ['resume', 'archive'],
+  candidate: ['edit', 'promote', 'archive'],
+  testing: ['edit', 'promote', 'archive'],
+  watched: ['edit', 'pause', 'archive'],
+  paused: ['edit', 'resume', 'archive'],
   archived: [],
 }
 
