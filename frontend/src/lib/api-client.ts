@@ -2,6 +2,11 @@ import type { ApiConfig } from '../types/api'
 
 const API_CONFIG_KEY = 'harvester-api-config'
 
+const DEFAULT_CONFIG: ApiConfig = {
+  baseUrl: 'http://localhost:8001',
+  token: 'change-me-in-production',
+}
+
 /** Load API configuration from localStorage. */
 export function loadApiConfig(): ApiConfig {
   try {
@@ -9,14 +14,14 @@ export function loadApiConfig(): ApiConfig {
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<ApiConfig>
       return {
-        baseUrl: parsed.baseUrl || '',
-        token: parsed.token || '',
+        baseUrl: parsed.baseUrl || DEFAULT_CONFIG.baseUrl,
+        token: parsed.token || DEFAULT_CONFIG.token,
       }
     }
   } catch {
     // ignore parse errors
   }
-  return { baseUrl: '', token: '' }
+  return { ...DEFAULT_CONFIG }
 }
 
 /** Save API configuration to localStorage. */
