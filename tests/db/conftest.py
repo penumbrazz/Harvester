@@ -65,7 +65,10 @@ def _test_db_engine(_test_db_name, _test_db_url):
 
     test_engine.dispose()
 
-    with admin_engine.connect() as conn:
+    # Create a fresh admin engine for teardown (the original was disposed
+    # during setup to avoid leaking connections during migration).
+    teardown_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
+    with teardown_engine.connect() as conn:
         conn.execute(
             sa.text(
                 f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
@@ -74,7 +77,7 @@ def _test_db_engine(_test_db_name, _test_db_url):
         )
         conn.execute(sa.text(f'DROP DATABASE IF EXISTS "{_test_db_name}"'))
 
-    admin_engine.dispose()
+    teardown_engine.dispose()
 
 
 @pytest.fixture()
