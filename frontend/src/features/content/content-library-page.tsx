@@ -19,6 +19,7 @@ import { Card } from '../../components/ui/card'
 import { Input } from '../../components/ui/input'
 import { Select } from '../../components/ui/select'
 import { StatusPill } from '../../components/ui/status-pill'
+import { PaginationControls } from '../../components/common/pagination-controls'
 import { listContentItems, searchContentItems } from '../../lib/content-api'
 import { formatDate } from '../../lib/format'
 import { cellStyle } from '../../lib/table-styles'
@@ -436,64 +437,14 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
           )}
 
           {/* Pagination */}
-          {!loading && !error && total > PAGE_SIZE && (
-            <div
-              data-testid="content-pagination"
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginTop: 'var(--space-4)',
-                fontSize: 'var(--font-size-sm)',
-                color: 'var(--color-warm-gray-500)',
-              }}
-            >
-              <span>
-                {offset + 1}-{Math.min(offset + PAGE_SIZE, total)} of {total}
-              </span>
-              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                <button
-                  data-testid="pagination-prev"
-                  disabled={offset === 0}
-                  onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: 'var(--radius-sm)',
-                    border: 'var(--border-whisper)',
-                    backgroundColor:
-                      offset === 0 ? 'var(--color-warm-white)' : 'var(--color-white)',
-                    cursor: offset === 0 ? 'not-allowed' : 'pointer',
-                    fontFamily: 'var(--font-family)',
-                    fontSize: 'var(--font-size-sm)',
-                    fontWeight: 500,
-                    opacity: offset === 0 ? 0.5 : 1,
-                  }}
-                >
-                  上一页
-                </button>
-                <button
-                  data-testid="pagination-next"
-                  disabled={offset + PAGE_SIZE >= total}
-                  onClick={() => setOffset(offset + PAGE_SIZE)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: 'var(--radius-sm)',
-                    border: 'var(--border-whisper)',
-                    backgroundColor:
-                      offset + PAGE_SIZE >= total
-                        ? 'var(--color-warm-white)'
-                        : 'var(--color-white)',
-                    cursor: offset + PAGE_SIZE >= total ? 'not-allowed' : 'pointer',
-                    fontFamily: 'var(--font-family)',
-                    fontSize: 'var(--font-size-sm)',
-                    fontWeight: 500,
-                    opacity: offset + PAGE_SIZE >= total ? 0.5 : 1,
-                  }}
-                >
-                  下一页
-                </button>
-              </div>
-            </div>
+          {/* Pagination */}
+          {!loading && !error && (
+            <PaginationControls
+              total={total}
+              offset={offset}
+              pageSize={PAGE_SIZE}
+              onPageChange={setOffset}
+            />
           )}
         </>
       )}

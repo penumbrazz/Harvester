@@ -179,13 +179,17 @@ async def test_list_recipes_requires_auth(api_client):
 
 @pytest.mark.asyncio
 async def test_list_recipes_returns_empty(api_client):
-    """GET /recipes returns a list (may not be empty due to shared test db)."""
+    """GET /recipes returns a paginated response."""
     resp = await api_client.get(
         "/recipes",
         headers={"Authorization": "Bearer test-secret"},
     )
     assert resp.status_code == 200
-    assert isinstance(resp.json(), list)
+    data = resp.json()
+    assert "items" in data
+    assert "total" in data
+    assert "limit" in data
+    assert "offset" in data
 
 
 @pytest.mark.asyncio
@@ -208,10 +212,10 @@ async def test_list_recipes_returns_created_recipes(api_client):
     resp = await api_client.get("/recipes", headers=headers)
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) >= 2
+    assert len(data["items"]) >= 2
 
     # Verify required fields present
-    for item in data:
+    for item in data["items"]:
         assert "id" in item
         assert "name" in item
         assert "executor" in item
@@ -249,8 +253,8 @@ async def test_list_recipes_filter_by_approval_status(api_client):
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) >= 1
-    assert all(r["approval_status"] == "approved" for r in data)
+    assert len(data["items"]) >= 1
+    assert all(r["approval_status"] == "approved" for r in data["items"])
 
 
 @pytest.mark.asyncio
@@ -275,5 +279,5 @@ async def test_list_recipes_filter_by_executor(api_client):
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) >= 1
-    assert all(r["executor"] == "http_fetch" for r in data)
+    assert len(data["items"]) >= 1
+    assert all(r["executor"] == "http_fetch" for r in data["items"])

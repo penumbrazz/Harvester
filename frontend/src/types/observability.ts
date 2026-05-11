@@ -32,6 +32,8 @@ export interface CrawlRun {
 export interface CrawlRunListResponse {
   items: CrawlRun[]
   total: number
+  limit: number
+  offset: number
 }
 
 /** A single job record. */
@@ -56,6 +58,8 @@ export interface Job {
 export interface JobListResponse {
   items: Job[]
   total: number
+  limit: number
+  offset: number
 }
 
 /** A single failure item from the failures API. */

@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from harvester.api.auth import require_api_token
 from harvester.api.deps import get_db_session
+from harvester.api.schemas import PaginatedResponse
 from harvester.db.models import ContentItem, Source
 
 router = APIRouter(prefix="/items", tags=["content"])
@@ -33,13 +34,8 @@ class ContentItemResponse(BaseModel):
     updated_at: datetime
 
 
-class ContentListResponse(BaseModel):
+class ContentListResponse(PaginatedResponse[ContentItemResponse]):
     """Paginated content item list response."""
-
-    items: list[ContentItemResponse]
-    total: int
-    limit: int
-    offset: int
 
 
 _Token = Depends(require_api_token)

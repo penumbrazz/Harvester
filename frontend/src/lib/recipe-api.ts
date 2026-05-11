@@ -1,18 +1,20 @@
 import type { ApiConfig } from '../types/api'
-import type { CreateRecipeRequest, Recipe } from '../types/recipe'
+import type { CreateRecipeRequest, Recipe, RecipeListResponse } from '../types/recipe'
 import { apiRequest } from './api-client'
 
-/** Fetch the list of recipes, optionally filtered. */
+/** Fetch the list of recipes with pagination and optional filters. */
 export function listRecipes(
   config: ApiConfig,
-  filters?: { approval_status?: string; executor?: string },
-): Promise<Recipe[]> {
-  const params = new URLSearchParams()
-  if (filters?.approval_status) params.set('approval_status', filters.approval_status)
-  if (filters?.executor) params.set('executor', filters.executor)
-  const query = params.toString()
+  params?: { approval_status?: string; executor?: string; limit?: number; offset?: number },
+): Promise<RecipeListResponse> {
+  const searchParams = new URLSearchParams()
+  if (params?.approval_status) searchParams.set('approval_status', params.approval_status)
+  if (params?.executor) searchParams.set('executor', params.executor)
+  if (params?.limit !== undefined) searchParams.set('limit', String(params.limit))
+  if (params?.offset !== undefined) searchParams.set('offset', String(params.offset))
+  const query = searchParams.toString()
   const path = query ? `/recipes?${query}` : '/recipes'
-  return apiRequest<Recipe[]>(config, path)
+  return apiRequest<RecipeListResponse>(config, path)
 }
 
 /** Create a new recipe. */

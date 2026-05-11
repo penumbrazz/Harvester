@@ -11,6 +11,14 @@ export interface Source {
   updated_at: string
 }
 
+/** Paginated source list response. */
+export interface SourceListResponse {
+  items: Source[]
+  total: number
+  limit: number
+  offset: number
+}
+
 /** Request payload for proposing a new source. */
 export interface ProposeSourceRequest {
   name: string

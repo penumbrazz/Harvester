@@ -27,4 +27,4 @@
 
 - [x] 5.1 运行 `uv run pytest` 中 source API 相关测试
 - [x] 5.2 运行前端 lint、类型检查、单元/组件测试和 E2E
-- [ ] 5.3 手动检查 UI 是否遵循 `DESIGN.md`，没有回退到参考 HTML 的厚边框游戏化风格
+- [x] 5.3 手动检查 UI 是否遵循 `DESIGN.md`，没有回退到参考 HTML 的厚边框游戏化风格

@@ -6,6 +6,7 @@ import { STATUS_LABELS } from '../../types/source'
 import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Select } from '../../components/ui/select'
+import { PaginationControls } from '../../components/common/pagination-controls'
 import { listSources } from '../../lib/source-api'
 import { ProposeSourceForm } from './components/propose-source-form'
 import { SourceRow } from './components/source-row'
@@ -13,6 +14,8 @@ import { SourceRow } from './components/source-row'
 interface SourcesPageProps {
   config: ApiConfig
 }
+
+const PAGE_SIZE = 20
 
 const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: '全部状态' },
@@ -29,6 +32,8 @@ const KIND_FILTER_OPTIONS: { value: string; label: string }[] = [
 
 export function SourcesPage({ config }: SourcesPageProps) {
   const [sources, setSources] = useState<Source[]>([])
+  const [total, setTotal] = useState(0)
+  const [offset, setOffset] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
@@ -43,14 +48,17 @@ export function SourcesPage({ config }: SourcesPageProps) {
       const data = await listSources(config, {
         status: statusFilter || undefined,
         kind: kindFilter || undefined,
+        limit: PAGE_SIZE,
+        offset,
       })
-      setSources(data)
+      setSources(data.items)
+      setTotal(data.total)
     } catch (err) {
       setError(err instanceof Error ? err.message : '加载信息源失败')
     } finally {
       setLoading(false)
     }
-  }, [config, statusFilter, kindFilter])
+  }, [config, statusFilter, kindFilter, offset])
 
   useEffect(() => {
     if (config.baseUrl) {
@@ -132,7 +140,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
         <Select
           data-testid="select-status-filter"
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => { setStatusFilter(e.target.value); setOffset(0) }}
         >
           {STATUS_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -143,7 +151,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
         <Select
           data-testid="select-kind-filter"
           value={kindFilter}
-          onChange={(e) => setKindFilter(e.target.value)}
+          onChange={(e) => { setKindFilter(e.target.value); setOffset(0) }}
         >
           {KIND_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -295,6 +303,16 @@ export function SourcesPage({ config }: SourcesPageProps) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && !error && (
+        <PaginationControls
+          total={total}
+          offset={offset}
+          pageSize={PAGE_SIZE}
+          onPageChange={setOffset}
+        />
       )}
     </div>
   )

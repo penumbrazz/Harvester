@@ -1,19 +1,21 @@
 import type { ApiConfig } from '../types/api'
-import type { CreateScheduleRequest, Schedule } from '../types/schedule'
+import type { CreateScheduleRequest, Schedule, ScheduleListResponse } from '../types/schedule'
 import { apiRequest } from './api-client'
 
-/** Fetch the list of schedules, optionally filtered. */
+/** Fetch the list of schedules with pagination and optional filters. */
 export function listSchedules(
   config: ApiConfig,
-  filters?: { status?: string; source_id?: string; recipe_id?: string },
-): Promise<Schedule[]> {
-  const params = new URLSearchParams()
-  if (filters?.status) params.set('status', filters.status)
-  if (filters?.source_id) params.set('source_id', filters.source_id)
-  if (filters?.recipe_id) params.set('recipe_id', filters.recipe_id)
-  const query = params.toString()
+  params?: { status?: string; source_id?: string; recipe_id?: string; limit?: number; offset?: number },
+): Promise<ScheduleListResponse> {
+  const searchParams = new URLSearchParams()
+  if (params?.status) searchParams.set('status', params.status)
+  if (params?.source_id) searchParams.set('source_id', params.source_id)
+  if (params?.recipe_id) searchParams.set('recipe_id', params.recipe_id)
+  if (params?.limit !== undefined) searchParams.set('limit', String(params.limit))
+  if (params?.offset !== undefined) searchParams.set('offset', String(params.offset))
+  const query = searchParams.toString()
   const path = query ? `/schedules?${query}` : '/schedules'
-  return apiRequest<Schedule[]>(config, path)
+  return apiRequest<ScheduleListResponse>(config, path)
 }
 
 /** Create a new watch schedule. */

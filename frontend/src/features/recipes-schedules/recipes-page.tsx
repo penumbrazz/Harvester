@@ -12,6 +12,7 @@ import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Select } from '../../components/ui/select'
 import { StatusPill } from '../../components/ui/status-pill'
+import { PaginationControls } from '../../components/common/pagination-controls'
 import { formatDate } from '../../lib/format'
 import { approveRecipe, createRecipe, listRecipes } from '../../lib/recipe-api'
 import { cellStyle } from '../../lib/table-styles'
@@ -19,6 +20,8 @@ import { cellStyle } from '../../lib/table-styles'
 interface RecipesPageProps {
   config: ApiConfig
 }
+
+const PAGE_SIZE = 20
 
 const APPROVAL_FILTER_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: '全部状态' },
@@ -32,6 +35,8 @@ const EXECUTOR_FILTER_OPTIONS: { value: string; label: string }[] = [
 
 export function RecipesPage({ config }: RecipesPageProps) {
   const [recipes, setRecipes] = useState<Recipe[]>([])
+  const [total, setTotal] = useState(0)
+  const [offset, setOffset] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
@@ -54,14 +59,17 @@ export function RecipesPage({ config }: RecipesPageProps) {
       const data = await listRecipes(config, {
         approval_status: approvalFilter || undefined,
         executor: executorFilter || undefined,
+        limit: PAGE_SIZE,
+        offset,
       })
-      setRecipes(data)
+      setRecipes(data.items)
+      setTotal(data.total)
     } catch (err) {
       setError(err instanceof Error ? err.message : '加载配方失败')
     } finally {
       setLoading(false)
     }
-  }, [config, approvalFilter, executorFilter])
+  }, [config, approvalFilter, executorFilter, offset])
 
   useEffect(() => {
     if (config.baseUrl) {
@@ -194,7 +202,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
         <Select
           data-testid="select-approval-filter"
           value={approvalFilter}
-          onChange={(e) => setApprovalFilter(e.target.value)}
+          onChange={(e) => { setApprovalFilter(e.target.value); setOffset(0) }}
         >
           {APPROVAL_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -205,7 +213,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
         <Select
           data-testid="select-executor-filter"
           value={executorFilter}
-          onChange={(e) => setExecutorFilter(e.target.value)}
+          onChange={(e) => { setExecutorFilter(e.target.value); setOffset(0) }}
         >
           {EXECUTOR_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -510,6 +518,16 @@ export function RecipesPage({ config }: RecipesPageProps) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && !error && (
+        <PaginationControls
+          total={total}
+          offset={offset}
+          pageSize={PAGE_SIZE}
+          onPageChange={setOffset}
+        />
       )}
     </div>
   )

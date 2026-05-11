@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from harvester.api.auth import require_api_token
 from harvester.api.deps import get_db_session
+from harvester.api.schemas import PaginatedResponse
 from harvester.db.models import Recipe
 from harvester.domain.audit import write_audit
 from harvester.domain.state import RECIPE_TRANSITIONS, transition_entity
@@ -120,14 +121,20 @@ def approve_recipe(
     return _to_recipe_response(recipe)
 
 
-@router.get("", response_model=list[RecipeResponse])
+class RecipeListResponse(PaginatedResponse[RecipeResponse]):
+    """Paginated recipe list response."""
+
+
+@router.get("", response_model=RecipeListResponse)
 def list_recipes(
     _token: str = _Token,
     session: Session = _Session,
     approval_status: str | None = Query(None, description="Filter by approval status"),
     executor: str | None = Query(None, description="Filter by executor type"),
+    limit: int = Query(20, ge=1, le=100, description="Page size"),
+    offset: int = Query(0, ge=0, description="Page offset"),
 ):
-    """List recipes with optional filtering by approval status and executor."""
+    """List recipes with pagination and optional filtering."""
     query = session.query(Recipe)
 
     if approval_status:
@@ -135,5 +142,8 @@ def list_recipes(
     if executor:
         query = query.filter(Recipe.executor == executor)
 
-    recipes = query.order_by(Recipe.created_at.desc()).all()
-    return [_to_recipe_response(r) for r in recipes]
+    total = query.count()
+    recipes = query.order_by(Recipe.created_at.desc()).offset(offset).limit(limit).all()
+    items = [_to_recipe_response(r) for r in recipes]
+
+    return RecipeListResponse(items=items, total=total, limit=limit, offset=offset)

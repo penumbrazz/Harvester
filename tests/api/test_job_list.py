@@ -128,6 +128,8 @@ async def test_jobs_returns_empty(api_client):
     assert "items" in data
     assert data["items"] == []
     assert data["total"] == 0
+    assert data["limit"] == 20
+    assert data["offset"] == 0
 
 
 @pytest.mark.asyncio
@@ -255,3 +257,5 @@ async def test_jobs_pagination(api_client, api_test_db):
     data = resp.json()
     assert len(data["items"]) <= 2
     assert data["total"] >= 5
+    assert data["limit"] == 2
+    assert data["offset"] == 0

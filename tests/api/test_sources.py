@@ -246,14 +246,18 @@ async def test_list_sources_returns_created_sources(api_client):
     # Assert
     assert resp.status_code == 200
     data = resp.json()
-    assert isinstance(data, list)
-    assert len(data) >= 2
-    names = {s["name"] for s in data}
+    assert "items" in data
+    assert "total" in data
+    assert "limit" in data
+    assert "offset" in data
+    assert isinstance(data["items"], list)
+    assert len(data["items"]) >= 2
+    names = {s["name"] for s in data["items"]}
     assert name_a in names
     assert name_b in names
 
     # Verify expected fields are present on our created sources
-    our_sources = [s for s in data if s["name"] in (name_a, name_b)]
+    our_sources = [s for s in data["items"] if s["name"] in (name_a, name_b)]
     for source in our_sources:
         assert "id" in source
         assert "name" in source
@@ -294,7 +298,7 @@ async def test_list_sources_sorted_by_created_at_desc(api_client):
 
     # Assert — extract our sources and verify newest first
     data = resp.json()
-    our_sources = [s for s in data if s["name"] in names]
+    our_sources = [s for s in data["items"] if s["name"] in names]
     our_sources.sort(key=lambda s: s["created_at"], reverse=True)
     result_names = [s["name"] for s in our_sources]
     assert result_names == list(reversed(names))
@@ -336,9 +340,9 @@ async def test_filter_sources_by_status(api_client):
     # Assert — filter returns only candidate sources; ours is included
     assert resp.status_code == 200
     data = resp.json()
-    for source in data:
+    for source in data["items"]:
         assert source["status"] == "candidate"
-    our_names = {s["name"] for s in data}
+    our_names = {s["name"] for s in data["items"]}
     assert name_candidate in our_names
     assert name_testing not in our_names
 
@@ -370,9 +374,9 @@ async def test_filter_sources_by_kind(api_client):
     # Assert — filter returns only rss sources; ours is included
     assert resp.status_code == 200
     data = resp.json()
-    for source in data:
+    for source in data["items"]:
         assert source["kind"] == "rss"
-    our_names = {s["name"] for s in data}
+    our_names = {s["name"] for s in data["items"]}
     assert name_rss in our_names
     assert name_web not in our_names
 
@@ -564,3 +568,84 @@ async def test_resume_writes_audit_event(api_client, api_test_db):
     assert row is not None
     after = row[0] if isinstance(row[0], dict) else __import__("json").loads(row[0])
     assert after.get("status") == "watched"
+
+
+# ---------------------------------------------------------------------------
+# Pagination tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_list_sources_default_pagination(api_client):
+    """GET /sources should return paginated response with default limit/offset."""
+    resp = await api_client.get(
+        "/sources",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["limit"] == 20
+    assert data["offset"] == 0
+    assert isinstance(data["total"], int)
+    assert isinstance(data["items"], list)
+
+
+@pytest.mark.asyncio
+async def test_list_sources_custom_pagination(api_client):
+    """GET /sources?limit=1&offset=0 should respect pagination params."""
+    # Create at least 2 sources
+    tag = uuid.uuid4().hex[:6]
+    await api_client.post(
+        "/sources/propose",
+        json={"name": f"page-a-{tag}", "kind": "web"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    await api_client.post(
+        "/sources/propose",
+        json={"name": f"page-b-{tag}", "kind": "web"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    resp = await api_client.get(
+        "/sources?limit=1&offset=0",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["limit"] == 1
+    assert data["offset"] == 0
+    assert data["total"] >= 2
+    assert len(data["items"]) <= 1
+
+
+@pytest.mark.asyncio
+async def test_list_sources_offset_beyond_total(api_client):
+    """GET /sources with offset beyond total should return empty items."""
+    resp = await api_client.get(
+        "/sources?limit=20&offset=99999",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["items"] == []
+    assert isinstance(data["total"], int)
+
+
+@pytest.mark.asyncio
+async def test_list_sources_invalid_limit(api_client):
+    """GET /sources with limit > 100 should return 422."""
+    resp = await api_client.get(
+        "/sources?limit=200",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_list_sources_negative_offset(api_client):
+    """GET /sources with negative offset should return 422."""
+    resp = await api_client.get(
+        "/sources?offset=-1",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 422

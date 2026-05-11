@@ -5,6 +5,7 @@ import type { Job } from '../../types/observability'
 import { Card } from '../../components/ui/card'
 import { Select } from '../../components/ui/select'
 import { StatusPill } from '../../components/ui/status-pill'
+import { PaginationControls } from '../../components/common/pagination-controls'
 import { listJobs } from '../../lib/observability-api'
 import { formatDate } from '../../lib/format'
 import { cellStyle } from '../../lib/table-styles'
@@ -12,6 +13,8 @@ import { cellStyle } from '../../lib/table-styles'
 interface JobsPageProps {
   config: ApiConfig
 }
+
+const PAGE_SIZE = 20
 
 const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: '全部状态' },
@@ -58,6 +61,7 @@ function jobStatusVariant(
 export function JobsPage({ config }: JobsPageProps) {
   const [jobs, setJobs] = useState<Job[]>([])
   const [total, setTotal] = useState(0)
+  const [offset, setOffset] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -72,6 +76,8 @@ export function JobsPage({ config }: JobsPageProps) {
         status: statusFilter || undefined,
         job_type: jobTypeFilter || undefined,
         lane: laneFilter || undefined,
+        limit: PAGE_SIZE,
+        offset,
       })
       setJobs(data.items)
       setTotal(data.total)
@@ -80,7 +86,7 @@ export function JobsPage({ config }: JobsPageProps) {
     } finally {
       setLoading(false)
     }
-  }, [config, statusFilter, jobTypeFilter, laneFilter])
+  }, [config, statusFilter, jobTypeFilter, laneFilter, offset])
 
   useEffect(() => {
     if (config.baseUrl) {
@@ -182,7 +188,7 @@ export function JobsPage({ config }: JobsPageProps) {
         <Select
           data-testid="select-job-type-filter"
           value={jobTypeFilter}
-          onChange={(e) => setJobTypeFilter(e.target.value)}
+          onChange={(e) => { setJobTypeFilter(e.target.value); setOffset(0) }}
         >
           {JOB_TYPE_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -193,7 +199,7 @@ export function JobsPage({ config }: JobsPageProps) {
         <Select
           data-testid="select-job-status-filter"
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => { setStatusFilter(e.target.value); setOffset(0) }}
         >
           {STATUS_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -204,7 +210,7 @@ export function JobsPage({ config }: JobsPageProps) {
         <Select
           data-testid="select-job-lane-filter"
           value={laneFilter}
-          onChange={(e) => setLaneFilter(e.target.value)}
+          onChange={(e) => { setLaneFilter(e.target.value); setOffset(0) }}
         >
           {LANE_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -372,6 +378,16 @@ export function JobsPage({ config }: JobsPageProps) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && !error && (
+        <PaginationControls
+          total={total}
+          offset={offset}
+          pageSize={PAGE_SIZE}
+          onPageChange={setOffset}
+        />
       )}
     </div>
   )

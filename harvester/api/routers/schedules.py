@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from harvester.api.auth import require_api_token
 from harvester.api.deps import get_db_session
+from harvester.api.schemas import PaginatedResponse
 from harvester.db.models import Recipe, Source, TopicSource, TopicWatch, WatchSchedule
 from harvester.domain.audit import write_audit
 
@@ -199,15 +200,21 @@ def create_schedule(
     return _to_schedule_response(schedule)
 
 
-@router.get("", response_model=list[ScheduleResponse])
+class ScheduleListResponse(PaginatedResponse[ScheduleResponse]):
+    """Paginated schedule list response."""
+
+
+@router.get("", response_model=ScheduleListResponse)
 def list_schedules(
     _token: str = _Token,
     session: Session = _Session,
     status: str | None = Query(None, description="Filter by schedule status"),
     source_id: str | None = Query(None, description="Filter by source ID"),
     recipe_id: str | None = Query(None, description="Filter by recipe ID"),
+    limit: int = Query(20, ge=1, le=100, description="Page size"),
+    offset: int = Query(0, ge=0, description="Page offset"),
 ):
-    """List watch schedules with optional filtering."""
+    """List watch schedules with pagination and optional filtering."""
     query = session.query(WatchSchedule)
 
     if status:
@@ -227,5 +234,8 @@ def list_schedules(
                 status_code=422, detail="Invalid recipe_id format"
             ) from None
 
-    schedules = query.order_by(WatchSchedule.created_at.desc()).all()
-    return [_to_schedule_response(s) for s in schedules]
+    total = query.count()
+    schedules = query.order_by(WatchSchedule.created_at.desc()).offset(offset).limit(limit).all()
+    items = [_to_schedule_response(s) for s in schedules]
+
+    return ScheduleListResponse(items=items, total=total, limit=limit, offset=offset)

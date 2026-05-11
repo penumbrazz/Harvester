@@ -31,7 +31,7 @@ export function SourceSelector({
   useEffect(() => {
     if (!baseUrl) return
     void listSources({ baseUrl, token })
-      .then(setSources)
+      .then((res) => setSources(res.items))
       .catch(() => setSources([]))
   }, [baseUrl, token])
 
@@ -88,7 +88,7 @@ export function ApprovedRecipeSelector({
   useEffect(() => {
     if (!baseUrl) return
     void listRecipes({ baseUrl, token })
-      .then(setRecipes)
+      .then((res) => setRecipes(res.items))
       .catch(() => setRecipes([]))
   }, [baseUrl, token])
 

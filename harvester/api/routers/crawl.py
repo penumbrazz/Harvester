@@ -53,6 +53,8 @@ class CrawlRunListResponse(BaseModel):
 
     items: list[CrawlRunItem]
     total: int
+    limit: int
+    offset: int
 
 
 @router.post("/run", response_model=CrawlRunResponse)
@@ -135,4 +137,4 @@ def list_crawl_runs(
         for r in rows
     ]
 
-    return CrawlRunListResponse(items=items, total=total)
+    return CrawlRunListResponse(items=items, total=total, limit=limit, offset=offset)

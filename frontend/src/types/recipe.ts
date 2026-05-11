@@ -10,6 +10,14 @@ export interface Recipe {
   updated_at: string | null
 }
 
+/** Paginated recipe list response. */
+export interface RecipeListResponse {
+  items: Recipe[]
+  total: number
+  limit: number
+  offset: number
+}
+
 /** Request payload for creating a new recipe. */
 export interface CreateRecipeRequest {
   name: string

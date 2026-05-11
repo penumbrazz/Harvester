@@ -14,6 +14,14 @@ export interface Schedule {
   created_at: string
 }
 
+/** Paginated schedule list response. */
+export interface ScheduleListResponse {
+  items: Schedule[]
+  total: number
+  limit: number
+  offset: number
+}
+
 /** Request payload for creating a new schedule. */
 export interface CreateScheduleRequest {
   source_id: string

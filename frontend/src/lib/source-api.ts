@@ -1,18 +1,20 @@
 import type { ApiConfig } from '../types/api'
-import type { ProposeSourceRequest, Source } from '../types/source'
+import type { ProposeSourceRequest, Source, SourceListResponse } from '../types/source'
 import { apiRequest } from './api-client'
 
-/** Fetch the list of sources, optionally filtered by status and/or kind. */
+/** Fetch the list of sources with pagination and optional filters. */
 export function listSources(
   config: ApiConfig,
-  filters?: { status?: string; kind?: string },
-): Promise<Source[]> {
-  const params = new URLSearchParams()
-  if (filters?.status) params.set('status', filters.status)
-  if (filters?.kind) params.set('kind', filters.kind)
-  const query = params.toString()
+  params?: { status?: string; kind?: string; limit?: number; offset?: number },
+): Promise<SourceListResponse> {
+  const searchParams = new URLSearchParams()
+  if (params?.status) searchParams.set('status', params.status)
+  if (params?.kind) searchParams.set('kind', params.kind)
+  if (params?.limit !== undefined) searchParams.set('limit', String(params.limit))
+  if (params?.offset !== undefined) searchParams.set('offset', String(params.offset))
+  const query = searchParams.toString()
   const path = query ? `/sources?${query}` : '/sources'
-  return apiRequest<Source[]>(config, path)
+  return apiRequest<SourceListResponse>(config, path)
 }
 
 /** Propose a new candidate source. */

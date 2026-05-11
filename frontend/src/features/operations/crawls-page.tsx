@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Select } from '../../components/ui/select'
 import { StatusPill } from '../../components/ui/status-pill'
+import { PaginationControls } from '../../components/common/pagination-controls'
 import { listCrawlRuns, triggerCrawlRun } from '../../lib/observability-api'
 import { formatDate } from '../../lib/format'
 import { cellStyle } from '../../lib/table-styles'
@@ -13,6 +14,8 @@ import { cellStyle } from '../../lib/table-styles'
 interface CrawlsPageProps {
   config: ApiConfig
 }
+
+const PAGE_SIZE = 20
 
 const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
   { value: '', label: '全部状态' },
@@ -43,6 +46,7 @@ function crawlStatusVariant(
 export function CrawlsPage({ config }: CrawlsPageProps) {
   const [runs, setRuns] = useState<CrawlRun[]>([])
   const [total, setTotal] = useState(0)
+  const [offset, setOffset] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -61,6 +65,8 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
     try {
       const data = await listCrawlRuns(config, {
         status: statusFilter || undefined,
+        limit: PAGE_SIZE,
+        offset,
       })
       setRuns(data.items)
       setTotal(data.total)
@@ -69,7 +75,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
     } finally {
       setLoading(false)
     }
-  }, [config, statusFilter])
+  }, [config, statusFilter, offset])
 
   useEffect(() => {
     if (config.baseUrl) {
@@ -257,7 +263,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
         <Select
           data-testid="select-crawl-status-filter"
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => { setStatusFilter(e.target.value); setOffset(0) }}
         >
           {STATUS_FILTER_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -425,6 +431,16 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && !error && (
+        <PaginationControls
+          total={total}
+          offset={offset}
+          pageSize={PAGE_SIZE}
+          onPageChange={setOffset}
+        />
       )}
     </div>
   )

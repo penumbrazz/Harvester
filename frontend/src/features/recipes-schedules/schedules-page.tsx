@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/button'
 import { Input } from '../../components/ui/input'
 import { Select } from '../../components/ui/select'
 import { StatusPill } from '../../components/ui/status-pill'
+import { PaginationControls } from '../../components/common/pagination-controls'
 import { formatDate } from '../../lib/format'
 import { listSchedules, createSchedule } from '../../lib/schedule-api'
 import { cellStyle } from '../../lib/table-styles'
@@ -16,6 +17,8 @@ import { SourceSelector } from './components/selectors'
 interface SchedulesPageProps {
   config: ApiConfig
 }
+
+const PAGE_SIZE = 20
 
 /** Format interval seconds to a human-readable string. */
 function formatInterval(seconds: number): string {
@@ -33,6 +36,8 @@ function formatInterval(seconds: number): string {
 
 export function SchedulesPage({ config }: SchedulesPageProps) {
   const [schedules, setSchedules] = useState<Schedule[]>([])
+  const [total, setTotal] = useState(0)
+  const [offset, setOffset] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -53,14 +58,17 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
     try {
       const data = await listSchedules(config, {
         status: statusFilter || undefined,
+        limit: PAGE_SIZE,
+        offset,
       })
-      setSchedules(data)
+      setSchedules(data.items)
+      setTotal(data.total)
     } catch (err) {
       setError(err instanceof Error ? err.message : '加载调度计划失败')
     } finally {
       setLoading(false)
     }
-  }, [config, statusFilter])
+  }, [config, statusFilter, offset])
 
   useEffect(() => {
     if (config.baseUrl) {
@@ -180,7 +188,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
         <Select
           data-testid="select-schedule-status-filter"
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => { setStatusFilter(e.target.value); setOffset(0) }}
         >
           {SCHEDULE_STATUS_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -483,6 +491,16 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && !error && (
+        <PaginationControls
+          total={total}
+          offset={offset}
+          pageSize={PAGE_SIZE}
+          onPageChange={setOffset}
+        />
       )}
     </div>
   )

@@ -417,13 +417,17 @@ async def test_list_schedules_requires_auth(api_client):
 
 @pytest.mark.asyncio
 async def test_list_schedules_returns_empty(api_client):
-    """GET /schedules returns a list (may not be empty due to shared test db)."""
+    """GET /schedules returns a paginated response."""
     resp = await api_client.get(
         "/schedules",
         headers={"Authorization": "Bearer test-secret"},
     )
     assert resp.status_code == 200
-    assert isinstance(resp.json(), list)
+    data = resp.json()
+    assert "items" in data
+    assert "total" in data
+    assert "limit" in data
+    assert "offset" in data
 
 
 @pytest.mark.asyncio
@@ -447,10 +451,10 @@ async def test_list_schedules_returns_created_schedules(api_client, api_test_db)
     resp = await api_client.get("/schedules", headers=headers)
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) >= 1
+    assert len(data["items"]) >= 1
 
     # Verify required fields present
-    for item in data:
+    for item in data["items"]:
         assert "id" in item
         assert "schedule_key" in item
         assert "source_id" in item
@@ -487,8 +491,8 @@ async def test_list_schedules_filter_by_status(api_client, api_test_db):
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) >= 1
-    assert all(s["status"] == "active" for s in data)
+    assert len(data["items"]) >= 1
+    assert all(s["status"] == "active" for s in data["items"])
 
 
 @pytest.mark.asyncio
@@ -514,8 +518,8 @@ async def test_list_schedules_filter_by_source_id(api_client, api_test_db):
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) >= 1
-    assert all(s["source_id"] == src_id for s in data)
+    assert len(data["items"]) >= 1
+    assert all(s["source_id"] == src_id for s in data["items"])
 
 
 @pytest.mark.asyncio
@@ -541,5 +545,5 @@ async def test_list_schedules_filter_by_recipe_id(api_client, api_test_db):
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert len(data) >= 1
-    assert all(s["recipe_id"] == recipe_id for s in data)
+    assert len(data["items"]) >= 1
+    assert all(s["recipe_id"] == recipe_id for s in data["items"])

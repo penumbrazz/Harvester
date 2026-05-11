@@ -51,6 +51,8 @@ class JobListResponse(BaseModel):
 
     items: list[JobItem]
     total: int
+    limit: int
+    offset: int
 
 
 @router.get("/status", response_model=list[QueueStatusItem])
@@ -135,4 +137,4 @@ def list_jobs(
         for j in rows
     ]
 
-    return JobListResponse(items=items, total=total)
+    return JobListResponse(items=items, total=total, limit=limit, offset=offset)

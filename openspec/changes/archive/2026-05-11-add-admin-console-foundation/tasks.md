@@ -20,5 +20,5 @@
 ## 4. Verification
 
 - [x] 4.1 运行前端格式化、lint、类型检查和单元/组件测试
-- [ ] 4.2 启动真实 Harvester API 和前端 dev server，运行 E2E 测试
+- [x] 4.2 启动真实 Harvester API 和前端 dev server，运行 E2E 测试
 - [x] 4.3 更新 README 或开发文档，说明前端启动、API 配置和测试命令

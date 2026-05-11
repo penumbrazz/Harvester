@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from harvester.api.auth import require_api_token
 from harvester.api.deps import get_db_session
+from harvester.api.schemas import PaginatedResponse
 from harvester.db.models import Source
 from harvester.domain.audit import write_audit
 from harvester.domain.state import SOURCE_TRANSITIONS, transition_entity
@@ -61,14 +62,20 @@ def _source_to_response(source: Source) -> SourceResponse:
     )
 
 
-@router.get("", response_model=list[SourceResponse])
+class SourceListResponse(PaginatedResponse[SourceResponse]):
+    """Paginated source list response."""
+
+
+@router.get("", response_model=SourceListResponse)
 def list_sources(
     status_filter: Optional[str] = Query(None, alias="status"),
     kind_filter: Optional[str] = Query(None, alias="kind"),
+    limit: int = Query(20, ge=1, le=100, description="Page size"),
+    offset: int = Query(0, ge=0, description="Page offset"),
     _token: str = _Token,
     session: Session = _Session,
 ):
-    """List all sources, optionally filtered by status and/or kind.
+    """List sources with pagination and optional filtering by status/kind.
 
     Returns sources sorted by created_at descending (newest first).
     """
@@ -79,8 +86,11 @@ def list_sources(
     if kind_filter is not None:
         query = query.filter(Source.kind == kind_filter)
 
-    sources = query.order_by(Source.created_at.desc()).all()
-    return [_source_to_response(s) for s in sources]
+    total = query.count()
+    sources = query.order_by(Source.created_at.desc()).offset(offset).limit(limit).all()
+    items = [_source_to_response(s) for s in sources]
+
+    return SourceListResponse(items=items, total=total, limit=limit, offset=offset)
 
 
 @router.post("/propose", response_model=SourceResponse, status_code=status.HTTP_201_CREATED)
