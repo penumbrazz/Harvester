@@ -10,8 +10,8 @@ from harvester.extractors.base import CandidateItem
 _FLASH_RE = re.compile(
     r"(?P<time>\d{2}:\d{2}:\d{2})\n"
     r"\n"
-    r"\[(?P<title>(?:[^\]]|\]\()[^]]*)\]\((?P<url>https?://wap\.cj\.sina\.cn/pc/7x24/\d+)\)\n"
-    r"\n"
+    r"_?\[?(?P<title>(?:[^\]\n]|\]\()[^\]\n]*)\]?\((?P<url>https?://wap\.cj\.sina\.cn/(?:pc/)?7x24/\d+)\)\n"
+    r"_?\n?"
     r"(?:(?P<read_line>[^\n]*阅读[^\n]*)\n\n)?",
     re.MULTILINE,
 )

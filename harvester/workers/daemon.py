@@ -15,11 +15,13 @@ from harvester.db.settings import DatabaseSettings
 from harvester.jobs.repository import claim_next_jobs, fail_job
 from harvester.workers.crawl import process_crawl_job
 from harvester.workers.embedding import process_embed_chunks_job
+from harvester.workers.extraction import process_extract_job
 
 logger = logging.getLogger(__name__)
 
 _EMBED_LANES = ["embed_chunks"]
 _CRAWL_LANES = ["crawl"]
+_EXTRACT_LANES = ["extract"]
 
 
 def _default_worker_id() -> str:
@@ -159,6 +161,44 @@ def run_crawl_once(
             except Exception:
                 logger.exception(
                     "Failed to dead-letter crawl job %s after unhandled error", job.id
+                )
+
+    return {
+        "claimed": len(jobs),
+        "completed": completed,
+        "failed": failed,
+    }
+
+
+def run_extract_once(
+    session: Session,
+    *,
+    limit: int = 10,
+    worker_id: str | None = None,
+) -> dict[str, int]:
+    """Claim and process a batch of extract jobs."""
+    wid = worker_id or _default_worker_id()
+    jobs = claim_next_jobs(session, wid, limit=limit, lanes=_EXTRACT_LANES)
+
+    completed = 0
+    failed = 0
+
+    for job in jobs:
+        try:
+            success = process_extract_job(session, job)
+            if success:
+                completed += 1
+            else:
+                failed += 1
+        except Exception as exc:
+            logger.error("Unhandled error processing extract job %s: %s", job.id, exc)
+            failed += 1
+            try:
+                session.rollback()
+                fail_job(session, job.id, f"Unhandled extract worker error: {exc}")
+            except Exception:
+                logger.exception(
+                    "Failed to dead-letter extract job %s after unhandled error", job.id
                 )
 
     return {

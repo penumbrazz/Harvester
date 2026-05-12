@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from harvester.adapters.firecrawl import CrawlResult
 from harvester.db.models import CrawlRun, RawObject, Recipe, Source
 from harvester.domain.audit import write_audit
+from harvester.jobs.repository import create_job
 from harvester.domain.fetch_policy import check_fetch_policy
 from harvester.domain.state import CRAWL_RUN_TRANSITIONS, transition_entity
 from harvester.jobs.archive import ArchiveConfig, ArchiveWriter, ArchiveWriteResult
@@ -270,6 +271,16 @@ def execute_crawl(
                 "http_status": crawl_result.status_code,
             },
         )
+
+        # 11. Create extraction job
+        create_job(
+            session,
+            job_type="extract",
+            payload={"raw_object_id": str(raw_id)},
+            source_id=str(source_id),
+            auto_commit=False,
+        )
+        logger.info("crawl.enqueued_extract run=%s raw=%s", run_id, raw_id)
 
         session.commit()
         logger.info(
