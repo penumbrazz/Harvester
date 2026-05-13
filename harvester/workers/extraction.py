@@ -9,19 +9,9 @@ from sqlalchemy.orm import Session
 
 from harvester.db.models import Job
 from harvester.jobs.extraction import ExtractionError, execute_extraction
-from harvester.jobs.repository import complete_job, fail_job
+from harvester.jobs.repository import complete_job, dead_letter_job, fail_job
 
 logger = logging.getLogger(__name__)
-
-
-def _dead_letter_job(session: Session, job: Job, error_message: str) -> None:
-    """Mark a job as dead-letter without creating a retry."""
-    job.last_error = error_message
-    job.locked_by = None
-    job.locked_until = None
-    job.attempts += 1
-    job.status = "dead"
-    session.commit()
 
 
 def process_extract_job(session: Session, job: Job) -> bool:
@@ -33,14 +23,14 @@ def process_extract_job(session: Session, job: Job) -> bool:
 
     raw_object_id_raw = payload.get("raw_object_id")
     if not raw_object_id_raw:
-        _dead_letter_job(session, job, "Missing raw_object_id in job payload")
+        dead_letter_job(session, job.id, "Missing raw_object_id in job payload")
         return False
 
     try:
         raw_object_id = uuid.UUID(str(raw_object_id_raw))
     except (ValueError, AttributeError):
-        _dead_letter_job(
-            session, job, f"Invalid raw_object_id: {raw_object_id_raw!r}"
+        dead_letter_job(
+            session, job.id, f"Invalid raw_object_id: {raw_object_id_raw!r}"
         )
         return False
 
@@ -61,7 +51,7 @@ def process_extract_job(session: Session, job: Job) -> bool:
             logger.warning(
                 "Permanent extraction error for job %s: %s", job.id, exc
             )
-            _dead_letter_job(session, job, str(exc))
+            dead_letter_job(session, job.id, str(exc))
             return False
 
     if result.skipped:

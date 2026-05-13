@@ -7,6 +7,7 @@ import os
 import socket
 import time
 from collections.abc import Callable
+from functools import partial
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -58,6 +59,155 @@ def _make_session() -> Session:
     return _EngineCache.get().make_session()
 
 
+def _run_lane_once(
+    session: Session,
+    lanes: list[str],
+    handler: Callable[[Session, object], bool],
+    error_label: str,
+    *,
+    limit: int = 10,
+    worker_id: str | None = None,
+) -> dict[str, int]:
+    """Claim and process a batch of jobs from the given lanes.
+
+    Parameters
+    ----------
+    session : Session
+        Active database session.
+    lanes : list[str]
+        Lane tags to claim jobs from.
+    handler : Callable[[Session, Job], bool]
+        Function that processes a single job. Returns True on success.
+    error_label : str
+        Label used in error log messages (e.g. ``"crawl"``, ``"extract"``).
+    limit : int
+        Maximum number of jobs to claim in this batch.
+    worker_id : str or None
+        Worker identifier for job claiming.
+
+    Returns
+    -------
+    dict[str, int]
+        Processing stats with keys ``claimed``, ``completed``, ``failed``.
+    """
+    wid = worker_id or _default_worker_id()
+    jobs = claim_next_jobs(session, wid, limit=limit, lanes=lanes)
+
+    completed = 0
+    failed = 0
+
+    for job in jobs:
+        try:
+            success = handler(session, job)
+            if success:
+                completed += 1
+            else:
+                failed += 1
+        except Exception as exc:
+            logger.error(
+                "Unhandled error processing %s job %s: %s", error_label, job.id, exc
+            )
+            failed += 1
+            try:
+                session.rollback()
+                fail_job(
+                    session, job.id, f"Unhandled {error_label} worker error: {exc}"
+                )
+            except Exception:
+                logger.exception(
+                    "Failed to dead-letter %s job %s after unhandled error",
+                    error_label,
+                    job.id,
+                )
+
+    return {
+        "claimed": len(jobs),
+        "completed": completed,
+        "failed": failed,
+    }
+
+
+def _run_lane_loop(
+    session_factory: Callable[[], Session],
+    run_once_fn: Callable[..., dict[str, int]],
+    lane_label: str,
+    *,
+    poll_interval: int = 10,
+    limit: int = 10,
+    worker_id: str | None = None,
+    should_stop: Callable[[], bool] | None = None,
+    **run_once_kwargs: object,
+) -> None:
+    """Generic daemon loop for any job lane.
+
+    Each iteration creates a new session, calls *run_once_fn*, closes the
+    session, and sleeps if no jobs were claimed.
+
+    Parameters
+    ----------
+    session_factory : Callable
+        Factory that returns a new Session per iteration.
+    run_once_fn : Callable
+        The ``run_*_once`` function to call each iteration.
+    lane_label : str
+        Label used in log messages.
+    poll_interval : int
+        Seconds to sleep when no jobs are claimed.
+    limit : int
+        Max jobs per iteration.
+    worker_id : str or None
+        Worker identifier.
+    should_stop : Callable or None
+        Optional callable that returns True to stop the loop.
+    **run_once_kwargs
+        Extra keyword arguments forwarded to *run_once_fn*.
+    """
+    wid = worker_id or _default_worker_id()
+
+    while True:
+        if should_stop and should_stop():
+            logger.info("%s daemon stop condition met, exiting loop", lane_label)
+            break
+
+        sess: Session | None = None
+        stats: dict[str, int] = {"claimed": 0}
+        try:
+            sess = session_factory()
+            stats = run_once_fn(sess, limit=limit, worker_id=wid, **run_once_kwargs)
+            logger.info(
+                "%s daemon round complete: claimed=%d completed=%d failed=%d",
+                lane_label,
+                stats["claimed"],
+                stats["completed"],
+                stats["failed"],
+            )
+        except Exception as exc:
+            logger.error("%s daemon round failed: %s", lane_label, exc)
+            if sess is not None:
+                try:
+                    sess.rollback()
+                except Exception:
+                    logger.exception(
+                        "Failed to rollback after %s worker error", lane_label.lower()
+                    )
+        finally:
+            if sess is not None:
+                sess.close()
+
+        if stats["claimed"] == 0:
+            logger.debug("%s daemon: no jobs claimed, sleeping %ds", lane_label, poll_interval)
+            time.sleep(poll_interval)
+
+        if should_stop and should_stop():
+            logger.info("%s daemon stop condition met after iteration, exiting loop", lane_label)
+            break
+
+
+# ---------------------------------------------------------------------------
+# Public lane-specific entry points
+# ---------------------------------------------------------------------------
+
+
 def run_once(
     session: Session,
     adapter,
@@ -66,55 +216,11 @@ def run_once(
     limit: int = 10,
     worker_id: str | None = None,
 ) -> dict[str, int]:
-    """Claim and process a batch of embed_chunks jobs.
-
-    Parameters
-    ----------
-    session : Session
-        Active database session.
-    adapter
-        Embedding adapter with an ``embed(text)`` method.
-    model_name : str
-        Model identifier written into ``chunks.embedding_model``.
-    limit : int
-        Maximum number of jobs to claim in this batch.
-    worker_id : str or None
-        Worker identifier for job claiming. Generated if not provided.
-
-    Returns
-    -------
-    dict[str, int]
-        Processing stats with keys ``claimed``, ``completed``, ``failed``.
-    """
-    wid = worker_id or _default_worker_id()
-    jobs = claim_next_jobs(session, wid, limit=limit, lanes=_EMBED_LANES)
-
-    completed = 0
-    failed = 0
-
-    for job in jobs:
-        try:
-            success = process_embed_chunks_job(session, job, adapter, model_name)
-            if success:
-                completed += 1
-            else:
-                failed += 1
-        except Exception as exc:
-            logger.error("Unhandled error processing job %s: %s", job.id, exc)
-            failed += 1
-            try:
-                session.rollback()
-                fail_job(session, job.id, f"Unhandled worker error: {exc}")
-            except Exception:
-                logger.exception(
-                    "Failed to dead-letter job %s after unhandled error", job.id
-                )
-
-    return {
-        "claimed": len(jobs),
-        "completed": completed,
-        "failed": failed,
-    }
+    """Claim and process a batch of embed_chunks jobs."""
+    handler = partial(process_embed_chunks_job, adapter=adapter, model_name=model_name)
+    return _run_lane_once(
+        session, _EMBED_LANES, handler, "embed", limit=limit, worker_id=worker_id
+    )
 
 
 def run_crawl_once(
@@ -123,51 +229,10 @@ def run_crawl_once(
     limit: int = 10,
     worker_id: str | None = None,
 ) -> dict[str, int]:
-    """Claim and process a batch of crawl jobs.
-
-    Parameters
-    ----------
-    session : Session
-        Active database session.
-    limit : int
-        Maximum number of jobs to claim in this batch.
-    worker_id : str or None
-        Worker identifier for job claiming. Generated if not provided.
-
-    Returns
-    -------
-    dict[str, int]
-        Processing stats with keys ``claimed``, ``completed``, ``failed``.
-    """
-    wid = worker_id or _default_worker_id()
-    jobs = claim_next_jobs(session, wid, limit=limit, lanes=_CRAWL_LANES)
-
-    completed = 0
-    failed = 0
-
-    for job in jobs:
-        try:
-            success = process_crawl_job(session, job)
-            if success:
-                completed += 1
-            else:
-                failed += 1
-        except Exception as exc:
-            logger.error("Unhandled error processing crawl job %s: %s", job.id, exc)
-            failed += 1
-            try:
-                session.rollback()
-                fail_job(session, job.id, f"Unhandled crawl worker error: {exc}")
-            except Exception:
-                logger.exception(
-                    "Failed to dead-letter crawl job %s after unhandled error", job.id
-                )
-
-    return {
-        "claimed": len(jobs),
-        "completed": completed,
-        "failed": failed,
-    }
+    """Claim and process a batch of crawl jobs."""
+    return _run_lane_once(
+        session, _CRAWL_LANES, process_crawl_job, "crawl", limit=limit, worker_id=worker_id
+    )
 
 
 def run_extract_once(
@@ -177,35 +242,9 @@ def run_extract_once(
     worker_id: str | None = None,
 ) -> dict[str, int]:
     """Claim and process a batch of extract jobs."""
-    wid = worker_id or _default_worker_id()
-    jobs = claim_next_jobs(session, wid, limit=limit, lanes=_EXTRACT_LANES)
-
-    completed = 0
-    failed = 0
-
-    for job in jobs:
-        try:
-            success = process_extract_job(session, job)
-            if success:
-                completed += 1
-            else:
-                failed += 1
-        except Exception as exc:
-            logger.error("Unhandled error processing extract job %s: %s", job.id, exc)
-            failed += 1
-            try:
-                session.rollback()
-                fail_job(session, job.id, f"Unhandled extract worker error: {exc}")
-            except Exception:
-                logger.exception(
-                    "Failed to dead-letter extract job %s after unhandled error", job.id
-                )
-
-    return {
-        "claimed": len(jobs),
-        "completed": completed,
-        "failed": failed,
-    }
+    return _run_lane_once(
+        session, _EXTRACT_LANES, process_extract_job, "extract", limit=limit, worker_id=worker_id
+    )
 
 
 def run_loop(
@@ -218,67 +257,23 @@ def run_loop(
     worker_id: str | None = None,
     should_stop: Callable[[], bool] | None = None,
 ) -> None:
-    """Run the embedding worker in a loop.
-
-    Creates a new session for each iteration and properly closes it afterwards
-    to avoid connection leaks in long-running Docker daemons.
-
-    Parameters
-    ----------
-    session_factory : Callable or Session
-        A factory that returns a new Session, or an existing Session.
-    adapter
-        Embedding adapter.
-    model_name : str
-        Model identifier.
-    poll_interval : int
-        Seconds to sleep between iterations when no jobs are claimed.
-    limit : int
-        Max jobs per iteration.
-    worker_id : str or None
-        Worker identifier.
-    should_stop : Callable or None
-        Optional callable that returns True to stop the loop.
-    """
-    wid = worker_id or _default_worker_id()
-    use_factory = callable(session_factory) and not isinstance(
-        session_factory, Session
+    """Run the embedding worker in a loop."""
+    factory = (
+        session_factory
+        if callable(session_factory) and not isinstance(session_factory, Session)
+        else lambda sf=session_factory: sf
     )
-
-    while True:
-        if should_stop and should_stop():
-            logger.info("Stop condition met, exiting loop")
-            break
-
-        sess: Session | None = None
-        stats: dict[str, int] = {"claimed": 0}
-        try:
-            if use_factory:
-                sess = session_factory()
-            else:
-                sess = session_factory
-
-            stats = run_once(
-                sess, adapter, model_name, limit=limit, worker_id=wid
-            )
-        except Exception as exc:
-            logger.error("Worker loop iteration failed: %s", exc)
-            if sess is not None:
-                try:
-                    sess.rollback()
-                except Exception:
-                    logger.exception("Failed to rollback after worker error")
-        finally:
-            if use_factory and sess is not None:
-                sess.close()
-
-        if stats["claimed"] == 0:
-            logger.debug("No jobs claimed, sleeping %ds", poll_interval)
-            time.sleep(poll_interval)
-
-        if should_stop and should_stop():
-            logger.info("Stop condition met after iteration, exiting loop")
-            break
+    _run_lane_loop(
+        factory,
+        run_once,
+        "Embedding",
+        poll_interval=poll_interval,
+        limit=limit,
+        worker_id=worker_id,
+        should_stop=should_stop,
+        adapter=adapter,
+        model_name=model_name,
+    )
 
 
 def run_crawl_loop(
@@ -289,65 +284,13 @@ def run_crawl_loop(
     worker_id: str | None = None,
     should_stop: Callable[[], bool] | None = None,
 ) -> None:
-    """Run the crawl worker in a loop for daemon mode.
-
-    Each iteration creates a new session, calls ``run_crawl_once``,
-    closes the session, and sleeps if no jobs were claimed.
-
-    Parameters
-    ----------
-    session_factory : Callable
-        Factory that returns a new Session per iteration.
-    poll_interval : int
-        Seconds to sleep when no jobs are claimed.
-    limit : int
-        Max jobs per iteration.
-    worker_id : str or None
-        Worker identifier.
-    should_stop : Callable or None
-        Optional callable that returns True to stop the loop.
-    """
-    wid = worker_id or _default_worker_id()
-
-    while True:
-        if should_stop and should_stop():
-            logger.info("Crawl worker daemon stop condition met, exiting loop")
-            break
-
-        sess: Session | None = None
-        stats: dict[str, int] = {"claimed": 0}
-        try:
-            sess = session_factory()
-            stats = run_crawl_once(sess, limit=limit, worker_id=wid)
-            logger.info(
-                "Crawl worker daemon round complete: "
-                "claimed=%d completed=%d failed=%d",
-                stats["claimed"],
-                stats["completed"],
-                stats["failed"],
-            )
-        except Exception as exc:
-            logger.error("Crawl worker daemon round failed: %s", exc)
-            if sess is not None:
-                try:
-                    sess.rollback()
-                except Exception:
-                    logger.exception(
-                        "Failed to rollback after crawl worker error"
-                    )
-        finally:
-            if sess is not None:
-                sess.close()
-
-        if stats["claimed"] == 0:
-            logger.debug(
-                "Crawl worker daemon: no jobs claimed, sleeping %ds",
-                poll_interval,
-            )
-            time.sleep(poll_interval)
-
-        if should_stop and should_stop():
-            logger.info(
-                "Crawl worker daemon stop condition met after iteration, exiting loop"
-            )
-            break
+    """Run the crawl worker in a loop for daemon mode."""
+    _run_lane_loop(
+        session_factory,
+        run_crawl_once,
+        "Crawl",
+        poll_interval=poll_interval,
+        limit=limit,
+        worker_id=worker_id,
+        should_stop=should_stop,
+    )

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import uuid
 from dataclasses import dataclass
@@ -24,8 +25,6 @@ logger = logging.getLogger(__name__)
 
 class ExtractionError(Exception):
     """Raised when extraction fails."""
-
-    retryable: bool = False
 
     def __init__(self, message: str, retryable: bool = False) -> None:
         super().__init__(message)
@@ -163,8 +162,6 @@ def execute_extraction(
             payload_hash=candidate.payload_hash,
             snippet=candidate.snippet,
         )
-
-        import hashlib
 
         content_hash = "sha256:" + hashlib.sha256(
             candidate.content_text.encode("utf-8")

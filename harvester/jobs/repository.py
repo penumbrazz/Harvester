@@ -246,6 +246,36 @@ def fail_job(
     session.commit()
 
 
+def dead_letter_job(
+    session: Session,
+    job_id: uuid.UUID,
+    error_message: str,
+) -> None:
+    """Mark a job as dead-letter without scheduling a retry.
+
+    Use for permanent, non-retryable failures (e.g. invalid payload).
+
+    Parameters
+    ----------
+    session : Session
+        Active database session.
+    job_id : uuid.UUID
+        The job to dead-letter.
+    error_message : str
+        Human-readable error description.
+    """
+    job = session.get(Job, job_id)
+    if job is None:
+        raise ValueError(f"Job {job_id} not found")
+
+    job.last_error = error_message
+    job.locked_by = None
+    job.locked_until = None
+    job.attempts += 1
+    job.status = "dead"
+    session.commit()
+
+
 def create_job(
     session: Session,
     job_type: str,
