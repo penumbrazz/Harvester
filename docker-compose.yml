@@ -31,3 +31,35 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+
+  scheduler:
+    build: .
+    command: uv run harvester scheduler daemon
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f '[h]arvester scheduler daemon' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  crawl-worker:
+    build: .
+    command: uv run harvester worker run --job-type crawl
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f '[h]arvester worker run --job-type crawl' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

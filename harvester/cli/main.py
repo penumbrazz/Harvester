@@ -390,25 +390,60 @@ def worker_once(
 @worker_app.command("run")
 def worker_run(
     poll_interval: int = typer.Option(
-        10, "--poll-interval", help="Seconds between polls"
+        10,
+        "--poll-interval",
+        envvar="HARVESTER_CRAWL_WORKER_POLL_INTERVAL",
+        help="Seconds between polls",
     ),
-    limit: int = typer.Option(10, "--limit", help="Max jobs per iteration"),
+    limit: int = typer.Option(
+        10,
+        "--limit",
+        envvar="HARVESTER_CRAWL_WORKER_LIMIT",
+        help="Max jobs per iteration",
+    ),
+    job_type: str = typer.Option(
+        "embed_chunks",
+        "--job-type",
+        help="Job type to process: embed_chunks or crawl",
+    ),
 ) -> None:
-    """Run the embedding worker daemon in a loop."""
-    from harvester.adapters.embedding_settings import create_embedding_adapter
-    from harvester.workers.daemon import _make_session, run_loop
+    """Run the worker daemon in a loop."""
+    valid_job_types = ("embed_chunks", "crawl")
+    if job_type not in valid_job_types:
+        typer.echo(
+            f"Error: Invalid job type '{job_type}'. "
+            f"Must be one of: {', '.join(valid_job_types)}"
+        )
+        raise typer.Exit(code=1)
 
-    adapter, model_name = create_embedding_adapter()
-    typer.echo(
-        f"Starting embedding worker daemon (poll={poll_interval}s, limit={limit})"
-    )
-    run_loop(
-        _make_session,
-        adapter,
-        model_name,
-        poll_interval=poll_interval,
-        limit=limit,
-    )
+    from harvester.workers.daemon import _make_session
+
+    if job_type == "crawl":
+        from harvester.workers.daemon import run_crawl_loop
+
+        typer.echo(
+            f"Starting crawl worker daemon (poll={poll_interval}s, limit={limit})"
+        )
+        run_crawl_loop(
+            _make_session,
+            poll_interval=poll_interval,
+            limit=limit,
+        )
+    else:
+        from harvester.adapters.embedding_settings import create_embedding_adapter
+        from harvester.workers.daemon import run_loop
+
+        adapter, model_name = create_embedding_adapter()
+        typer.echo(
+            f"Starting embedding worker daemon (poll={poll_interval}s, limit={limit})"
+        )
+        run_loop(
+            _make_session,
+            adapter,
+            model_name,
+            poll_interval=poll_interval,
+            limit=limit,
+        )
 
 
 # --- Scheduler subcommands ---
@@ -438,6 +473,35 @@ def scheduler_run() -> None:
         )
     finally:
         session.close()
+
+
+@scheduler_app.command("daemon")
+def scheduler_daemon(
+    poll_interval: int = typer.Option(
+        30,
+        "--poll-interval",
+        envvar="HARVESTER_SCHEDULER_POLL_INTERVAL",
+        help="Seconds between scheduler polls",
+    ),
+    limit: int = typer.Option(
+        100,
+        "--limit",
+        envvar="HARVESTER_SCHEDULER_LIMIT",
+        help="Max schedules to process per iteration",
+    ),
+) -> None:
+    """Run the scheduler daemon in a loop."""
+    from harvester.jobs.scheduler import run_scheduler_loop
+    from harvester.workers.daemon import _make_session
+
+    typer.echo(
+        f"Starting scheduler daemon (poll={poll_interval}s, limit={limit})"
+    )
+    run_scheduler_loop(
+        _make_session,
+        poll_interval=poll_interval,
+        limit=limit,
+    )
 
 
 # --- Queue status subcommands ---

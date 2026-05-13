@@ -168,3 +168,73 @@ class TestWorkerCLIWithQwenConfig:
         assert result.exit_code == 0
         call_args = mock_run_loop.call_args
         assert isinstance(call_args.args[1], QwenEmbeddingAdapter)
+
+
+class TestWorkerRunJobType:
+    """Tests for 'worker run --job-type' CLI argument."""
+
+    @patch("harvester.workers.daemon.run_crawl_loop")
+    @patch("harvester.workers.daemon._make_session")
+    def test_worker_run_crawl_job_type(self, mock_session, mock_crawl_loop):
+        """'harvester worker run --job-type crawl' starts crawl worker loop."""
+        mock_session.return_value = MagicMock()
+
+        result = runner.invoke(
+            app, ["worker", "run", "--job-type", "crawl", "--poll-interval", "5"]
+        )
+
+        assert result.exit_code == 0
+        mock_crawl_loop.assert_called_once()
+        assert mock_crawl_loop.call_args.kwargs["poll_interval"] == 5
+
+    @patch("harvester.workers.daemon.run_crawl_loop")
+    @patch("harvester.workers.daemon._make_session")
+    def test_worker_run_crawl_passes_limit(self, mock_session, mock_crawl_loop):
+        """'harvester worker run --job-type crawl --limit 20' passes limit."""
+        mock_session.return_value = MagicMock()
+
+        result = runner.invoke(
+            app, ["worker", "run", "--job-type", "crawl", "--limit", "20"]
+        )
+
+        assert result.exit_code == 0
+        mock_crawl_loop.assert_called_once()
+        assert mock_crawl_loop.call_args.kwargs["limit"] == 20
+
+    def test_worker_run_invalid_job_type_exits_nonzero(self):
+        """'harvester worker run --job-type unknown' exits with non-zero code."""
+        result = runner.invoke(
+            app, ["worker", "run", "--job-type", "unknown"]
+        )
+
+        assert result.exit_code != 0
+
+    @patch("harvester.workers.daemon.run_loop")
+    @patch("harvester.workers.daemon._make_session")
+    def test_worker_run_default_still_embedding(self, mock_session, mock_run_loop):
+        """'harvester worker run' without --job-type still starts embedding worker."""
+        mock_session.return_value = MagicMock()
+
+        result = runner.invoke(app, ["worker", "run"])
+
+        assert result.exit_code == 0
+        mock_run_loop.assert_called_once()
+        # Should NOT have called run_crawl_loop
+        assert "crawl" not in result.output.lower()
+        assert "embedding" in result.output.lower()
+
+    @patch("harvester.workers.daemon.run_crawl_loop")
+    @patch("harvester.workers.daemon._make_session")
+    def test_worker_run_crawl_no_embedding_adapter(self, mock_session, mock_crawl_loop):
+        """Crawl worker run should NOT initialize embedding adapter."""
+        mock_session.return_value = MagicMock()
+
+        with patch(
+            "harvester.adapters.embedding_settings.create_embedding_adapter"
+        ) as mock_adapter:
+            result = runner.invoke(
+                app, ["worker", "run", "--job-type", "crawl"]
+            )
+
+            assert result.exit_code == 0
+            mock_adapter.assert_not_called()

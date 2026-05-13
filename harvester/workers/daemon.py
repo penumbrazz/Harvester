@@ -263,6 +263,11 @@ def run_loop(
             )
         except Exception as exc:
             logger.error("Worker loop iteration failed: %s", exc)
+            if sess is not None:
+                try:
+                    sess.rollback()
+                except Exception:
+                    logger.exception("Failed to rollback after worker error")
         finally:
             if use_factory and sess is not None:
                 sess.close()
@@ -273,4 +278,76 @@ def run_loop(
 
         if should_stop and should_stop():
             logger.info("Stop condition met after iteration, exiting loop")
+            break
+
+
+def run_crawl_loop(
+    session_factory: Callable[[], Session],
+    *,
+    poll_interval: int = 10,
+    limit: int = 10,
+    worker_id: str | None = None,
+    should_stop: Callable[[], bool] | None = None,
+) -> None:
+    """Run the crawl worker in a loop for daemon mode.
+
+    Each iteration creates a new session, calls ``run_crawl_once``,
+    closes the session, and sleeps if no jobs were claimed.
+
+    Parameters
+    ----------
+    session_factory : Callable
+        Factory that returns a new Session per iteration.
+    poll_interval : int
+        Seconds to sleep when no jobs are claimed.
+    limit : int
+        Max jobs per iteration.
+    worker_id : str or None
+        Worker identifier.
+    should_stop : Callable or None
+        Optional callable that returns True to stop the loop.
+    """
+    wid = worker_id or _default_worker_id()
+
+    while True:
+        if should_stop and should_stop():
+            logger.info("Crawl worker daemon stop condition met, exiting loop")
+            break
+
+        sess: Session | None = None
+        stats: dict[str, int] = {"claimed": 0}
+        try:
+            sess = session_factory()
+            stats = run_crawl_once(sess, limit=limit, worker_id=wid)
+            logger.info(
+                "Crawl worker daemon round complete: "
+                "claimed=%d completed=%d failed=%d",
+                stats["claimed"],
+                stats["completed"],
+                stats["failed"],
+            )
+        except Exception as exc:
+            logger.error("Crawl worker daemon round failed: %s", exc)
+            if sess is not None:
+                try:
+                    sess.rollback()
+                except Exception:
+                    logger.exception(
+                        "Failed to rollback after crawl worker error"
+                    )
+        finally:
+            if sess is not None:
+                sess.close()
+
+        if stats["claimed"] == 0:
+            logger.debug(
+                "Crawl worker daemon: no jobs claimed, sleeping %ds",
+                poll_interval,
+            )
+            time.sleep(poll_interval)
+
+        if should_stop and should_stop():
+            logger.info(
+                "Crawl worker daemon stop condition met after iteration, exiting loop"
+            )
             break
