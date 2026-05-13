@@ -236,9 +236,11 @@ uv run harvester schedule create \
   --interval 1800
 ```
 
-### 运行 Scheduler One-shot
+### Scheduler 运行模式
 
-Scheduler 是 one-shot 命令，每次调用扫描到期 schedule 并创建 crawl job。可配合 cron/systemd 定期执行。
+#### One-shot（手动触发）
+
+Scheduler 的 one-shot 命令每次调用扫描到期 schedule 并创建 crawl job。可配合 cron/systemd 定期执行。
 
 ```bash
 # 执行一次 scheduler
@@ -246,14 +248,62 @@ uv run harvester scheduler run
 # 输出: scanned=N enqueued=N skipped=N duplicates=N
 ```
 
-### 运行 Crawl Worker One-shot
+#### Scheduler Daemon（长期运行）
+
+Scheduler daemon 按配置的轮询间隔持续扫描到期 schedule，自动创建 crawl job。**注意：scheduler 只创建 `crawl` job，不直接执行网络抓取。**
+
+```bash
+# 启动 scheduler daemon（默认每 30 秒轮询一次）
+uv run harvester scheduler daemon
+# 自定义轮询间隔和每轮处理数量
+uv run harvester scheduler daemon --poll-interval 10 --limit 50
+```
+
+### Crawl Worker 运行模式
+
+#### One-shot（手动触发）
 
 ```bash
 # 处理 pending 的 crawl job
 uv run harvester worker once --job-type crawl --limit 10
 ```
 
-默认 `worker once` 仍只处理 `embed_chunks` job，不会改变已有行为。
+#### Crawl Worker Daemon（长期运行）
+
+Crawl worker daemon 持续消费 `crawl` job。**不会初始化 embedding adapter，不会认领 `embed_chunks` 或 `extract` job。**
+
+```bash
+# 启动 crawl worker daemon
+uv run harvester worker run --job-type crawl --poll-interval 5 --limit 10
+```
+
+默认 `worker run`（不带 `--job-type`）仍只启动 embedding worker，不会改变已有行为。
+
+### 本地开发启动
+
+`./start.sh` 默认只启动后端 API（端口 `8001`）和前端 dev server（端口 `5173`）。
+
+```bash
+# 默认启动（不含 daemon）
+./start.sh
+
+# 启动后端 + 前端 + scheduler daemon + crawl worker daemon
+HARVESTER_START_DAEMONS=1 ./start.sh
+```
+
+### Docker Compose 部署
+
+`docker-compose.yml` 默认启动所有服务：
+- `server`：Harvester API（端口 `8001`）
+- `worker`：Embedding worker daemon
+- `scheduler`：Scheduler daemon
+- `crawl-worker`：Crawl worker daemon
+
+每个服务有独立的 command、healthcheck 和环境变量配置，便于单独重启和观察。
+
+```bash
+docker compose up -d
+```
 
 ### 查看队列状态
 
@@ -265,6 +315,21 @@ uv run harvester queue status
 curl -H "Authorization: Bearer $HARVESTER_API_TOKEN" \
   http://localhost:8001/queue/status
 ```
+
+### 架构约束
+
+- **Scheduler 只创建 `crawl` job**，不直接调用网络抓取 adapter。
+- **Embedding 只能从 `item_version -> chunk` 开始**，不能对 raw HTML/API payload 做 embedding。
+- 默认 embedding worker 不会认领 `crawl` 或 `extract` job，各 job type 完全隔离。
+
+### 审计日志保留
+
+审计事件（`audit_events`）是控制平面的近期解释层，**不是** raw evidence、content item 或 job 历史的长期存储。
+
+- **默认保留 7 天**，可通过 `HARVESTER_AUDIT_RETENTION_DAYS` 环境变量覆盖。
+- Scheduler daemon 自动按 24 小时间隔执行清理（可通过 `HARVESTER_AUDIT_CLEANUP_INTERVAL_HOURS` 调整）。
+- 清理**只删除过期 audit events**，不会删除 source、recipe、schedule、crawl run、job、raw object、content item、item version 或 chunk。
+- 归档、废弃和停用等管理动作产生的 audit events 同样遵循保留策略，但业务记录和历史引用不受影响。
 
 ## Embedding 适配器
 

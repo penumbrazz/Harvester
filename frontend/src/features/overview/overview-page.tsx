@@ -1,10 +1,12 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import type { ApiConfig } from '../../types/api'
+import type { DashboardSummary } from '../../types/observability'
 import { Button } from '../../components/ui/button'
 import { Card } from '../../components/ui/card'
 import { Input } from '../../components/ui/input'
 import { StatusPill } from '../../components/ui/status-pill'
+import { getDashboardSummary } from '../../lib/observability-api'
 import { useHealthCheck } from '../../hooks/use-health-check'
 import type { ConnectionStatus } from '../../hooks/use-health-check'
 
@@ -34,6 +36,21 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
   const { status, errorMessage, check } = useHealthCheck(config)
   const [editConfig, setEditConfig] = useState<ApiConfig>(config)
   const [editing, setEditing] = useState(!config.baseUrl)
+  const [summary, setSummary] = useState<DashboardSummary | null>(null)
+
+  const fetchSummary = useCallback(async () => {
+    if (!config.baseUrl || status !== 'connected') return
+    try {
+      const data = await getDashboardSummary(config)
+      setSummary(data)
+    } catch {
+      // silent — stats will show --
+    }
+  }, [config, status])
+
+  useEffect(() => {
+    void fetchSummary()
+  }, [fetchSummary])
 
   const handleSave = useCallback(() => {
     onConfigChange(editConfig)
@@ -177,8 +194,9 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
         )}
       </Card>
 
-      {/* Quick Stats Placeholder */}
+      {/* Quick Stats */}
       <div
+        data-testid="overview-stats"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -201,7 +219,7 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
               fontWeight: 700,
             }}
           >
-            --
+            {summary?.sources.total ?? '--'}
           </p>
         </Card>
         <Card>
@@ -220,7 +238,9 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
               fontWeight: 700,
             }}
           >
-            --
+            {summary?.crawl_runs.by_status
+              ? (summary.crawl_runs.by_status['running'] ?? 0)
+              : '--'}
           </p>
         </Card>
         <Card>
@@ -239,7 +259,7 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
               fontWeight: 700,
             }}
           >
-            --
+            {summary?.content_items.total ?? '--'}
           </p>
         </Card>
       </div>

@@ -2,13 +2,15 @@
 
 Covers: due source schedule enqueue, due topic schedule enqueue,
 not-due schedule skip, expired topic skip, inactive topic skip,
-idempotency (duplicate run), and schedule advancement.
+idempotency (duplicate run), schedule advancement,
+per-schedule error isolation, and stale next_run_at fast-forward.
 """
 
 from __future__ import annotations
 
 import uuid
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 
 import sqlalchemy as sa
 from sqlalchemy import text
@@ -319,3 +321,156 @@ class TestSchedulerPausedSchedule:
         result = run_scheduler_once(db_session, now=now, limit=100)
 
         assert result.enqueued == 0
+
+
+class TestSchedulerPerScheduleErrorIsolation:
+    """When one schedule in a batch errors, others must still advance."""
+
+    def test_healthy_schedule_advances_when_another_fails(self, db_session):
+        """A failing schedule must not prevent other schedules from advancing.
+
+        Regression test: the original code used a single commit() at the end of
+        the batch.  If one schedule raised during processing the entire
+        transaction was rolled back — so *all* schedules stayed overdue and the
+        scheduler kept hitting the same error forever (the "never runs again"
+        bug).
+        """
+        # Schedule B — will cause create_job to raise; earlier next_run_at
+        # ensures it is processed FIRST (ORDER BY next_run_at ASC).
+        src_b = _insert_source(db_session)
+        recipe_b = _insert_recipe(db_session)
+        sched_b = _make_schedule(
+            db_session,
+            source_id=src_b,
+            recipe_id=recipe_b,
+            interval_seconds=3600,
+            next_run_at=datetime.now(timezone.utc) - timedelta(hours=2),
+        )
+
+        # Schedule A — healthy; later next_run_at, processed SECOND.
+        src_a = _insert_source(db_session)
+        recipe_a = _insert_recipe(db_session)
+        sched_a = _make_schedule(
+            db_session,
+            source_id=src_a,
+            recipe_id=recipe_a,
+            interval_seconds=3600,
+            next_run_at=datetime.now(timezone.utc) - timedelta(hours=1),
+        )
+
+        now = datetime.now(timezone.utc)
+
+        original_create = __import__(
+            "harvester.jobs.repository", fromlist=["create_job"]
+        ).create_job
+
+        call_count = 0
+
+        def _flaky_create_job(session, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            # Raise on the first call to simulate a transient error
+            if call_count == 1:
+                raise RuntimeError("transient DB error")
+            return original_create(session, **kwargs)
+
+        with patch(
+            "harvester.jobs.scheduler.create_job", side_effect=_flaky_create_job
+        ):
+            result = run_scheduler_once(db_session, now=now, limit=100)
+
+        # The healthy schedule should still have been advanced
+        schedule_a = db_session.get(WatchSchedule, sched_a)
+        assert schedule_a.next_run_at > now, (
+            "Schedule A should have advanced despite Schedule B failing"
+        )
+
+    def test_error_schedule_not_paused(self, db_session):
+        """A schedule that causes a transient error should stay active."""
+        src = _insert_source(db_session)
+        recipe = _insert_recipe(db_session)
+        sched_id = _make_schedule(
+            db_session,
+            source_id=src,
+            recipe_id=recipe,
+            interval_seconds=3600,
+            next_run_at=datetime.now(timezone.utc) - timedelta(hours=1),
+        )
+
+        now = datetime.now(timezone.utc)
+
+        with patch(
+            "harvester.jobs.scheduler.create_job",
+            side_effect=RuntimeError("transient"),
+        ):
+            run_scheduler_once(db_session, now=now, limit=100)
+
+        schedule = db_session.get(WatchSchedule, sched_id)
+        assert schedule.status == "active", (
+            "Schedule should stay active after transient error"
+        )
+
+
+class TestSchedulerFastForward:
+    """When next_run_at is deeply stale, scheduler must fast-forward."""
+
+    def test_stale_next_run_at_fast_forwards_to_future(self, db_session):
+        """A schedule overdue by many intervals should jump to a future slot.
+
+        Instead of `now + interval` (which silently drops all missed windows),
+        the scheduler should fast-forward from the original next_run_at by
+        whole intervals until it reaches a future time.
+        """
+        interval = 300  # 5 minutes
+        # Schedule is 3 hours overdue (36 intervals missed)
+        stale_time = datetime.now(timezone.utc) - timedelta(hours=3)
+
+        src = _insert_source(db_session)
+        recipe = _insert_recipe(db_session)
+        sched_id = _make_schedule(
+            db_session,
+            source_id=src,
+            recipe_id=recipe,
+            interval_seconds=interval,
+            next_run_at=stale_time,
+        )
+
+        now = datetime.now(timezone.utc)
+        run_scheduler_once(db_session, now=now, limit=100)
+
+        schedule = db_session.get(WatchSchedule, sched_id)
+        # next_run_at must be in the future
+        assert schedule.next_run_at > now, (
+            f"next_run_at ({schedule.next_run_at}) should be in the future "
+            f"(now = {now})"
+        )
+        # And aligned to the interval grid starting from stale_time
+        delta = (schedule.next_run_at - stale_time).total_seconds()
+        assert delta % interval == 0, (
+            f"next_run_at should be aligned to the {interval}s interval grid, "
+            f"but delta is {delta}s"
+        )
+
+    def test_slightly_overdue_schedule_advances_one_interval(self, db_session):
+        """A schedule overdue by less than one interval should advance by one."""
+        interval = 3600
+        # Overdue by 10 minutes
+        stale_time = datetime.now(timezone.utc) - timedelta(minutes=10)
+
+        src = _insert_source(db_session)
+        recipe = _insert_recipe(db_session)
+        sched_id = _make_schedule(
+            db_session,
+            source_id=src,
+            recipe_id=recipe,
+            interval_seconds=interval,
+            next_run_at=stale_time,
+        )
+
+        now = datetime.now(timezone.utc)
+        run_scheduler_once(db_session, now=now, limit=100)
+
+        schedule = db_session.get(WatchSchedule, sched_id)
+        expected = stale_time + timedelta(seconds=interval)
+        # Allow small tolerance for test execution time
+        assert abs((schedule.next_run_at - expected).total_seconds()) < 5
