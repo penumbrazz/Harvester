@@ -239,7 +239,9 @@ class TestCrawlRunRejection:
         assert response.status_code == 400
 
     @pytest.mark.asyncio
-    async def test_policy_denial_returns_failed(self, api_client: AsyncClient, api_test_db):
+    async def test_policy_denial_returns_failed(
+        self, api_client: AsyncClient, api_test_db
+    ):
         source_id = _insert_source(api_test_db)
         recipe_id = _insert_recipe(api_test_db)
 

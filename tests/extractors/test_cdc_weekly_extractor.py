@@ -10,10 +10,7 @@ from harvester.extractors.cdc_weekly import (
 
 FIXTURE_DIR = Path(__file__).parents[1] / "fixtures"
 SOURCE_URL = "https://www.chinacdc.cn/jksj/jksj04_14249/"
-DETAIL_URL = (
-    "https://www.chinacdc.cn/jksj/jksj04_14249/202605/"
-    "t20260514_1835783.html"
-)
+DETAIL_URL = "https://www.chinacdc.cn/jksj/jksj04_14249/202605/t20260514_1835783.html"
 
 
 def _read_fixture(name: str) -> str:

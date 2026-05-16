@@ -102,9 +102,7 @@ class TestSina7x24FixtureFiles:
         path = RAW_DIR / "sina-7x24.md"
         content = path.read_text(encoding="utf-8")
         links = re.findall(r"https://wap\.cj\.sina\.cn/pc/7x24/\d+", content)
-        assert len(links) >= 3, (
-            f"Expected at least 3 news links, found {len(links)}"
-        )
+        assert len(links) >= 3, f"Expected at least 3 news links, found {len(links)}"
 
 
 class TestExpectedOutputFiles:

@@ -6,7 +6,15 @@ from unittest.mock import patch
 
 import sqlalchemy as sa
 
-from harvester.db.models import Chunk, ContentItem, CrawlRun, Job, RawObject, Recipe, Source
+from harvester.db.models import (
+    Chunk,
+    ContentItem,
+    CrawlRun,
+    Job,
+    RawObject,
+    Recipe,
+    Source,
+)
 from harvester.extractors.base import CandidateItem, ExtractionOutput
 from harvester.jobs.extraction import execute_extraction
 
@@ -86,9 +94,7 @@ class _TextExtractor:
 class TestExtractionChunking:
     """Extraction should create chunks and embedding jobs for new versions."""
 
-    def test_extraction_creates_chunks_from_normalized_text(
-        self, db_session, tmp_path
-    ):
+    def test_extraction_creates_chunks_from_normalized_text(self, db_session, tmp_path):
         """New item version should be chunked and stored in DB."""
         _, _, raw = _seed(db_session, tmp_path)
 
@@ -100,9 +106,7 @@ class TestExtractionChunking:
 
         assert result.versions_created == 1
 
-        chunks = db_session.scalars(
-            sa.select(Chunk).order_by(Chunk.chunk_index)
-        ).all()
+        chunks = db_session.scalars(sa.select(Chunk).order_by(Chunk.chunk_index)).all()
         assert len(chunks) > 0
         for chunk in chunks:
             assert chunk.text
@@ -141,10 +145,11 @@ class TestExtractionChunking:
         assert len(chunks) > 0
         # Chunks should only be created once (content hash is the same)
         from harvester.db.models import ItemVersion
+
         item = db_session.scalar(sa.select(ContentItem))
         versions = db_session.scalar(
-            sa.select(sa.func.count()).select_from(ItemVersion).where(
-                ItemVersion.content_item_id == item.id
-            )
+            sa.select(sa.func.count())
+            .select_from(ItemVersion)
+            .where(ItemVersion.content_item_id == item.id)
         )
         assert versions == 1

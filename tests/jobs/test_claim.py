@@ -83,17 +83,11 @@ class TestClaimNextJobs:
 
     def test_filters_by_lanes(self, db_session):
         """Should only claim jobs of specified types when lanes is set."""
-        crawl_id = _insert_job(
-            db_session, id=uuid.uuid4(), job_type="crawl"
-        )
-        embed_id = _insert_job(
-            db_session, id=uuid.uuid4(), job_type="embed"
-        )
+        crawl_id = _insert_job(db_session, id=uuid.uuid4(), job_type="crawl")
+        embed_id = _insert_job(db_session, id=uuid.uuid4(), job_type="embed")
         db_session.commit()
 
-        claimed = claim_next_jobs(
-            db_session, "worker-1", limit=10, lanes=["crawl"]
-        )
+        claimed = claim_next_jobs(db_session, "worker-1", limit=10, lanes=["crawl"])
         assert len(claimed) >= 1
         assert all(j.job_type == "crawl" for j in claimed)
 

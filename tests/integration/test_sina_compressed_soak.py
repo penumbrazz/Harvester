@@ -119,9 +119,9 @@ class TestSinaCompressedSoak:
 
         # Verify: content item count should match unique items, not total extractions
         total_items = db_session.scalar(
-            sa.select(sa.func.count()).select_from(ContentItem).where(
-                ContentItem.source_id == source_id
-            )
+            sa.select(sa.func.count())
+            .select_from(ContentItem)
+            .where(ContentItem.source_id == source_id)
         )
         assert total_items == expected_count, (
             f"Expected {expected_count} unique items, got {total_items}. "

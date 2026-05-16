@@ -59,9 +59,8 @@ def list_content_items(
     Joins with sources table to include source_name for display.
     """
     # Base query with source name join
-    query = (
-        session.query(ContentItem, Source.name.label("source_name"))
-        .outerjoin(Source, ContentItem.source_id == Source.id)
+    query = session.query(ContentItem, Source.name.label("source_name")).outerjoin(
+        Source, ContentItem.source_id == Source.id
     )
 
     # Apply filters
@@ -87,10 +86,14 @@ def list_content_items(
         ContentItemResponse(
             id=str(row.ContentItem.id),
             item_type=row.ContentItem.item_type,
-            source_id=str(row.ContentItem.source_id) if row.ContentItem.source_id else None,
+            source_id=str(row.ContentItem.source_id)
+            if row.ContentItem.source_id
+            else None,
             source_name=row.source_name,
             topic_watch_id=(
-                str(row.ContentItem.topic_watch_id) if row.ContentItem.topic_watch_id else None
+                str(row.ContentItem.topic_watch_id)
+                if row.ContentItem.topic_watch_id
+                else None
             ),
             title=row.ContentItem.title,
             canonical_url=row.ContentItem.canonical_url,

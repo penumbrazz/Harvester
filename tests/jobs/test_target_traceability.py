@@ -29,12 +29,8 @@ from harvester.extractors.pdf_text import PdfTextExtractor
 from harvester.jobs.extraction import execute_extraction
 
 SOURCE_URL = "https://www.chinacdc.cn/jksj/jksj04_14249/"
-DETAIL_URL = (
-    "https://www.chinacdc.cn/jksj/jksj04_14249/202605/t20260514_1835783.html"
-)
-PDF_URL = (
-    "https://www.chinacdc.cn/jksj/jksj04_14249/202605/P020260514670474006354.pdf"
-)
+DETAIL_URL = "https://www.chinacdc.cn/jksj/jksj04_14249/202605/t20260514_1835783.html"
+PDF_URL = "https://www.chinacdc.cn/jksj/jksj04_14249/202605/P020260514670474006354.pdf"
 
 LIST_HTML = """\
 <!DOCTYPE html><html><body>

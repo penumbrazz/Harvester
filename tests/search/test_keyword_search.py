@@ -131,13 +131,9 @@ class TestKeywordSearch:
 
         src_a = _make_source(db_session, "source_a")
         src_b = _make_source(db_session, "source_b")
-        ci_a = _make_item(
-            db_session, "Python Data Analysis", source_id=src_a.id
-        )
+        ci_a = _make_item(db_session, "Python Data Analysis", source_id=src_a.id)
         _make_version(db_session, ci_a.id)
-        ci_b = _make_item(
-            db_session, "Python Web Development", source_id=src_b.id
-        )
+        ci_b = _make_item(db_session, "Python Web Development", source_id=src_b.id)
         _make_version(db_session, ci_b.id)
 
         results = keyword_search(db_session, "Python", source_id=src_a.id)
@@ -162,7 +158,14 @@ class TestKeywordSearch:
         results = keyword_search(db_session, "Test")
         assert len(results) == 1
         r = results[0]
-        expected_keys = {"item_id", "title", "canonical_url", "source_id", "version_id", "created_at"}
+        expected_keys = {
+            "item_id",
+            "title",
+            "canonical_url",
+            "source_id",
+            "version_id",
+            "created_at",
+        }
         assert set(r.keys()) == expected_keys
 
     def test_dedup_group_returns_canonical_only(self, db_session):

@@ -169,9 +169,7 @@ class TestQueueStatusCLI:
         )
         db_session.commit()
 
-        with patch(
-            "harvester.workers.daemon._make_session", return_value=db_session
-        ):
+        with patch("harvester.workers.daemon._make_session", return_value=db_session):
             result = runner.invoke(app, ["queue", "status"])
 
         assert result.exit_code == 0
@@ -183,9 +181,7 @@ class TestQueueStatusCLI:
 
         runner = CliRunner()
 
-        with patch(
-            "harvester.workers.daemon._make_session", return_value=db_session
-        ):
+        with patch("harvester.workers.daemon._make_session", return_value=db_session):
             result = runner.invoke(app, ["queue", "status"])
 
         assert result.exit_code == 0

@@ -125,16 +125,12 @@ def process_crawl_job(session: Session, job: Job) -> bool:
     except CrawlExecutionError as exc:
         if exc.retryable:
             # Retryable error: use fail_job for retry/dead-letter flow
-            logger.warning(
-                "Retryable crawl error for job %s: %s", job.id, exc
-            )
+            logger.warning("Retryable crawl error for job %s: %s", job.id, exc)
             fail_job(session, job.id, str(exc))
             return False
         else:
             # Permanent error: dead-letter directly
-            logger.warning(
-                "Permanent crawl error for job %s: %s", job.id, exc
-            )
+            logger.warning("Permanent crawl error for job %s: %s", job.id, exc)
             _dead_letter_job(session, job, str(exc))
             return False
 

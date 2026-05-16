@@ -84,9 +84,7 @@ class TestSchedulerCLI:
         db_session.commit()
 
         # Patch _make_session in the daemon module (where it's imported from)
-        with patch(
-            "harvester.workers.daemon._make_session", return_value=db_session
-        ):
+        with patch("harvester.workers.daemon._make_session", return_value=db_session):
             result = runner.invoke(app, ["scheduler", "run"])
 
         assert result.exit_code == 0
@@ -98,9 +96,7 @@ class TestSchedulerCLI:
 
         runner = CliRunner()
 
-        with patch(
-            "harvester.workers.daemon._make_session", return_value=db_session
-        ):
+        with patch("harvester.workers.daemon._make_session", return_value=db_session):
             result = runner.invoke(app, ["scheduler", "run"])
 
         assert result.exit_code == 0

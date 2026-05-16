@@ -65,8 +65,15 @@ class TestSourcesTable:
     def test_required_columns(self, db_connection):
         cols = _column_names(db_connection, "sources")
         required = {
-            "id", "name", "kind", "status", "trust_level",
-            "auth_required", "failure_count", "created_at", "updated_at",
+            "id",
+            "name",
+            "kind",
+            "status",
+            "trust_level",
+            "auth_required",
+            "failure_count",
+            "created_at",
+            "updated_at",
         }
         assert required.issubset(cols)
 
@@ -90,7 +97,12 @@ class TestTopicWatchesTable:
     def test_required_columns(self, db_connection):
         cols = _column_names(db_connection, "topic_watches")
         required = {
-            "id", "name", "status", "ttl_seconds", "created_at", "updated_at",
+            "id",
+            "name",
+            "status",
+            "ttl_seconds",
+            "created_at",
+            "updated_at",
         }
         assert required.issubset(cols)
 
@@ -124,8 +136,15 @@ class TestRecipesTable:
     def test_required_columns(self, db_connection):
         cols = _column_names(db_connection, "recipes")
         required = {
-            "id", "name", "executor", "config", "risk_level",
-            "approval_status", "version", "created_at", "updated_at",
+            "id",
+            "name",
+            "executor",
+            "config",
+            "risk_level",
+            "approval_status",
+            "version",
+            "created_at",
+            "updated_at",
         }
         assert required.issubset(cols)
 
@@ -144,7 +163,11 @@ class TestCrawlRunsTable:
     def test_required_columns(self, db_connection):
         cols = _column_names(db_connection, "crawl_runs")
         required = {
-            "id", "status", "started_at", "completed_at", "created_at",
+            "id",
+            "status",
+            "started_at",
+            "completed_at",
+            "created_at",
         }
         assert required.issubset(cols)
 
@@ -173,7 +196,10 @@ class TestRawObjectsTable:
     def test_required_columns(self, db_connection):
         cols = _column_names(db_connection, "raw_objects")
         required = {
-            "id", "content_hash", "storage_uri", "created_at",
+            "id",
+            "content_hash",
+            "storage_uri",
+            "created_at",
         }
         assert required.issubset(cols)
 

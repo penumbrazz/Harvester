@@ -43,7 +43,9 @@ def test_alembic_downgrade_base(_test_db_url, _test_db_engine, _test_db_name):
             )
         )
         tables = result.fetchall()
-        assert len(tables) == 0, f"Expected no user tables after downgrade, got {tables}"
+        assert len(tables) == 0, (
+            f"Expected no user tables after downgrade, got {tables}"
+        )
 
     # Re-upgrade for other tests in the session
     env_backup = os.environ.pop("HARVESTER_DATABASE_URL", None)

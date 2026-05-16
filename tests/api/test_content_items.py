@@ -112,7 +112,9 @@ async def test_content_list_returns_empty_when_no_items(content_api_client):
 
 
 @pytest.mark.asyncio
-async def test_content_list_returns_expected_fields(content_api_client, content_test_db):
+async def test_content_list_returns_expected_fields(
+    content_api_client, content_test_db
+):
     """Each content item must contain id, item_type, source_id, title, canonical_url, status, created_at, updated_at."""
     engine = create_engine(content_test_db)
     with Session(bind=engine) as session:
@@ -242,7 +244,9 @@ async def test_content_list_total_count(content_api_client, content_test_db):
 
 
 @pytest.mark.asyncio
-async def test_content_list_sorted_by_updated_at_desc(content_api_client, content_test_db):
+async def test_content_list_sorted_by_updated_at_desc(
+    content_api_client, content_test_db
+):
     """Items should be sorted by updated_at descending (most recent first)."""
     engine = create_engine(content_test_db)
     with Session(bind=engine) as session:
@@ -268,7 +272,9 @@ async def test_content_list_sorted_by_updated_at_desc(content_api_client, conten
 
 
 @pytest.mark.asyncio
-async def test_content_list_does_not_return_raw_payload(content_api_client, content_test_db):
+async def test_content_list_does_not_return_raw_payload(
+    content_api_client, content_test_db
+):
     """Response must not contain raw HTML or API payload fields."""
     engine = create_engine(content_test_db)
     with Session(bind=engine) as session:

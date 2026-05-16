@@ -83,9 +83,7 @@ def cleanup_expired_payloads(
     )
 
     for raw_obj in expired:
-        retain_str = (
-            raw_obj.retain_until.isoformat() if raw_obj.retain_until else "N/A"
-        )
+        retain_str = raw_obj.retain_until.isoformat() if raw_obj.retain_until else "N/A"
         logger.info(
             "Raw object %s expired (retain_until=%s, storage_uri=%s)%s",
             raw_obj.id,

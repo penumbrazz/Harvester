@@ -69,9 +69,7 @@ class TestScheduleCLIHttpOnly:
                     if "db" in node.module and "session" in str(
                         [alias.name for alias in (node.names or [])]
                     ):
-                        pytest.fail(
-                            f"CLI imports database session from {node.module}"
-                        )
+                        pytest.fail(f"CLI imports database session from {node.module}")
 
     def test_schedule_create_output_contains_id(self):
         """CLI should output schedule id on success."""

@@ -73,8 +73,7 @@ def get_queue_status(
         )
     ).fetchall()
     return [
-        QueueStatusItem(job_type=row[0], status=row[1], count=row[2])
-        for row in rows
+        QueueStatusItem(job_type=row[0], status=row[1], count=row[2]) for row in rows
     ]
 
 
@@ -110,12 +109,7 @@ def list_jobs(
             ) from None
 
     total = query.count()
-    rows = (
-        query.order_by(desc(Job.created_at))
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
+    rows = query.order_by(desc(Job.created_at)).offset(offset).limit(limit).all()
 
     items = [
         JobItem(

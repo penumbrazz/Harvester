@@ -144,8 +144,6 @@ class TestDedupCollapse:
         iv_d.dedup_group_id = dg2.id
         db_session.flush()
 
-        result = collapse_dedup_groups(
-            db_session, [iv_a.id, iv_b.id, iv_c.id, iv_d.id]
-        )
+        result = collapse_dedup_groups(db_session, [iv_a.id, iv_b.id, iv_c.id, iv_d.id])
         assert set(result) == {iv_a.id, iv_c.id}
         assert len(result) == 2

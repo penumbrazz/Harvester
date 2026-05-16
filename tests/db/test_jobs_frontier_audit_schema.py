@@ -48,8 +48,15 @@ class TestJobsTable:
     def test_required_columns(self, db_connection):
         cols = _column_names(db_connection, "jobs")
         required = {
-            "id", "job_type", "status", "priority",
-            "attempts", "max_attempts", "payload", "created_at", "updated_at",
+            "id",
+            "job_type",
+            "status",
+            "priority",
+            "attempts",
+            "max_attempts",
+            "payload",
+            "created_at",
+            "updated_at",
         }
         assert required.issubset(cols)
 
@@ -88,7 +95,10 @@ class TestSourceFrontiersTable:
     def test_required_columns(self, db_connection):
         cols = _column_names(db_connection, "source_frontiers")
         required = {
-            "id", "source_id", "cursor_value", "updated_at",
+            "id",
+            "source_id",
+            "cursor_value",
+            "updated_at",
         }
         assert required.issubset(cols)
 
@@ -114,7 +124,11 @@ class TestAuditEventsTable:
     def test_required_columns(self, db_connection):
         cols = _column_names(db_connection, "audit_events")
         required = {
-            "id", "actor", "action", "entity_type", "created_at",
+            "id",
+            "actor",
+            "action",
+            "entity_type",
+            "created_at",
         }
         assert required.issubset(cols)
 

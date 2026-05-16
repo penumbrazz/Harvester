@@ -46,9 +46,7 @@ class TestUpdateFrontier:
         source_id = _insert_source(db_session, id=uuid.uuid4())
         db_session.commit()
 
-        frontier = update_frontier(
-            db_session, source_id, cursor_value="100"
-        )
+        frontier = update_frontier(db_session, source_id, cursor_value="100")
         assert frontier is not None
         assert frontier.source_id == source_id
         assert frontier.cursor_value == "100"
@@ -58,12 +56,8 @@ class TestUpdateFrontier:
         source_id = _insert_source(db_session, id=uuid.uuid4())
         db_session.commit()
 
-        f1 = update_frontier(
-            db_session, source_id, cursor_value="100"
-        )
-        f2 = update_frontier(
-            db_session, source_id, cursor_value="200"
-        )
+        f1 = update_frontier(db_session, source_id, cursor_value="100")
+        f2 = update_frontier(db_session, source_id, cursor_value="200")
 
         assert f2.cursor_value == "200"
         assert f2.id == f1.id

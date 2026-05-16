@@ -135,9 +135,10 @@ class TestArchiveOversizedRejection:
                 crawl_run_id=uuid.uuid4(),
                 content_type="text/html",
             )
-        assert "oversized" in str(exc_info.value).lower() or "exceeds" in str(
-            exc_info.value
-        ).lower()
+        assert (
+            "oversized" in str(exc_info.value).lower()
+            or "exceeds" in str(exc_info.value).lower()
+        )
 
     def test_accepts_exact_max_size(self, tmp_path: Path):
         config = ArchiveConfig(

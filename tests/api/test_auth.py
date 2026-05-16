@@ -58,10 +58,13 @@ def auth_test_db():
 
 @pytest.fixture()
 def app(auth_test_db):
-    with patch.dict(os.environ, {
-        "HARVESTER_API_TOKEN": "test-secret",
-        "HARVESTER_DATABASE_URL": auth_test_db,
-    }):
+    with patch.dict(
+        os.environ,
+        {
+            "HARVESTER_API_TOKEN": "test-secret",
+            "HARVESTER_DATABASE_URL": auth_test_db,
+        },
+    ):
         yield create_app()
 
 
@@ -75,7 +78,9 @@ async def client(app):
 @pytest.mark.asyncio
 async def test_missing_token_returns_401(client):
     """POST /sources/propose without token should return 401."""
-    response = await client.post("/sources/propose", json={"name": "test", "kind": "web"})
+    response = await client.post(
+        "/sources/propose", json={"name": "test", "kind": "web"}
+    )
     assert response.status_code == 401
 
 
@@ -115,10 +120,14 @@ async def test_get_health_no_auth_required():
 @pytest.mark.asyncio
 async def test_no_token_configured_returns_401(auth_test_db):
     """Mutating endpoints must return 401 when HARVESTER_API_TOKEN is not set."""
-    with patch.dict(os.environ, {
-        "HARVESTER_API_TOKEN": "",
-        "HARVESTER_DATABASE_URL": auth_test_db,
-    }, clear=False):
+    with patch.dict(
+        os.environ,
+        {
+            "HARVESTER_API_TOKEN": "",
+            "HARVESTER_DATABASE_URL": auth_test_db,
+        },
+        clear=False,
+    ):
         os.environ.pop("HARVESTER_API_TOKEN", None)
         app = create_app()
     transport = ASGITransport(app=app)

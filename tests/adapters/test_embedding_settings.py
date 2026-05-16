@@ -45,9 +45,7 @@ class TestEmbeddingSettingsFromEnv:
             assert settings.adapter == "qwen"
 
     def test_model_from_env(self):
-        with patch.dict(
-            os.environ, {"HARVESTER_EMBEDDING_MODEL": "text-embedding-v3"}
-        ):
+        with patch.dict(os.environ, {"HARVESTER_EMBEDDING_MODEL": "text-embedding-v3"}):
             settings = EmbeddingSettings()
             assert settings.model == "text-embedding-v3"
 
@@ -57,9 +55,7 @@ class TestEmbeddingSettingsFromEnv:
             assert settings.dimension == 768
 
     def test_timeout_from_env(self):
-        with patch.dict(
-            os.environ, {"HARVESTER_QWEN_EMBEDDING_TIMEOUT_SECONDS": "60"}
-        ):
+        with patch.dict(os.environ, {"HARVESTER_QWEN_EMBEDDING_TIMEOUT_SECONDS": "60"}):
             settings = EmbeddingSettings()
             assert settings.qwen_timeout_seconds == 60
 

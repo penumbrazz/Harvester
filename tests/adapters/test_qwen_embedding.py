@@ -96,9 +96,7 @@ class TestQwenAdapterTimeout:
 
     def test_timeout_raises_embedding_error(self):
         transport = httpx.MockTransport(
-            lambda req: (_ for _ in ()).throw(
-                httpx.TimeoutException("timed out")
-            )
+            lambda req: (_ for _ in ()).throw(httpx.TimeoutException("timed out"))
         )
         adapter = _make_adapter(transport)
         with pytest.raises(EmbeddingAdapterError, match="timed out"):
@@ -130,27 +128,21 @@ class TestQwenAdapterMissingEmbedding:
 
     def test_empty_data_array_raises_error(self):
         body = {"object": "list", "data": [], "model": "test"}
-        transport = httpx.MockTransport(
-            lambda req: httpx.Response(200, json=body)
-        )
+        transport = httpx.MockTransport(lambda req: httpx.Response(200, json=body))
         adapter = _make_adapter(transport)
         with pytest.raises(EmbeddingAdapterError, match="Empty data array"):
             adapter.embed("test")
 
     def test_missing_data_key_raises_error(self):
         body = {"object": "list", "model": "test"}
-        transport = httpx.MockTransport(
-            lambda req: httpx.Response(200, json=body)
-        )
+        transport = httpx.MockTransport(lambda req: httpx.Response(200, json=body))
         adapter = _make_adapter(transport)
         with pytest.raises(EmbeddingAdapterError, match="Missing embedding"):
             adapter.embed("test")
 
     def test_missing_embedding_field_raises_error(self):
         body = {"data": [{"object": "embedding", "index": 0}]}
-        transport = httpx.MockTransport(
-            lambda req: httpx.Response(200, json=body)
-        )
+        transport = httpx.MockTransport(lambda req: httpx.Response(200, json=body))
         adapter = _make_adapter(transport)
         with pytest.raises(EmbeddingAdapterError, match="Missing embedding"):
             adapter.embed("test")
@@ -161,9 +153,7 @@ class TestQwenAdapterDimensionMismatch:
 
     def test_wrong_dimension_raises_error(self):
         wrong_embedding = [0.1] * 768
-        transport = httpx.MockTransport(
-            lambda req: _success_response(wrong_embedding)
-        )
+        transport = httpx.MockTransport(lambda req: _success_response(wrong_embedding))
         adapter = _make_adapter(transport, dimension=1536)
         with pytest.raises(EmbeddingAdapterError, match="dimension mismatch"):
             adapter.embed("test")
@@ -217,9 +207,7 @@ class TestQwenAdapterNetworkError:
 
     def test_connection_error_raises_embedding_error(self):
         transport = httpx.MockTransport(
-            lambda req: (_ for _ in ()).throw(
-                httpx.ConnectError("Connection refused")
-            )
+            lambda req: (_ for _ in ()).throw(httpx.ConnectError("Connection refused"))
         )
         adapter = _make_adapter(transport)
         with pytest.raises(EmbeddingAdapterError, match="HTTP error"):

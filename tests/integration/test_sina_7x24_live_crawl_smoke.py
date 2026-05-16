@@ -48,7 +48,9 @@ def _insert_source(db_session) -> Source:
     return source
 
 
-@pytest.mark.skipif(not LIVE_CRAWL_ENABLED, reason="HARVESTER_ENABLE_LIVE_CRAWL not set")
+@pytest.mark.skipif(
+    not LIVE_CRAWL_ENABLED, reason="HARVESTER_ENABLE_LIVE_CRAWL not set"
+)
 class TestSina7x24LiveCrawlSmoke:
     """Live smoke test — only runs when HARVESTER_ENABLE_LIVE_CRAWL=1.
 
@@ -107,9 +109,7 @@ class TestSina7x24LiveCrawlSmoke:
                 content_item_id=item.id,
                 raw_object_id=raw_obj.id,
             )
-            hash_str = hashlib.sha256(
-                (c.content_text or "").encode()
-            ).hexdigest()
+            hash_str = hashlib.sha256((c.content_text or "").encode()).hexdigest()
             create_version_if_changed(
                 db_session,
                 content_item_id=item.id,

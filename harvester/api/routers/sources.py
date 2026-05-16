@@ -93,7 +93,9 @@ def list_sources(
     return SourceListResponse(items=items, total=total, limit=limit, offset=offset)
 
 
-@router.post("/propose", response_model=SourceResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/propose", response_model=SourceResponse, status_code=status.HTTP_201_CREATED
+)
 def propose_source(
     req: SourceProposeRequest,
     _token: str = _Token,
@@ -102,7 +104,9 @@ def propose_source(
     """Propose a new candidate source."""
     existing = session.query(Source).filter(Source.name == req.name).first()
     if existing:
-        raise HTTPException(status_code=409, detail=f"Source '{req.name}' already exists")
+        raise HTTPException(
+            status_code=409, detail=f"Source '{req.name}' already exists"
+        )
 
     source = Source(
         id=uuid.uuid4(),
@@ -135,7 +139,9 @@ def _resolve_source(source_id: str, session: Session) -> Source:
     try:
         parsed_uuid = uuid.UUID(source_id)
     except ValueError:
-        raise HTTPException(status_code=422, detail="Invalid source_id format") from None
+        raise HTTPException(
+            status_code=422, detail="Invalid source_id format"
+        ) from None
     source = session.get(Source, parsed_uuid)
     if not source:
         raise HTTPException(status_code=404, detail="Source not found")
@@ -159,11 +165,15 @@ def promote_source(
     elif current == "testing":
         target = "watched"
     else:
-        raise HTTPException(status_code=400, detail=f"Cannot promote source in '{current}' status")
+        raise HTTPException(
+            status_code=400, detail=f"Cannot promote source in '{current}' status"
+        )
 
     reason = body.reason if body else None
     try:
-        transition_entity(session, source, SOURCE_TRANSITIONS, target, "api", "source", reason=reason)
+        transition_entity(
+            session, source, SOURCE_TRANSITIONS, target, "api", "source", reason=reason
+        )
     except ValueError as e:
         # Commit to persist the rejection audit written by transition_entity.
         session.commit()
@@ -184,7 +194,9 @@ def pause_source(
     source = _resolve_source(source_id, session)
 
     try:
-        transition_entity(session, source, SOURCE_TRANSITIONS, "paused", "api", "source")
+        transition_entity(
+            session, source, SOURCE_TRANSITIONS, "paused", "api", "source"
+        )
     except ValueError as e:
         session.commit()
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -204,7 +216,9 @@ def resume_source(
     source = _resolve_source(source_id, session)
 
     try:
-        transition_entity(session, source, SOURCE_TRANSITIONS, "watched", "api", "source")
+        transition_entity(
+            session, source, SOURCE_TRANSITIONS, "watched", "api", "source"
+        )
     except ValueError as e:
         session.commit()
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -236,7 +250,9 @@ def update_source(
     if req.name is not None and req.name != source.name:
         conflict = session.query(Source).filter(Source.name == req.name).first()
         if conflict:
-            raise HTTPException(status_code=409, detail=f"Source '{req.name}' already exists")
+            raise HTTPException(
+                status_code=409, detail=f"Source '{req.name}' already exists"
+            )
         source.name = req.name
 
     if req.url is not None:
@@ -251,7 +267,11 @@ def update_source(
         action="source.update",
         entity_type="source",
         entity_id=source.id,
-        after_state={"name": source.name, "url": source.url, "trust_level": source.trust_level},
+        after_state={
+            "name": source.name,
+            "url": source.url,
+            "trust_level": source.trust_level,
+        },
     )
     session.commit()
     session.refresh(source)
@@ -268,7 +288,9 @@ def archive_source(
     source = _resolve_source(source_id, session)
 
     try:
-        transition_entity(session, source, SOURCE_TRANSITIONS, "archived", "api", "source")
+        transition_entity(
+            session, source, SOURCE_TRANSITIONS, "archived", "api", "source"
+        )
     except ValueError as e:
         session.commit()
         raise HTTPException(status_code=400, detail=str(e)) from e

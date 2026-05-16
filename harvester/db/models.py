@@ -33,7 +33,9 @@ class Source(Base):
     kind: Mapped[str] = mapped_column(String(64), nullable=False)
     url: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
-    trust_level: Mapped[str] = mapped_column(String(16), nullable=False, default="medium")
+    trust_level: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="medium"
+    )
     auth_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     default_recipe_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("recipes.id"), nullable=True
@@ -82,7 +84,9 @@ class TopicSource(Base):
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
     )
     topic_watch_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("topic_watches.id", ondelete="CASCADE"), nullable=False
+        UUID(as_uuid=True),
+        ForeignKey("topic_watches.id", ondelete="CASCADE"),
+        nullable=False,
     )
     source_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("sources.id", ondelete="CASCADE"), nullable=False
@@ -92,7 +96,9 @@ class TopicSource(Base):
     )
 
     __table_args__ = (
-        sa.UniqueConstraint("topic_watch_id", "source_id", name="uq_topic_sources_pair"),
+        sa.UniqueConstraint(
+            "topic_watch_id", "source_id", name="uq_topic_sources_pair"
+        ),
     )
 
 
@@ -232,9 +238,7 @@ class CrawlTarget(Base):
         String(32), nullable=False, default="unknown"
     )
     external_item_id: Mapped[str | None] = mapped_column(String(512), nullable=True)
-    status: Mapped[str] = mapped_column(
-        String(32), nullable=False, default="pending"
-    )
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="pending")
     depth: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     last_raw_object_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -271,9 +275,7 @@ class CrawlTarget(Base):
             name="ck_crawl_targets_status",
         ),
         sa.CheckConstraint("depth >= 0", name="ck_crawl_targets_depth"),
-        sa.CheckConstraint(
-            "failure_count >= 0", name="ck_crawl_targets_failure_count"
-        ),
+        sa.CheckConstraint("failure_count >= 0", name="ck_crawl_targets_failure_count"),
         sa.UniqueConstraint(
             "source_id",
             "target_role",
@@ -323,7 +325,8 @@ class ContentItem(Base):
 
     __table_args__ = (
         sa.UniqueConstraint(
-            "source_id", "external_item_id",
+            "source_id",
+            "external_item_id",
             name="uq_content_items_source_external_id",
         ),
         sa.Index("ix_content_items_canonical_url_hash", "canonical_url_hash"),
@@ -347,7 +350,9 @@ class ItemObservation(Base):
     raw_object_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("raw_objects.id"), nullable=False
     )
-    extraction_run_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    extraction_run_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
     position: Mapped[int | None] = mapped_column(Integer, nullable=True)
     observed_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     payload_hash: Mapped[str | None] = mapped_column(String(128), nullable=True)
@@ -361,7 +366,8 @@ class ItemObservation(Base):
 
     __table_args__ = (
         sa.UniqueConstraint(
-            "content_item_id", "raw_object_id",
+            "content_item_id",
+            "raw_object_id",
             name="uq_item_observations_item_raw",
         ),
     )
@@ -420,7 +426,8 @@ class ItemVersion(Base):
 
     __table_args__ = (
         sa.UniqueConstraint(
-            "content_item_id", "content_hash",
+            "content_item_id",
+            "content_hash",
             name="uq_item_versions_content_hash",
         ),
     )
@@ -456,9 +463,7 @@ class Chunk(Base):
         DateTime(timezone=True), nullable=False, default=_utcnow
     )
 
-    __table_args__ = (
-        sa.Index("ix_chunks_item_version_id", "item_version_id"),
-    )
+    __table_args__ = (sa.Index("ix_chunks_item_version_id", "item_version_id"),)
 
 
 # ---------------------------------------------------------------------------
@@ -565,9 +570,7 @@ class WatchSchedule(Base):
         ForeignKey("recipes.id", ondelete="CASCADE"),
         nullable=False,
     )
-    status: Mapped[str] = mapped_column(
-        String(32), nullable=False, default="active"
-    )
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
     interval_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
     next_run_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
@@ -609,7 +612,9 @@ class AuditEvent(Base):
     actor: Mapped[str | None] = mapped_column(String(255), nullable=True)
     action: Mapped[str] = mapped_column(String(64), nullable=False)
     entity_type: Mapped[str] = mapped_column(String(64), nullable=False)
-    entity_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    entity_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), nullable=True
+    )
     before_state: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     after_state: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     reason: Mapped[str | None] = mapped_column(Text, nullable=True)

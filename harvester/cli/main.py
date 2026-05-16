@@ -494,9 +494,7 @@ def scheduler_daemon(
     from harvester.jobs.scheduler import run_scheduler_loop
     from harvester.workers.daemon import _make_session
 
-    typer.echo(
-        f"Starting scheduler daemon (poll={poll_interval}s, limit={limit})"
-    )
+    typer.echo(f"Starting scheduler daemon (poll={poll_interval}s, limit={limit})")
     run_scheduler_loop(
         _make_session,
         poll_interval=poll_interval,

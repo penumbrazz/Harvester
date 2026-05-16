@@ -58,7 +58,11 @@ class TestContentItemsTable:
     def test_required_columns(self, db_connection):
         cols = _column_names(db_connection, "content_items")
         required = {
-            "id", "item_type", "status", "created_at", "updated_at",
+            "id",
+            "item_type",
+            "status",
+            "created_at",
+            "updated_at",
         }
         assert required.issubset(cols)
 
@@ -91,7 +95,10 @@ class TestItemObservationsTable:
     def test_required_columns(self, db_connection):
         cols = _column_names(db_connection, "item_observations")
         required = {
-            "id", "content_item_id", "raw_object_id", "created_at",
+            "id",
+            "content_item_id",
+            "raw_object_id",
+            "created_at",
         }
         assert required.issubset(cols)
 
@@ -116,7 +123,10 @@ class TestItemVersionsTable:
     def test_required_columns(self, db_connection):
         cols = _column_names(db_connection, "item_versions")
         required = {
-            "id", "content_item_id", "content_hash", "created_at",
+            "id",
+            "content_item_id",
+            "content_hash",
+            "created_at",
         }
         assert required.issubset(cols)
 
@@ -158,8 +168,12 @@ class TestChunksTable:
     def test_required_columns(self, db_connection):
         cols = _column_names(db_connection, "chunks")
         required = {
-            "id", "item_version_id", "chunk_index", "text",
-            "embedding_status", "created_at",
+            "id",
+            "item_version_id",
+            "chunk_index",
+            "text",
+            "embedding_status",
+            "created_at",
         }
         assert required.issubset(cols)
 

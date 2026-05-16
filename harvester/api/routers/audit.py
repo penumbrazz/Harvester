@@ -33,7 +33,9 @@ def _summarize_state(state: dict | None) -> str | None:
         return None
     parts = []
     for key, value in state.items():
-        val_str = json.dumps(value, default=str) if not isinstance(value, str) else value
+        val_str = (
+            json.dumps(value, default=str) if not isinstance(value, str) else value
+        )
         if len(val_str) > _SUMMARY_MAX_LEN:
             val_str = val_str[: _SUMMARY_MAX_LEN - 3] + "..."
         parts.append(f"{key}={val_str}")
@@ -93,7 +95,9 @@ def list_audit_events(
         query = query.filter(AuditEvent.created_at <= time_to)
 
     total = query.count()
-    events = query.order_by(desc(AuditEvent.created_at)).offset(offset).limit(limit).all()
+    events = (
+        query.order_by(desc(AuditEvent.created_at)).offset(offset).limit(limit).all()
+    )
 
     return AuditEventListResponse(
         items=[

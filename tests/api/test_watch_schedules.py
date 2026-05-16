@@ -117,7 +117,12 @@ def _insert_recipe(db_url: str, approval_status: str = "approved") -> str:
                 "created_at, updated_at) "
                 "VALUES (:id, :name, 'firecrawl', 'low', :status, 1, :ts, :ts)"
             ),
-            {"id": rid, "name": f"recipe_{rid.hex[:8]}", "status": approval_status, "ts": now},
+            {
+                "id": rid,
+                "name": f"recipe_{rid.hex[:8]}",
+                "status": approval_status,
+                "ts": now,
+            },
         )
         conn.commit()
     engine.dispose()

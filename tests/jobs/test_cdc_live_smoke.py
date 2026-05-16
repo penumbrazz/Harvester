@@ -35,9 +35,7 @@ class TestCdcLiveSmoke:
         assert resp.status_code == 200
         assert "text/html" in resp.headers.get("content-type", "")
 
-        output = CdcWeeklyListExtractor().extract(
-            {"source_url": LIST_URL}, resp.text
-        )
+        output = CdcWeeklyListExtractor().extract({"source_url": LIST_URL}, resp.text)
         assert len(output.items) >= 1
         assert len(output.discovered_targets) >= 1
 

@@ -65,9 +65,7 @@ class TestLeaseExpiry:
 
         # Simulate a worker claiming the job with an expired lease
         past = datetime.now(timezone.utc) - timedelta(minutes=10)
-        _set_job_status(
-            db_session, job_id, "running", "old-worker", past
-        )
+        _set_job_status(db_session, job_id, "running", "old-worker", past)
         db_session.commit()
 
         # claim_next_jobs should automatically recover expired leases
@@ -84,9 +82,7 @@ class TestLeaseExpiry:
 
         # Set a valid future lease
         future = datetime.now(timezone.utc) + timedelta(minutes=5)
-        _set_job_status(
-            db_session, job_id, "running", "active-worker", future
-        )
+        _set_job_status(db_session, job_id, "running", "active-worker", future)
         db_session.commit()
 
         # Pending-only filter should not pick this up
@@ -99,9 +95,7 @@ class TestRetryMechanism:
 
     def test_failed_job_creates_retry_when_under_max_attempts(self, db_session):
         """A failed job with attempts < max_attempts should create a retry job."""
-        job_id = _insert_job(
-            db_session, id=uuid.uuid4(), attempts=0, max_attempts=3
-        )
+        job_id = _insert_job(db_session, id=uuid.uuid4(), attempts=0, max_attempts=3)
         db_session.commit()
 
         # Claim the job first so it is in running state
@@ -128,9 +122,7 @@ class TestRetryMechanism:
 
     def test_retry_job_has_backoff_delay(self, db_session):
         """Retry jobs should have a run_after set in the future."""
-        job_id = _insert_job(
-            db_session, id=uuid.uuid4(), attempts=0, max_attempts=3
-        )
+        job_id = _insert_job(db_session, id=uuid.uuid4(), attempts=0, max_attempts=3)
         db_session.commit()
 
         claim_next_jobs(db_session, "worker-1", limit=1)
@@ -167,9 +159,7 @@ class TestRetryMechanism:
 
     def test_exhausted_job_becomes_dead_letter(self, db_session):
         """A job that has exhausted max_attempts should become 'dead'."""
-        job_id = _insert_job(
-            db_session, id=uuid.uuid4(), attempts=2, max_attempts=3
-        )
+        job_id = _insert_job(db_session, id=uuid.uuid4(), attempts=2, max_attempts=3)
         db_session.commit()
 
         claim_next_jobs(db_session, "worker-1", limit=1)

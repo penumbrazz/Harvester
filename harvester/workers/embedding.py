@@ -68,9 +68,7 @@ def process_embed_chunks_job(
     try:
         chunk_id = uuid.UUID(str(chunk_id_raw))
     except (ValueError, AttributeError):
-        _dead_letter_job(
-            session, job, f"Invalid chunk_id in payload: {chunk_id_raw!r}"
-        )
+        _dead_letter_job(session, job, f"Invalid chunk_id in payload: {chunk_id_raw!r}")
         return False
 
     # --- Load chunk (permanent error — dead-letter directly) ---

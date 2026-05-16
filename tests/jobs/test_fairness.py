@@ -77,7 +77,10 @@ class TestPerSourceCap:
         db_session.commit()
 
         claimed = claim_next_jobs(
-            db_session, "test-worker", limit=5, max_per_source=2,
+            db_session,
+            "test-worker",
+            limit=5,
+            max_per_source=2,
         )
         claimed_ids = [j.id for j in claimed]
         assert blocked_id not in claimed_ids
@@ -101,7 +104,10 @@ class TestPerSourceCap:
         db_session.commit()
 
         claimed = claim_next_jobs(
-            db_session, "test-worker", limit=5, max_per_source=2,
+            db_session,
+            "test-worker",
+            limit=5,
+            max_per_source=2,
         )
         claimed_ids = [j.id for j in claimed]
         assert pa in claimed_ids
@@ -126,7 +132,10 @@ class TestPerJobTypeCap:
         db_session.commit()
 
         claimed = claim_next_jobs(
-            db_session, "test-worker", limit=5, max_per_job_type=3,
+            db_session,
+            "test-worker",
+            limit=5,
+            max_per_job_type=3,
         )
         claimed_ids = [j.id for j in claimed]
         assert blocked_id not in claimed_ids
@@ -149,12 +158,18 @@ class TestProtectedLanes:
 
         # Manual lane job from same source
         manual_id = _insert_job(
-            db_session, source_id=source_a, lane="manual", priority=10,
+            db_session,
+            source_id=source_a,
+            lane="manual",
+            priority=10,
         )
         db_session.commit()
 
         claimed = claim_next_jobs(
-            db_session, "test-worker", limit=1, max_per_source=2,
+            db_session,
+            "test-worker",
+            limit=1,
+            max_per_source=2,
         )
         assert len(claimed) == 1
         assert claimed[0].id == manual_id
@@ -170,12 +185,18 @@ class TestProtectedLanes:
 
         # Failure lane job of same type
         failure_id = _insert_job(
-            db_session, job_type="crawl", lane="failure", priority=10,
+            db_session,
+            job_type="crawl",
+            lane="failure",
+            priority=10,
         )
         db_session.commit()
 
         claimed = claim_next_jobs(
-            db_session, "test-worker", limit=1, max_per_job_type=3,
+            db_session,
+            "test-worker",
+            limit=1,
+            max_per_job_type=3,
         )
         assert len(claimed) == 1
         assert claimed[0].id == failure_id
@@ -187,19 +208,27 @@ class TestProtectedLanes:
         # Saturate both caps
         for _ in range(5):
             jid = _insert_job(
-                db_session, source_id=source_a, job_type="crawl",
+                db_session,
+                source_id=source_a,
+                job_type="crawl",
             )
             db_session.commit()
             _set_running(db_session, jid)
             db_session.commit()
 
         normal_id = _insert_job(
-            db_session, source_id=source_a, job_type="crawl", priority=10,
+            db_session,
+            source_id=source_a,
+            job_type="crawl",
+            priority=10,
         )
         db_session.commit()
 
         claimed = claim_next_jobs(
-            db_session, "test-worker", limit=1,
-            max_per_source=2, max_per_job_type=3,
+            db_session,
+            "test-worker",
+            limit=1,
+            max_per_source=2,
+            max_per_job_type=3,
         )
         assert all(j.id != normal_id for j in claimed)

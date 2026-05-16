@@ -51,7 +51,9 @@ def _insert_source(db_session, *, status="watched", name=None, url=None, **overr
     return source_id
 
 
-def _insert_recipe(db_session, *, approval_status="approved", risk_level="low", **overrides):
+def _insert_recipe(
+    db_session, *, approval_status="approved", risk_level="low", **overrides
+):
     recipe_id = overrides.pop("id", uuid.uuid4())
     defaults = dict(
         id=recipe_id,
@@ -74,7 +76,9 @@ def _insert_recipe(db_session, *, approval_status="approved", risk_level="low", 
     return recipe_id
 
 
-def _insert_crawl_run(db_session, source_id, recipe_id, *, status="pending", **overrides):
+def _insert_crawl_run(
+    db_session, source_id, recipe_id, *, status="pending", **overrides
+):
     run_id = overrides.pop("id", uuid.uuid4())
     defaults = dict(
         id=run_id,
@@ -113,7 +117,9 @@ class TestApprovedSourceSuccess:
 
     def test_successful_crawl(self, db_session):
         source_id = _insert_source(db_session, status="watched")
-        recipe_id = _insert_recipe(db_session, approval_status="approved", risk_level="low")
+        recipe_id = _insert_recipe(
+            db_session, approval_status="approved", risk_level="low"
+        )
         db_session.commit()
 
         crawl_result = CrawlResult(
@@ -279,7 +285,9 @@ class TestHighRiskRecipeRejection:
 
     def test_rejects_high_risk_recipe(self, db_session):
         source_id = _insert_source(db_session, status="watched")
-        recipe_id = _insert_recipe(db_session, approval_status="approved", risk_level="high")
+        recipe_id = _insert_recipe(
+            db_session, approval_status="approved", risk_level="high"
+        )
         db_session.commit()
 
         with pytest.raises(CrawlExecutionError) as exc_info:
@@ -289,9 +297,10 @@ class TestHighRiskRecipeRejection:
                 recipe_id=recipe_id,
                 actor="test",
             )
-        assert "risk" in str(exc_info.value).lower() or "recipe" in str(
-            exc_info.value
-        ).lower()
+        assert (
+            "risk" in str(exc_info.value).lower()
+            or "recipe" in str(exc_info.value).lower()
+        )
 
 
 class TestPolicyDenial:
@@ -299,7 +308,9 @@ class TestPolicyDenial:
 
     def test_policy_denial_fails_crawl(self, db_session):
         source_id = _insert_source(db_session, status="watched")
-        recipe_id = _insert_recipe(db_session, approval_status="approved", risk_level="low")
+        recipe_id = _insert_recipe(
+            db_session, approval_status="approved", risk_level="low"
+        )
         db_session.commit()
 
         with patch(
@@ -313,7 +324,10 @@ class TestPolicyDenial:
                 actor="test",
             )
         assert result.status == "failed"
-        assert "policy" in result.error_message.lower() or "private" in result.error_message.lower()
+        assert (
+            "policy" in result.error_message.lower()
+            or "private" in result.error_message.lower()
+        )
 
 
 class TestTargetCrawlFailures:
@@ -443,7 +457,9 @@ class TestAdapterFailure:
 
     def test_adapter_error_fails_crawl(self, db_session):
         source_id = _insert_source(db_session, status="watched")
-        recipe_id = _insert_recipe(db_session, approval_status="approved", risk_level="low")
+        recipe_id = _insert_recipe(
+            db_session, approval_status="approved", risk_level="low"
+        )
         db_session.commit()
 
         crawl_result = CrawlResult(

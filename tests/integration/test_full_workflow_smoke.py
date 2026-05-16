@@ -108,7 +108,9 @@ def _make_archive_result():
     )
 
 
-@pytest.mark.skipif(not LIVE_CRAWL_ENABLED, reason="HARVESTER_ENABLE_LIVE_CRAWL not set")
+@pytest.mark.skipif(
+    not LIVE_CRAWL_ENABLED, reason="HARVESTER_ENABLE_LIVE_CRAWL not set"
+)
 @pytest.mark.asyncio
 async def test_full_workflow_via_api(api_client, workflow_db_url):
     """Full lifecycle: propose source -> promote -> create recipe -> approve
@@ -321,9 +323,7 @@ async def test_full_workflow_mocked_crawl(api_client, workflow_db_url):
         assert "status_change" in source_actions
 
         # Verify at least two status_change events (candidate->testing, testing->watched)
-        status_changes = [
-            r for r in source_audits if r[0] == "status_change"
-        ]
+        status_changes = [r for r in source_audits if r[0] == "status_change"]
         assert len(status_changes) >= 2
 
         # Crawl run should be recorded

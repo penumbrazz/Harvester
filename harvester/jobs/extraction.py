@@ -65,9 +65,7 @@ def _read_payload(storage_uri: str) -> bytes:
         )
     path = Path(storage_uri[7:])
     if not path.exists():
-        raise ExtractionError(
-            f"Archive file not found: {path}", retryable=True
-        )
+        raise ExtractionError(f"Archive file not found: {path}", retryable=True)
     return path.read_bytes()
 
 
@@ -90,9 +88,7 @@ def execute_extraction(
     # 1. Load raw_object
     raw_object = session.get(RawObject, raw_object_id)
     if raw_object is None:
-        raise ExtractionError(
-            f"RawObject {raw_object_id} not found", retryable=False
-        )
+        raise ExtractionError(f"RawObject {raw_object_id} not found", retryable=False)
 
     if not raw_object.source_id:
         raise ExtractionError(
@@ -109,9 +105,9 @@ def execute_extraction(
 
     # 2. Resolve the actual URL: use target URL for target crawls
     crawl_target = session.scalar(
-        sa.select(CrawlTarget).where(
-            CrawlTarget.last_raw_object_id == raw_object_id
-        ).limit(1)
+        sa.select(CrawlTarget)
+        .where(CrawlTarget.last_raw_object_id == raw_object_id)
+        .limit(1)
     )
     actual_url = crawl_target.target_url if crawl_target else source_url
 
@@ -120,7 +116,8 @@ def execute_extraction(
     if extractor is None:
         logger.info(
             "extract.skip raw=%s no_extractor_for url=%s",
-            raw_object_id, actual_url,
+            raw_object_id,
+            actual_url,
         )
         return ExtractionResult(
             raw_object_id=raw_object_id,
@@ -138,7 +135,9 @@ def execute_extraction(
 
     logger.info(
         "extract.start raw=%s source=%s url=%s extractor=%s",
-        raw_object_id, source.id, actual_url,
+        raw_object_id,
+        source.id,
+        actual_url,
         type(extractor).__name__,
     )
 
@@ -150,15 +149,15 @@ def execute_extraction(
         "source_url": source_url,
         "content_type": raw_object.content_type,
         "target_url": crawl_target.target_url if crawl_target else None,
-        "external_item_id": (
-            crawl_target.external_item_id if crawl_target else None
-        ),
+        "external_item_id": (crawl_target.external_item_id if crawl_target else None),
     }
     output = normalize_extraction_output(extractor.extract(metadata, payload))
     candidates: list[CandidateItem] = output.items
 
     logger.info(
-        "extract.candidates raw=%s count=%d", raw_object_id, len(candidates),
+        "extract.candidates raw=%s count=%d",
+        raw_object_id,
+        len(candidates),
     )
 
     # 6. Upsert through pipeline
@@ -189,9 +188,10 @@ def execute_extraction(
             snippet=candidate.snippet,
         )
 
-        content_hash = "sha256:" + hashlib.sha256(
-            candidate.content_text.encode("utf-8")
-        ).hexdigest()
+        content_hash = (
+            "sha256:"
+            + hashlib.sha256(candidate.content_text.encode("utf-8")).hexdigest()
+        )
 
         version, created = create_version_if_changed(
             session,
@@ -230,7 +230,9 @@ def execute_extraction(
 
     logger.info(
         "extract.completed raw=%s items=%d versions=%d",
-        raw_object_id, items_count, versions_count,
+        raw_object_id,
+        items_count,
+        versions_count,
     )
 
     return ExtractionResult(
@@ -255,7 +257,8 @@ def _process_discovered_targets(
     recipe = _find_recipe_for_raw_object(session, raw_object.id)
     if recipe is None:
         logger.info(
-            "discovery.skip raw=%s no_recipe_found", raw_object.id,
+            "discovery.skip raw=%s no_recipe_found",
+            raw_object.id,
         )
         return
     scope = parse_discovery_scope(recipe.config)
@@ -304,7 +307,9 @@ def _process_discovered_targets(
         targets_seen += 1
 
 
-def _find_recipe_for_raw_object(session: Session, raw_object_id: uuid.UUID) -> Recipe | None:
+def _find_recipe_for_raw_object(
+    session: Session, raw_object_id: uuid.UUID
+) -> Recipe | None:
     """Return the most recent recipe associated with a raw object's crawl run."""
     return session.scalar(
         sa.select(Recipe)
@@ -329,8 +334,6 @@ def _create_chunks_and_embedding_jobs(
     version: "ItemVersion",
 ) -> None:
     """Chunk item version text and enqueue embedding jobs."""
-    from harvester.db.models import ItemVersion
-
     if not version.normalized_text:
         return
 

@@ -84,7 +84,9 @@ def test_write_audit_minimal_fields(db_session):
 
     # Assert
     result = db_session.execute(
-        sa.text("SELECT actor, action, entity_type, entity_id FROM audit_events WHERE id = :id"),
+        sa.text(
+            "SELECT actor, action, entity_type, entity_id FROM audit_events WHERE id = :id"
+        ),
         {"id": str(event.id)},
     )
     row = result.fetchone()

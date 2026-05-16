@@ -27,9 +27,7 @@ from tests.utils.factories import (
 def vec_adapter_test_db():
     """Create an isolated test database for vector adapter tests."""
     db_name = f"harvester_vec_adptr_{uuid.uuid4().hex[:8]}"
-    admin_url = (
-        "postgresql+psycopg://postgres:postgres123@192.168.0.114:5432/postgres"
-    )
+    admin_url = "postgresql+psycopg://postgres:postgres123@192.168.0.114:5432/postgres"
     test_url = admin_url.rsplit("/", 1)[0] + "/" + db_name
 
     admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
@@ -103,9 +101,7 @@ def _seed_vector_data(test_db, unique_suffix, query_text="Python"):
 
 
 @pytest.mark.asyncio
-async def test_vector_search_uses_adapter_factory(
-    vec_api_client, vec_adapter_test_db
-):
+async def test_vector_search_uses_adapter_factory(vec_api_client, vec_adapter_test_db):
     """Vector search uses adapter factory (defaults to StubModelAdapter)."""
     uid = uuid.uuid4().hex[:8]
     _seed_vector_data(vec_adapter_test_db, uid, "Python")
@@ -149,9 +145,7 @@ async def test_keyword_search_unaffected_by_adapter_errors(
     engine = create_engine(vec_adapter_test_db)
     with Session(bind=engine) as session:
         src_id = insert_source(session, f"kw-unaf-src-{uid}")
-        ci_id = insert_content_item(
-            session, src_id, f"Keyword Unaffected Test {uid}"
-        )
+        ci_id = insert_content_item(session, src_id, f"Keyword Unaffected Test {uid}")
         insert_item_version(session, ci_id)
         session.commit()
     engine.dispose()

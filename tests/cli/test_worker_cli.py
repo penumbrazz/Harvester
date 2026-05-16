@@ -58,9 +58,7 @@ class TestWorkerOnce:
 
     @patch("harvester.workers.daemon.run_once")
     @patch("harvester.workers.daemon._make_session")
-    def test_worker_once_default_model_name_is_stub(
-        self, mock_session, mock_run_once
-    ):
+    def test_worker_once_default_model_name_is_stub(self, mock_session, mock_run_once):
         """Worker once passes stub model name by default."""
         mock_session.return_value = MagicMock()
         mock_run_once.return_value = {"claimed": 0, "completed": 0, "failed": 0}
@@ -101,9 +99,7 @@ class TestWorkerRun:
 
     @patch("harvester.workers.daemon.run_loop")
     @patch("harvester.workers.daemon._make_session")
-    def test_worker_run_uses_stub_adapter_by_default(
-        self, mock_session, mock_run_loop
-    ):
+    def test_worker_run_uses_stub_adapter_by_default(self, mock_session, mock_run_loop):
         """Worker run uses StubModelAdapter when no adapter is configured."""
         from harvester.adapters.stub_model import StubModelAdapter
 
@@ -203,9 +199,7 @@ class TestWorkerRunJobType:
 
     def test_worker_run_invalid_job_type_exits_nonzero(self):
         """'harvester worker run --job-type unknown' exits with non-zero code."""
-        result = runner.invoke(
-            app, ["worker", "run", "--job-type", "unknown"]
-        )
+        result = runner.invoke(app, ["worker", "run", "--job-type", "unknown"])
 
         assert result.exit_code != 0
 
@@ -232,9 +226,7 @@ class TestWorkerRunJobType:
         with patch(
             "harvester.adapters.embedding_settings.create_embedding_adapter"
         ) as mock_adapter:
-            result = runner.invoke(
-                app, ["worker", "run", "--job-type", "crawl"]
-            )
+            result = runner.invoke(app, ["worker", "run", "--job-type", "crawl"])
 
             assert result.exit_code == 0
             mock_adapter.assert_not_called()

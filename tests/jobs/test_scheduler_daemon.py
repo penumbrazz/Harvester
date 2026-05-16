@@ -118,8 +118,13 @@ class TestSchedulerLoopBasic:
 
         mock_session = MagicMock()
 
-        with patch("harvester.jobs.scheduler.run_scheduler_once", side_effect=fake_run_once):
-            with patch("harvester.jobs.scheduler.time.sleep", side_effect=lambda s: sleep_times.append(s)):
+        with patch(
+            "harvester.jobs.scheduler.run_scheduler_once", side_effect=fake_run_once
+        ):
+            with patch(
+                "harvester.jobs.scheduler.time.sleep",
+                side_effect=lambda s: sleep_times.append(s),
+            ):
                 run_scheduler_loop(
                     lambda: mock_session,
                     poll_interval=5,
@@ -144,8 +149,13 @@ class TestSchedulerLoopBasic:
 
         mock_session = MagicMock()
 
-        with patch("harvester.jobs.scheduler.run_scheduler_once", side_effect=fake_run_once):
-            with patch("harvester.jobs.scheduler.time.sleep", side_effect=lambda s: sleep_times.append(s)):
+        with patch(
+            "harvester.jobs.scheduler.run_scheduler_once", side_effect=fake_run_once
+        ):
+            with patch(
+                "harvester.jobs.scheduler.time.sleep",
+                side_effect=lambda s: sleep_times.append(s),
+            ):
                 run_scheduler_loop(
                     lambda: mock_session,
                     poll_interval=5,
@@ -168,7 +178,9 @@ class TestSchedulerLoopBasic:
 
         mock_session = MagicMock()
 
-        with patch("harvester.jobs.scheduler.run_scheduler_once", side_effect=fake_run_once):
+        with patch(
+            "harvester.jobs.scheduler.run_scheduler_once", side_effect=fake_run_once
+        ):
             run_scheduler_loop(
                 lambda: mock_session,
                 poll_interval=0,
@@ -190,7 +202,9 @@ class TestSchedulerLoopBasic:
 
         mock_session = MagicMock()
 
-        with patch("harvester.jobs.scheduler.run_scheduler_once", side_effect=fake_run_once):
+        with patch(
+            "harvester.jobs.scheduler.run_scheduler_once", side_effect=fake_run_once
+        ):
             with patch("harvester.jobs.scheduler.logger") as mock_logger:
                 run_scheduler_loop(
                     lambda: mock_session,

@@ -220,12 +220,13 @@ class TestExtractionDiscoveryIntegration:
             execute_extraction(db_session, raw_object_id=raw.id, actor="test")
 
         # Assert
-        assert db_session.scalar(sa.select(sa.func.count()).select_from(CrawlTarget)) == 0
+        assert (
+            db_session.scalar(sa.select(sa.func.count()).select_from(CrawlTarget)) == 0
+        )
         assert db_session.scalar(sa.select(sa.func.count()).select_from(Job)) == 0
         reason = db_session.scalar(
             sa.text(
-                "SELECT reason FROM audit_events "
-                "WHERE action = 'crawl_target_skipped'"
+                "SELECT reason FROM audit_events WHERE action = 'crawl_target_skipped'"
             )
         )
         assert reason == "host_not_allowed"
@@ -255,9 +256,7 @@ class TestExtractionDiscoveryIntegration:
         )
         assert target_count == 1
         crawl_job_count = db_session.scalar(
-            sa.select(sa.func.count()).select_from(Job).where(
-                Job.job_type == "crawl"
-            )
+            sa.select(sa.func.count()).select_from(Job).where(Job.job_type == "crawl")
         )
         assert crawl_job_count == 1
         assert item_count == 1

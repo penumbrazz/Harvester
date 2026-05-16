@@ -6,22 +6,24 @@ from harvester.extractors.base import CandidateItem
 from harvester.extractors.sina_fixture import SinaFixtureExtractor
 
 
-SAMPLE_PAYLOAD = json.dumps({
-    "statuses": [
-        {
-            "idstr": "1234567890",
-            "text": "Hello world from Weibo!",
-            "source": "iPhone",
-            "created_at": "Fri Jan 01 00:00:00 +0800 2025",
-        },
-        {
-            "idstr": "9876543210",
-            "text": "Another post with more content.",
-            "source": "Android",
-            "created_at": "Fri Jan 02 00:00:00 +0800 2025",
-        },
-    ]
-})
+SAMPLE_PAYLOAD = json.dumps(
+    {
+        "statuses": [
+            {
+                "idstr": "1234567890",
+                "text": "Hello world from Weibo!",
+                "source": "iPhone",
+                "created_at": "Fri Jan 01 00:00:00 +0800 2025",
+            },
+            {
+                "idstr": "9876543210",
+                "text": "Another post with more content.",
+                "source": "Android",
+                "created_at": "Fri Jan 02 00:00:00 +0800 2025",
+            },
+        ]
+    }
+)
 
 
 class TestSinaFixtureExtractor:
@@ -63,16 +65,18 @@ class TestSinaFixtureExtractor:
         """Snippet should be truncated at 200 characters."""
         extractor = SinaFixtureExtractor()
         long_text = "x" * 300
-        payload = json.dumps({
-            "statuses": [
-                {
-                    "idstr": "1",
-                    "text": long_text,
-                    "source": "Web",
-                    "created_at": "now",
-                }
-            ]
-        })
+        payload = json.dumps(
+            {
+                "statuses": [
+                    {
+                        "idstr": "1",
+                        "text": long_text,
+                        "source": "Web",
+                        "created_at": "now",
+                    }
+                ]
+            }
+        )
         items = extractor.extract({}, payload)
         assert len(items[0].snippet) == 200
 
@@ -92,7 +96,7 @@ class TestSinaFixtureExtractor:
     def test_handles_missing_statuses_key(self):
         """Should return an empty list when statuses key is absent."""
         extractor = SinaFixtureExtractor()
-        items = extractor.extract({}, '{}')
+        items = extractor.extract({}, "{}")
         assert items == []
 
     def test_returns_candidate_items(self):

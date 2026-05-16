@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import re
 
-from harvester.extractors.base import CandidateItem, Extractor
+from harvester.extractors.base import Extractor
 from harvester.extractors.cdc_weekly import (
     CdcWeeklyDetailExtractor,
     CdcWeeklyListExtractor,

@@ -76,7 +76,13 @@ async def search_compat_client(search_compat_db):
             yield client
 
 
-FORBIDDEN_RAW_FIELDS = {"storage_uri", "content_hash", "payload", "raw_html", "byte_size"}
+FORBIDDEN_RAW_FIELDS = {
+    "storage_uri",
+    "content_hash",
+    "payload",
+    "raw_html",
+    "byte_size",
+}
 
 
 @pytest.mark.asyncio
@@ -143,7 +149,9 @@ async def test_vector_search_no_raw_fields(search_compat_client, search_compat_d
 
 
 @pytest.mark.asyncio
-async def test_keyword_search_has_traceable_fields(search_compat_client, search_compat_db):
+async def test_keyword_search_has_traceable_fields(
+    search_compat_client, search_compat_db
+):
     """Keyword search response must have traceable fields for frontend display."""
     engine = create_engine(search_compat_db)
     with Session(bind=engine) as session:
@@ -178,7 +186,9 @@ async def test_keyword_search_has_traceable_fields(search_compat_client, search_
 
 
 @pytest.mark.asyncio
-async def test_vector_search_has_traceable_fields(search_compat_client, search_compat_db):
+async def test_vector_search_has_traceable_fields(
+    search_compat_client, search_compat_db
+):
     """Vector search response must have traceable fields for frontend display."""
     engine = create_engine(search_compat_db)
     with Session(bind=engine) as session:

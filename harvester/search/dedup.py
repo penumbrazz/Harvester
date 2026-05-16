@@ -35,16 +35,12 @@ def collapse_dedup_groups(
         return []
 
     # Fetch versions with their dedup group info
-    rows = (
-        session.execute(
-            sa.select(
-                ItemVersion.id,
-                ItemVersion.dedup_group_id,
-            )
-            .where(ItemVersion.id.in_(version_ids))
-        )
-        .fetchall()
-    )
+    rows = session.execute(
+        sa.select(
+            ItemVersion.id,
+            ItemVersion.dedup_group_id,
+        ).where(ItemVersion.id.in_(version_ids))
+    ).fetchall()
 
     # Map version_id -> dedup_group_id (or None)
     version_to_group: dict[uuid.UUID, uuid.UUID | None] = {
@@ -57,16 +53,12 @@ def collapse_dedup_groups(
     # Map dedup_group_id -> canonical_version_id
     group_to_canonical: dict[uuid.UUID, uuid.UUID] = {}
     if group_ids:
-        canon_rows = (
-            session.execute(
-                sa.select(
-                    DedupGroup.id,
-                    DedupGroup.canonical_item_version_id,
-                )
-                .where(DedupGroup.id.in_(group_ids))
-            )
-            .fetchall()
-        )
+        canon_rows = session.execute(
+            sa.select(
+                DedupGroup.id,
+                DedupGroup.canonical_item_version_id,
+            ).where(DedupGroup.id.in_(group_ids))
+        ).fetchall()
         group_to_canonical = {
             row.id: row.canonical_item_version_id for row in canon_rows
         }

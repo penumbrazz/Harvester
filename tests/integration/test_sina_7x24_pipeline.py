@@ -101,15 +101,13 @@ class TestSina7x24Pipeline:
 
         db_session.flush()
         total_items = db_session.scalar(
-            sa.select(sa.func.count()).select_from(ContentItem).where(
-                ContentItem.source_id == source_id
-            )
+            sa.select(sa.func.count())
+            .select_from(ContentItem)
+            .where(ContentItem.source_id == source_id)
         )
         assert total_items == len(expected_items)
 
-    def test_creates_item_versions(
-        self, db_session, source_id, sina_7x24_payload
-    ):
+    def test_creates_item_versions(self, db_session, source_id, sina_7x24_payload):
         extractor = Sina7x24Extractor()
         candidates = extractor.extract({}, sina_7x24_payload)
 
@@ -182,8 +180,8 @@ class TestSina7x24Pipeline:
 
         db_session.flush()
         total_items = db_session.scalar(
-            sa.select(sa.func.count()).select_from(ContentItem).where(
-                ContentItem.source_id == source_id
-            )
+            sa.select(sa.func.count())
+            .select_from(ContentItem)
+            .where(ContentItem.source_id == source_id)
         )
         assert total_items == expected_count

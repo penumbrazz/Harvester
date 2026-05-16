@@ -4,7 +4,11 @@ import hashlib
 
 import pytest
 
-from harvester.domain.urls import TRACKING_PARAMS, compute_canonical_url_hash, normalize_url
+from harvester.domain.urls import (
+    TRACKING_PARAMS,
+    compute_canonical_url_hash,
+    normalize_url,
+)
 
 
 # ---------------------------------------------------------------------------

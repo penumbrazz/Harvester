@@ -87,7 +87,9 @@ def keyword_search(
     if topic_watch_id is not None:
         stmt = stmt.where(ContentItem.topic_watch_id == topic_watch_id)
 
-    stmt = stmt.order_by(ItemVersion.created_at.desc()).limit(fetch_limit).offset(offset)
+    stmt = (
+        stmt.order_by(ItemVersion.created_at.desc()).limit(fetch_limit).offset(offset)
+    )
 
     rows = session.execute(stmt).fetchall()
 

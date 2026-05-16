@@ -168,7 +168,9 @@ class CdcWeeklyDetailExtractor:
         raw_payload: str | bytes,
     ) -> ExtractionOutput:
         payload = _decode_payload(raw_payload)
-        detail_url = raw_metadata.get("target_url") or raw_metadata.get("source_url") or ""
+        detail_url = (
+            raw_metadata.get("target_url") or raw_metadata.get("source_url") or ""
+        )
         parser = _WeeklyDetailParser()
         parser.feed(payload)
 

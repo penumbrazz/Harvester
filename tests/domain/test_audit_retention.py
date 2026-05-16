@@ -115,9 +115,9 @@ class TestCleanupAuditEvents:
         assert result.cutoff == now - timedelta(days=7)
 
         # Old event deleted, recent event kept
-        remaining = db_session.execute(
-            sa.text("SELECT id FROM audit_events")
-        ).scalars().all()
+        remaining = (
+            db_session.execute(sa.text("SELECT id FROM audit_events")).scalars().all()
+        )
         assert recent_id in remaining
         assert old_id not in remaining
 
@@ -126,7 +126,8 @@ class TestCleanupAuditEvents:
         now = datetime.now(UTC)
         # Insert events 1 second inside the cutoff boundary
         inside_id = _insert_audit(
-            db_session, created_at=now - timedelta(days=6, hours=23, minutes=59, seconds=59)
+            db_session,
+            created_at=now - timedelta(days=6, hours=23, minutes=59, seconds=59),
         )
         within_id = _insert_audit(db_session, created_at=now - timedelta(days=3))
         db_session.commit()
@@ -287,7 +288,13 @@ class TestCleanupDataSafety:
                 "interval_seconds, next_run_at, priority, created_at, updated_at) "
                 "VALUES (:id, :key, :src, :recipe, 'active', 3600, :ts, 0, :ts, :ts)"
             ),
-            {"id": sid, "key": f"source:{source_id}:recipe:{rid}", "src": source_id, "recipe": rid, "ts": now},
+            {
+                "id": sid,
+                "key": f"source:{source_id}:recipe:{rid}",
+                "src": source_id,
+                "recipe": rid,
+                "ts": now,
+            },
         )
         _insert_audit(db_session, created_at=now - timedelta(days=10))
         db_session.commit()
@@ -319,7 +326,13 @@ class TestCleanupDataSafety:
                 "VALUES (:id, :src, 'text/html', :hash, 'file:///tmp/s.raw', 100, "
                 ":retain, false, :ts)"
             ),
-            {"id": ro_id, "src": source_id, "hash": uuid.uuid4().hex, "retain": now + timedelta(days=7), "ts": now},
+            {
+                "id": ro_id,
+                "src": source_id,
+                "hash": uuid.uuid4().hex,
+                "retain": now + timedelta(days=7),
+                "ts": now,
+            },
         )
         # Insert crawl_run
         cr_id = uuid.uuid4()
@@ -339,12 +352,18 @@ class TestCleanupDataSafety:
             cleanup_audit_events(db_session, now=now)
         db_session.commit()
 
-        assert db_session.execute(
-            sa.text("SELECT id FROM raw_objects WHERE id = :id"), {"id": str(ro_id)}
-        ).scalar() is not None
-        assert db_session.execute(
-            sa.text("SELECT id FROM crawl_runs WHERE id = :id"), {"id": str(cr_id)}
-        ).scalar() is not None
+        assert (
+            db_session.execute(
+                sa.text("SELECT id FROM raw_objects WHERE id = :id"), {"id": str(ro_id)}
+            ).scalar()
+            is not None
+        )
+        assert (
+            db_session.execute(
+                sa.text("SELECT id FROM crawl_runs WHERE id = :id"), {"id": str(cr_id)}
+            ).scalar()
+            is not None
+        )
 
     def test_preserves_job(self, db_session):
         """Cleanup does not delete job records."""
@@ -367,13 +386,21 @@ class TestCleanupDataSafety:
             cleanup_audit_events(db_session, now=now)
         db_session.commit()
 
-        assert db_session.execute(
-            sa.text("SELECT id FROM jobs WHERE id = :id"), {"id": str(job_id)}
-        ).scalar() is not None
+        assert (
+            db_session.execute(
+                sa.text("SELECT id FROM jobs WHERE id = :id"), {"id": str(job_id)}
+            ).scalar()
+            is not None
+        )
 
     def test_preserves_content_item_version_chunk(self, db_session):
         """Cleanup does not delete content items, item versions, or chunks."""
-        from tests.utils.factories import insert_source, insert_content_item, insert_item_version, insert_chunk
+        from tests.utils.factories import (
+            insert_source,
+            insert_content_item,
+            insert_item_version,
+            insert_chunk,
+        )
 
         now = datetime.now(UTC)
         source_id = insert_source(db_session, "safety-content-source")
@@ -388,15 +415,26 @@ class TestCleanupDataSafety:
             cleanup_audit_events(db_session, now=now)
         db_session.commit()
 
-        assert db_session.execute(
-            sa.text("SELECT id FROM content_items WHERE id = :id"), {"id": str(ci_id)}
-        ).scalar() is not None
-        assert db_session.execute(
-            sa.text("SELECT id FROM item_versions WHERE id = :id"), {"id": str(iv_id)}
-        ).scalar() is not None
-        assert db_session.execute(
-            sa.text("SELECT id FROM chunks WHERE id = :id"), {"id": str(chunk_id)}
-        ).scalar() is not None
+        assert (
+            db_session.execute(
+                sa.text("SELECT id FROM content_items WHERE id = :id"),
+                {"id": str(ci_id)},
+            ).scalar()
+            is not None
+        )
+        assert (
+            db_session.execute(
+                sa.text("SELECT id FROM item_versions WHERE id = :id"),
+                {"id": str(iv_id)},
+            ).scalar()
+            is not None
+        )
+        assert (
+            db_session.execute(
+                sa.text("SELECT id FROM chunks WHERE id = :id"), {"id": str(chunk_id)}
+            ).scalar()
+            is not None
+        )
 
 
 def insert_source_by_sql(session, now) -> uuid.UUID:

@@ -154,14 +154,16 @@ class TestCDCFixtureIntegration:
         extractor = CdcFixtureExtractor()
 
         # Use a simple JSON payload matching the CDC fixture format
-        payload = json.dumps([
-            {
-                "id": "cdc-001",
-                "title": "Test CDC Article",
-                "url": "https://www.cdc.gov/test",
-                "content": "Test content for CDC article about health.",
-            }
-        ])
+        payload = json.dumps(
+            [
+                {
+                    "id": "cdc-001",
+                    "title": "Test CDC Article",
+                    "url": "https://www.cdc.gov/test",
+                    "content": "Test content for CDC article about health.",
+                }
+            ]
+        )
 
         items = extractor.extract(
             raw_metadata={"source_url": "https://www.cdc.gov"},
@@ -178,14 +180,16 @@ class TestCDCFixtureIntegration:
         db_session.commit()
 
         extractor = CdcFixtureExtractor()
-        payload = json.dumps([
-            {
-                "id": "cdc-search-001",
-                "title": "Health Topic Search",
-                "url": "https://www.cdc.gov/health",
-                "content": "Important health information for public safety.",
-            }
-        ])
+        payload = json.dumps(
+            [
+                {
+                    "id": "cdc-search-001",
+                    "title": "Health Topic Search",
+                    "url": "https://www.cdc.gov/health",
+                    "content": "Important health information for public safety.",
+                }
+            ]
+        )
 
         # Create a raw object for the observation
         raw_id = uuid.uuid4()
@@ -251,7 +255,9 @@ class TestCDCFixtureIntegration:
         assert len(items_in_db) >= 1
 
 
-@pytest.mark.skipif(not LIVE_CRAWL_ENABLED, reason="HARVESTER_ENABLE_LIVE_CRAWL not set")
+@pytest.mark.skipif(
+    not LIVE_CRAWL_ENABLED, reason="HARVESTER_ENABLE_LIVE_CRAWL not set"
+)
 class TestCDCLiveSmoke:
     """Live smoke test — only runs when HARVESTER_ENABLE_LIVE_CRAWL=1.
 
@@ -286,7 +292,9 @@ class TestCDCLiveSmoke:
         assert raw_obj.byte_size > 0
 
 
-@pytest.mark.skipif(not LIVE_CRAWL_ENABLED, reason="HARVESTER_ENABLE_LIVE_CRAWL not set")
+@pytest.mark.skipif(
+    not LIVE_CRAWL_ENABLED, reason="HARVESTER_ENABLE_LIVE_CRAWL not set"
+)
 class TestCDCWeeklyLiveCrawlSmoke:
     """Live smoke test for CDC Weekly list page crawl.
 

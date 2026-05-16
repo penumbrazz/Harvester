@@ -14,31 +14,25 @@ class TestRegistryCdcWeekly:
 
     def test_list_page_matches_list_extractor(self):
         """Source list page URL should match CdcWeeklyListExtractor."""
-        extractor = get_extractor_for_url(
-            "https://www.chinacdc.cn/jksj/jksj04_14249/"
-        )
+        extractor = get_extractor_for_url("https://www.chinacdc.cn/jksj/jksj04_14249/")
         assert isinstance(extractor, CdcWeeklyListExtractor)
 
     def test_list_page_without_trailing_slash(self):
         """List URL without trailing slash should also match list extractor."""
-        extractor = get_extractor_for_url(
-            "https://www.chinacdc.cn/jksj/jksj04_14249"
-        )
+        extractor = get_extractor_for_url("https://www.chinacdc.cn/jksj/jksj04_14249")
         assert isinstance(extractor, CdcWeeklyListExtractor)
 
     def test_detail_page_matches_detail_extractor(self):
         """Detail page URL should match CdcWeeklyDetailExtractor."""
         extractor = get_extractor_for_url(
-            "https://www.chinacdc.cn/jksj/jksj04_14249/"
-            "202605/t20260514_1835783.html"
+            "https://www.chinacdc.cn/jksj/jksj04_14249/202605/t20260514_1835783.html"
         )
         assert isinstance(extractor, CdcWeeklyDetailExtractor)
 
     def test_another_detail_page_matches_detail_extractor(self):
         """A different detail page URL should also match detail extractor."""
         extractor = get_extractor_for_url(
-            "https://www.chinacdc.cn/jksj/jksj04_14249/"
-            "202605/t20260508_1835622.html"
+            "https://www.chinacdc.cn/jksj/jksj04_14249/202605/t20260508_1835622.html"
         )
         assert isinstance(extractor, CdcWeeklyDetailExtractor)
 
@@ -49,16 +43,13 @@ class TestRegistryCdcWeekly:
 
     def test_sina_still_matches(self):
         """Existing Sina extractor registration should remain intact."""
-        extractor = get_extractor_for_url(
-            "https://finance.sina.com.cn/7x24/"
-        )
+        extractor = get_extractor_for_url("https://finance.sina.com.cn/7x24/")
         assert isinstance(extractor, Sina7x24Extractor)
 
     def test_detail_takes_priority_over_list(self):
         """Detail pattern should be checked before list pattern."""
         detail_url = (
-            "https://www.chinacdc.cn/jksj/jksj04_14249/"
-            "202605/t20260514_1835783.html"
+            "https://www.chinacdc.cn/jksj/jksj04_14249/202605/t20260514_1835783.html"
         )
         extractor = get_extractor_for_url(detail_url)
         # Should get detail extractor, not list extractor

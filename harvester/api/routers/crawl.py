@@ -83,7 +83,9 @@ def run_crawl(
     except CrawlExecutionError as exc:
         logger.warning(
             "crawl.run_failed source=%s recipe=%s error=%s",
-            source_id, recipe_id, exc,
+            source_id,
+            recipe_id,
+            exc,
         )
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -121,12 +123,7 @@ def list_crawl_runs(
             ) from None
 
     total = query.count()
-    rows = (
-        query.order_by(desc(CrawlRun.created_at))
-        .offset(offset)
-        .limit(limit)
-        .all()
-    )
+    rows = query.order_by(desc(CrawlRun.created_at)).offset(offset).limit(limit).all()
 
     items = [
         CrawlRunItem(
@@ -208,10 +205,7 @@ def list_crawl_targets(
 
     total = query.count()
     rows = (
-        query.order_by(desc(CrawlTarget.last_seen_at))
-        .offset(offset)
-        .limit(limit)
-        .all()
+        query.order_by(desc(CrawlTarget.last_seen_at)).offset(offset).limit(limit).all()
     )
 
     items = [

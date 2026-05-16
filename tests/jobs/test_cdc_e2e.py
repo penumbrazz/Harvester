@@ -34,12 +34,8 @@ from harvester.jobs.extraction import execute_extraction
 
 FIXTURE_DIR = Path(__file__).parents[1] / "fixtures"
 SOURCE_URL = "https://www.chinacdc.cn/jksj/jksj04_14249/"
-DETAIL_URL = (
-    "https://www.chinacdc.cn/jksj/jksj04_14249/202605/t20260514_1835783.html"
-)
-PDF_URL = (
-    "https://www.chinacdc.cn/jksj/jksj04_14249/202605/P020260514670474006354.pdf"
-)
+DETAIL_URL = "https://www.chinacdc.cn/jksj/jksj04_14249/202605/t20260514_1835783.html"
+PDF_URL = "https://www.chinacdc.cn/jksj/jksj04_14249/202605/P020260514670474006354.pdf"
 EXTERNAL_ITEM_ID = "cncdc-flu-weekly:2026:W18:issue-908"
 
 
@@ -219,19 +215,17 @@ class TestCdcWeeklyE2EPipeline:
 
         # Verify item versions exist (list + detail + PDF)
         versions = db_session.scalars(
-            sa.select(ItemVersion).where(
-                ItemVersion.content_item_id == item.id
-            ).order_by(ItemVersion.created_at)
+            sa.select(ItemVersion)
+            .where(ItemVersion.content_item_id == item.id)
+            .order_by(ItemVersion.created_at)
         ).all()
         assert len(versions) >= 2  # at least detail + PDF
 
         # Verify chunks were created
         chunks = db_session.scalars(
-            sa.select(Chunk).join(
-                ItemVersion, ItemVersion.id == Chunk.item_version_id
-            ).where(
-                ItemVersion.content_item_id == item.id
-            )
+            sa.select(Chunk)
+            .join(ItemVersion, ItemVersion.id == Chunk.item_version_id)
+            .where(ItemVersion.content_item_id == item.id)
         ).all()
         assert len(chunks) > 0
 

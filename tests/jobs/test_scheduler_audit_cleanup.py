@@ -80,7 +80,9 @@ class TestSchedulerDaemonCleanupIntegration:
 
         def fake_cleanup(session, *, now):
             cleanup_called["v"] = True
-            return CleanupResult(deleted_count=5, cutoff=now - timedelta(days=7), retention_days=7)
+            return CleanupResult(
+                deleted_count=5, cutoff=now - timedelta(days=7), retention_days=7
+            )
 
         with patch("harvester.jobs.scheduler._last_cleanup_at", None):
             with patch(

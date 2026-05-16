@@ -42,22 +42,16 @@ def process_extract_job(session: Session, job: Job) -> bool:
         )
     except ExtractionError as exc:
         if exc.retryable:
-            logger.warning(
-                "Retryable extraction error for job %s: %s", job.id, exc
-            )
+            logger.warning("Retryable extraction error for job %s: %s", job.id, exc)
             fail_job(session, job.id, str(exc))
             return False
         else:
-            logger.warning(
-                "Permanent extraction error for job %s: %s", job.id, exc
-            )
+            logger.warning("Permanent extraction error for job %s: %s", job.id, exc)
             dead_letter_job(session, job.id, str(exc))
             return False
 
     if result.skipped:
-        logger.info(
-            "Extraction skipped for job %s: %s", job.id, result.reason
-        )
+        logger.info("Extraction skipped for job %s: %s", job.id, result.reason)
 
     complete_job(session, job.id)
     return True

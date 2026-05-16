@@ -81,13 +81,9 @@ class QwenEmbeddingAdapter:
         try:
             response = self._client.post(endpoint, json=body, timeout=self._timeout)
         except httpx.TimeoutException as exc:
-            raise EmbeddingAdapterError(
-                f"Embedding request timed out: {exc}"
-            ) from exc
+            raise EmbeddingAdapterError(f"Embedding request timed out: {exc}") from exc
         except httpx.HTTPError as exc:
-            raise EmbeddingAdapterError(
-                f"Embedding HTTP error: {exc}"
-            ) from exc
+            raise EmbeddingAdapterError(f"Embedding HTTP error: {exc}") from exc
 
         if response.status_code >= 400:
             raise EmbeddingAdapterError(
@@ -106,9 +102,7 @@ class QwenEmbeddingAdapter:
         try:
             embedding_data = data["data"]
             if not embedding_data:
-                raise EmbeddingAdapterError(
-                    "Empty data array in embedding response"
-                )
+                raise EmbeddingAdapterError("Empty data array in embedding response")
             embedding = embedding_data[0]["embedding"]
         except (KeyError, IndexError, TypeError) as exc:
             raise EmbeddingAdapterError(
@@ -125,8 +119,6 @@ class QwenEmbeddingAdapter:
         # Validate all values are finite
         for i, v in enumerate(embedding):
             if not isinstance(v, (int, float)) or not math.isfinite(v):
-                raise EmbeddingAdapterError(
-                    f"Non-finite value at index {i}: {v!r}"
-                )
+                raise EmbeddingAdapterError(f"Non-finite value at index {i}: {v!r}")
 
         return list(embedding)

@@ -70,7 +70,9 @@ def validate_discovered_target(
     if not host or host not in scope.allowed_hosts:
         return DiscoveryDecision(False, "host_not_allowed")
 
-    if not any(parsed.path.startswith(prefix) for prefix in scope.allowed_path_prefixes):
+    if not any(
+        parsed.path.startswith(prefix) for prefix in scope.allowed_path_prefixes
+    ):
         return DiscoveryDecision(False, "path_not_allowed")
 
     normalized_content_type = _normalize_content_type(content_type)

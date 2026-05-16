@@ -21,12 +21,8 @@ from harvester.jobs.crawl_targets import upsert_crawl_target
 from harvester.jobs.extraction import execute_extraction
 
 
-DETAIL_URL = (
-    "https://www.chinacdc.cn/jksj/jksj04_14249/202605/t20260514_1835783.html"
-)
-PDF_URL = (
-    "https://www.chinacdc.cn/jksj/jksj04_14249/202605/P020260514670474006354.pdf"
-)
+DETAIL_URL = "https://www.chinacdc.cn/jksj/jksj04_14249/202605/t20260514_1835783.html"
+PDF_URL = "https://www.chinacdc.cn/jksj/jksj04_14249/202605/P020260514670474006354.pdf"
 SOURCE_URL = "https://www.chinacdc.cn/jksj/jksj04_14249/"
 
 
@@ -135,7 +131,9 @@ class TestContentPriority:
             execute_extraction(db_session, raw_object_id=raw_detail.id, actor="test")
 
         # Now simulate PDF extraction for the same content item (same source)
-        raw_pdf = _add_raw(db_session, source, recipe, tmp_path, content_type="application/pdf")
+        raw_pdf = _add_raw(
+            db_session, source, recipe, tmp_path, content_type="application/pdf"
+        )
         pdf_extractor = _make_extractor("PDF extracted text content", "item-001")
         with patch(
             "harvester.jobs.extraction.get_extractor",
@@ -168,7 +166,9 @@ class TestContentPriority:
         ):
             execute_extraction(db_session, raw_object_id=raw_detail.id, actor="test")
 
-        raw_pdf = _add_raw(db_session, source, recipe, tmp_path, content_type="application/pdf")
+        raw_pdf = _add_raw(
+            db_session, source, recipe, tmp_path, content_type="application/pdf"
+        )
         pdf_extractor = _make_extractor("PDF text", "item-001")
         with patch(
             "harvester.jobs.extraction.get_extractor",

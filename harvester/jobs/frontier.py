@@ -66,9 +66,7 @@ def update_frontier(
         frontier.frontier_state = frontier_state
 
     if items_seen:
-        cursors = [
-            item["cursor"] for item in items_seen if "cursor" in item
-        ]
+        cursors = [item["cursor"] for item in items_seen if "cursor" in item]
         if cursors:
             # Attempt numeric comparison for sorting; fall back to string sort.
             try:
@@ -141,7 +139,13 @@ def should_rewind(
         max_num = float(range_max)
         current_num = float(frontier.cursor_value)
         # Item is older than current cursor but within the known range.
-        return min_num <= cursor_num < current_num <= max_num or min_num <= cursor_num <= max_num < current_num
+        return (
+            min_num <= cursor_num < current_num <= max_num
+            or min_num <= cursor_num <= max_num < current_num
+        )
     except (ValueError, TypeError):
         # Lexicographic comparison
-        return range_min <= item_cursor <= range_max and item_cursor < frontier.cursor_value
+        return (
+            range_min <= item_cursor <= range_max
+            and item_cursor < frontier.cursor_value
+        )

@@ -14,7 +14,7 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from harvester.adapters.firecrawl import CrawlResult
-from harvester.adapters.binary_fetch import BinaryFetchResult, fetch_binary
+from harvester.adapters.binary_fetch import fetch_binary
 from harvester.db.models import CrawlRun, CrawlTarget, RawObject, Recipe, Source
 from harvester.domain.audit import write_audit
 from harvester.jobs.repository import create_job
@@ -142,7 +142,11 @@ def execute_crawl(
 
     logger.info(
         "crawl.start source=%s recipe=%s target=%s url=%s actor=%s",
-        source_id, recipe_id, target_id, crawl_url, actor,
+        source_id,
+        recipe_id,
+        target_id,
+        crawl_url,
+        actor,
     )
 
     # 3. Create pending crawl run
@@ -208,7 +212,8 @@ def execute_crawl(
             if binary_result.error:
                 logger.error(
                     "crawl.binary_failed run=%s error=%s",
-                    run_id, binary_result.error,
+                    run_id,
+                    binary_result.error,
                 )
                 _fail_crawl_run(session, crawl_run, binary_result.error)
                 if target is not None:
@@ -222,9 +227,7 @@ def execute_crawl(
                     reason=binary_result.error,
                 )
                 session.commit()
-                raise CrawlExecutionError(
-                    binary_result.error, retryable=True
-                )
+                raise CrawlExecutionError(binary_result.error, retryable=True)
 
             # Check redirect target policy
             if binary_result.final_url and binary_result.final_url != crawl_url:
@@ -261,12 +264,12 @@ def execute_crawl(
                     error_message=reason,
                 )
 
-            pdf_content_type = (
-                binary_result.content_type or "application/pdf"
-            )
+            pdf_content_type = binary_result.content_type or "application/pdf"
             logger.info(
                 "crawl.archiving run=%s payload_size=%d content_type=%s",
-                run_id, len(pdf_payload_bytes), pdf_content_type,
+                run_id,
+                len(pdf_payload_bytes),
+                pdf_content_type,
             )
             archive_result = write_archive(
                 payload=pdf_payload_bytes,
@@ -283,7 +286,8 @@ def execute_crawl(
             if crawl_result.error:
                 logger.error(
                     "crawl.adapter_failed run=%s error=%s",
-                    run_id, crawl_result.error,
+                    run_id,
+                    crawl_result.error,
                 )
                 _fail_crawl_run(session, crawl_run, crawl_result.error)
                 if target is not None:
@@ -297,18 +301,14 @@ def execute_crawl(
                     reason=crawl_result.error,
                 )
                 session.commit()
-                raise CrawlExecutionError(
-                    crawl_result.error, retryable=True
-                )
+                raise CrawlExecutionError(crawl_result.error, retryable=True)
 
             # Check redirect target policy
             if crawl_result.final_url and crawl_result.final_url != crawl_url:
                 redirect_policy = check_fetch_policy(crawl_result.final_url)
                 if not redirect_policy.allowed:
                     reason = f"Redirect target denied: {redirect_policy.reason}"
-                    logger.warning(
-                        "crawl.redirect_denied run=%s %s", run_id, reason
-                    )
+                    logger.warning("crawl.redirect_denied run=%s %s", run_id, reason)
                     _fail_crawl_run(session, crawl_run, reason)
                     if target is not None:
                         _fail_crawl_target(target, reason)
@@ -322,7 +322,9 @@ def execute_crawl(
             payload_bytes = (crawl_result.payload_text or "").encode("utf-8")
             logger.info(
                 "crawl.archiving run=%s payload_size=%d content_type=%s",
-                run_id, len(payload_bytes), crawl_result.content_type,
+                run_id,
+                len(payload_bytes),
+                crawl_result.content_type,
             )
             archive_result = write_archive(
                 payload=payload_bytes,
@@ -402,7 +404,10 @@ def execute_crawl(
         session.commit()
         logger.info(
             "crawl.completed run=%s raw_object=%s http_status=%s bytes=%d",
-            run_id, raw_id, status_code, archive_result.byte_size,
+            run_id,
+            raw_id,
+            status_code,
+            archive_result.byte_size,
         )
         return CrawlExecutionResult(
             crawl_run_id=run_id,
@@ -460,4 +465,5 @@ def _fail_crawl_target(target: CrawlTarget, error_message: str) -> None:
 def _get_max_payload_bytes() -> int:
     """Read max payload bytes from archive config."""
     from harvester.jobs.archive import ArchiveConfig
+
     return ArchiveConfig.from_env().max_payload_bytes

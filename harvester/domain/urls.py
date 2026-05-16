@@ -63,9 +63,7 @@ def normalize_url(url: str) -> str:
 
     # Strip tracking parameters and sort the rest.
     params = parse_qs(parsed.query, keep_blank_values=True)
-    cleaned = {
-        k: v for k, v in params.items() if k not in TRACKING_PARAMS
-    }
+    cleaned = {k: v for k, v in params.items() if k not in TRACKING_PARAMS}
     # Sort by key for deterministic output; use flat value for single-item lists.
     sorted_query = urlencode(
         sorted(cleaned.items(), key=lambda pair: pair[0]),
@@ -73,9 +71,7 @@ def normalize_url(url: str) -> str:
     )
 
     # Reassemble without fragment.
-    return urlunparse(
-        (scheme, netloc, parsed.path, parsed.params, sorted_query, "")
-    )
+    return urlunparse((scheme, netloc, parsed.path, parsed.params, sorted_query, ""))
 
 
 def compute_canonical_url_hash(url: str) -> str:

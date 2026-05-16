@@ -214,7 +214,9 @@ class TestCrawlWorkerLoop:
             call_count += 1
             return {"claimed": 1, "completed": 0, "failed": 1}
 
-        with patch("harvester.workers.daemon.run_crawl_once", side_effect=fake_crawl_once):
+        with patch(
+            "harvester.workers.daemon.run_crawl_once", side_effect=fake_crawl_once
+        ):
             run_crawl_loop(
                 lambda: mock_session,
                 poll_interval=0,
@@ -242,7 +244,9 @@ class TestCrawlWorkerLoop:
             call_count["n"] += 1
             return {"claimed": 1, "completed": 1, "failed": 0}
 
-        with patch("harvester.workers.daemon.run_crawl_once", side_effect=fake_crawl_once):
+        with patch(
+            "harvester.workers.daemon.run_crawl_once", side_effect=fake_crawl_once
+        ):
             run_crawl_loop(
                 make_session,
                 poll_interval=0,
@@ -267,8 +271,13 @@ class TestCrawlWorkerLoop:
             call_count["n"] += 1
             return {"claimed": 0, "completed": 0, "failed": 0}
 
-        with patch("harvester.workers.daemon.run_crawl_once", side_effect=fake_crawl_once):
-            with patch("harvester.workers.daemon.time.sleep", side_effect=lambda s: sleep_times.append(s)):
+        with patch(
+            "harvester.workers.daemon.run_crawl_once", side_effect=fake_crawl_once
+        ):
+            with patch(
+                "harvester.workers.daemon.time.sleep",
+                side_effect=lambda s: sleep_times.append(s),
+            ):
                 run_crawl_loop(
                     lambda: mock_session,
                     poll_interval=5,
@@ -285,7 +294,10 @@ class TestCrawlWorkerLoop:
 
         mock_session = MagicMock()
 
-        with patch("harvester.workers.daemon.run_crawl_once", return_value={"claimed": 0, "completed": 0, "failed": 0}):
+        with patch(
+            "harvester.workers.daemon.run_crawl_once",
+            return_value={"claimed": 0, "completed": 0, "failed": 0},
+        ):
             run_crawl_loop(
                 lambda: mock_session,
                 poll_interval=0,
@@ -307,7 +319,9 @@ class TestCrawlWorkerLoop:
                 raise RuntimeError("transient failure")
             return {"claimed": 0, "completed": 0, "failed": 0}
 
-        with patch("harvester.workers.daemon.run_crawl_once", side_effect=fake_crawl_once):
+        with patch(
+            "harvester.workers.daemon.run_crawl_once", side_effect=fake_crawl_once
+        ):
             run_crawl_loop(
                 lambda: mock_session,
                 poll_interval=0,

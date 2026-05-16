@@ -85,11 +85,7 @@ def _make_crawl_job(
         payload={
             "source_id": str(source_id),
             "recipe_id": str(recipe_id),
-            **(
-                {"topic_watch_id": str(topic_watch_id)}
-                if topic_watch_id
-                else {}
-            ),
+            **({"topic_watch_id": str(topic_watch_id)} if topic_watch_id else {}),
             **({"target_id": str(target_id)} if target_id else {}),
         },
     )
@@ -129,9 +125,7 @@ class TestCrawlHandlerSuccess:
 
         source_id = _insert_source(db_session)
         recipe_id = _insert_recipe(db_session)
-        job = _make_crawl_job(
-            db_session, source_id=source_id, recipe_id=recipe_id
-        )
+        job = _make_crawl_job(db_session, source_id=source_id, recipe_id=recipe_id)
 
         result = process_crawl_job(db_session, job)
         assert result is True
@@ -312,9 +306,7 @@ class TestCrawlHandlerRetryableErrors:
 
         source_id = _insert_source(db_session)
         recipe_id = _insert_recipe(db_session)
-        job = _make_crawl_job(
-            db_session, source_id=source_id, recipe_id=recipe_id
-        )
+        job = _make_crawl_job(db_session, source_id=source_id, recipe_id=recipe_id)
 
         result = process_crawl_job(db_session, job)
         assert result is False

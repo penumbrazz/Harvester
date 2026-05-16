@@ -89,7 +89,11 @@ def create_recipe(
         action="recipe.create",
         entity_type="recipe",
         entity_id=recipe.id,
-        after_state={"name": req.name, "executor": req.executor, "approval_status": "pending"},
+        after_state={
+            "name": req.name,
+            "executor": req.executor,
+            "approval_status": "pending",
+        },
     )
     session.commit()
     session.refresh(recipe)
@@ -107,7 +111,12 @@ def approve_recipe(
 
     try:
         transition_entity(
-            session, recipe, RECIPE_TRANSITIONS, "approved", "api", "recipe",
+            session,
+            recipe,
+            RECIPE_TRANSITIONS,
+            "approved",
+            "api",
+            "recipe",
             status_attr="approval_status",
         )
     except ValueError as e:
@@ -131,7 +140,9 @@ def _resolve_recipe(recipe_id: str, session: Session) -> Recipe:
     try:
         parsed_uuid = uuid.UUID(recipe_id)
     except ValueError:
-        raise HTTPException(status_code=422, detail="Invalid recipe_id format") from None
+        raise HTTPException(
+            status_code=422, detail="Invalid recipe_id format"
+        ) from None
     recipe = session.get(Recipe, parsed_uuid)
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
@@ -149,7 +160,12 @@ def reject_recipe(
 
     try:
         transition_entity(
-            session, recipe, RECIPE_TRANSITIONS, "rejected", "api", "recipe",
+            session,
+            recipe,
+            RECIPE_TRANSITIONS,
+            "rejected",
+            "api",
+            "recipe",
             status_attr="approval_status",
         )
     except ValueError as e:
@@ -172,7 +188,12 @@ def resubmit_recipe(
 
     try:
         transition_entity(
-            session, recipe, RECIPE_TRANSITIONS, "pending", "api", "recipe",
+            session,
+            recipe,
+            RECIPE_TRANSITIONS,
+            "pending",
+            "api",
+            "recipe",
             status_attr="approval_status",
         )
     except ValueError as e:
@@ -195,7 +216,12 @@ def deprecate_recipe(
 
     try:
         transition_entity(
-            session, recipe, RECIPE_TRANSITIONS, "deprecated", "api", "recipe",
+            session,
+            recipe,
+            RECIPE_TRANSITIONS,
+            "deprecated",
+            "api",
+            "recipe",
             status_attr="approval_status",
         )
     except ValueError as e:

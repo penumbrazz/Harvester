@@ -24,6 +24,7 @@ def app():
         FastAPI application configured for testing.
     """
     from harvester.api.app import create_app
+
     return create_app()
 
 

@@ -264,12 +264,19 @@ async def test_targets_role_filter(api_client, api_test_db):
     """GET /crawl/targets?target_role=detail should filter by role."""
     source_id, recipe_id = _insert_source_and_recipe(api_test_db)
     _insert_crawl_target(
-        api_test_db, source_id, recipe_id, target_role="detail",
+        api_test_db,
+        source_id,
+        recipe_id,
+        target_role="detail",
         target_url="https://example.com/detail.html",
     )
     _insert_crawl_target(
-        api_test_db, source_id, recipe_id, target_role="asset",
-        media_type="pdf", target_url="https://example.com/report.pdf",
+        api_test_db,
+        source_id,
+        recipe_id,
+        target_role="asset",
+        media_type="pdf",
+        target_url="https://example.com/report.pdf",
     )
 
     resp = await api_client.get(
@@ -287,11 +294,17 @@ async def test_targets_status_filter(api_client, api_test_db):
     """GET /crawl/targets?status=failed should filter by status."""
     source_id, recipe_id = _insert_source_and_recipe(api_test_db)
     _insert_crawl_target(
-        api_test_db, source_id, recipe_id, status="completed",
+        api_test_db,
+        source_id,
+        recipe_id,
+        status="completed",
         target_url="https://example.com/ok.html",
     )
     _insert_crawl_target(
-        api_test_db, source_id, recipe_id, status="failed",
+        api_test_db,
+        source_id,
+        recipe_id,
+        status="failed",
         target_url="https://example.com/fail.html",
         failure_count=3,
         last_error="connection timeout",
@@ -316,7 +329,9 @@ async def test_targets_pagination(api_client, api_test_db):
     source_id, recipe_id = _insert_source_and_recipe(api_test_db)
     for i in range(5):
         _insert_crawl_target(
-            api_test_db, source_id, recipe_id,
+            api_test_db,
+            source_id,
+            recipe_id,
             target_url=f"https://example.com/page/{i}.html",
         )
 
@@ -338,10 +353,15 @@ async def test_failures_includes_targets(api_client, api_test_db):
     """GET /failures/recent should include failed crawl targets."""
     source_id, recipe_id = _insert_source_and_recipe(api_test_db)
     _insert_crawl_target(
-        api_test_db, source_id, recipe_id, status="failed",
+        api_test_db,
+        source_id,
+        recipe_id,
+        status="failed",
         target_url="https://example.com/broken.pdf",
-        media_type="pdf", target_role="asset",
-        failure_count=2, last_error="download failed",
+        media_type="pdf",
+        target_role="asset",
+        failure_count=2,
+        last_error="download failed",
     )
 
     resp = await api_client.get(

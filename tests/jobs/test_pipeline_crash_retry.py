@@ -231,11 +231,9 @@ class TestPartialExtractionRetry:
 
         # One item, two observations
         obs_count = db_session.scalar(
-            sa.select(sa.func.count()).select_from(
-                sa.text("item_observations")
-            ).where(
-                sa.text("content_item_id = :cid")
-            ),
+            sa.select(sa.func.count())
+            .select_from(sa.text("item_observations"))
+            .where(sa.text("content_item_id = :cid")),
             {"cid": item1.id},
         )
         assert obs_count == 2

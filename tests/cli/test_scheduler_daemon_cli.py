@@ -24,9 +24,7 @@ class TestSchedulerDaemonCLI:
         """'scheduler daemon --poll-interval 5' passes poll_interval=5."""
         mock_session.return_value = MagicMock()
 
-        result = runner.invoke(
-            app, ["scheduler", "daemon", "--poll-interval", "5"]
-        )
+        result = runner.invoke(app, ["scheduler", "daemon", "--poll-interval", "5"])
 
         assert result.exit_code == 0
         mock_loop.assert_called_once()
@@ -38,9 +36,7 @@ class TestSchedulerDaemonCLI:
         """'scheduler daemon --limit 20' passes limit=20."""
         mock_session.return_value = MagicMock()
 
-        result = runner.invoke(
-            app, ["scheduler", "daemon", "--limit", "20"]
-        )
+        result = runner.invoke(app, ["scheduler", "daemon", "--limit", "20"])
 
         assert result.exit_code == 0
         mock_loop.assert_called_once()

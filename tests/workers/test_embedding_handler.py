@@ -60,7 +60,9 @@ class TestProcessEmbedChunksJob:
         db_session.commit()
 
         adapter = StubModelAdapter()
-        result = process_embed_chunks_job(db_session, job, adapter, "stub-embedding-1536")
+        result = process_embed_chunks_job(
+            db_session, job, adapter, "stub-embedding-1536"
+        )
 
         assert result is True
         db_session.expire_all()
@@ -79,7 +81,9 @@ class TestProcessEmbedChunksJob:
         from harvester.workers.embedding import process_embed_chunks_job
 
         _, _, iv = make_full_chain(db_session, "Ready Skip")
-        chunk = make_chunk(db_session, iv.id, 0, "already done", embedding_status="ready")
+        chunk = make_chunk(
+            db_session, iv.id, 0, "already done", embedding_status="ready"
+        )
         db_session.commit()
 
         job = _insert_job(
@@ -89,7 +93,9 @@ class TestProcessEmbedChunksJob:
         db_session.commit()
 
         adapter = StubModelAdapter()
-        result = process_embed_chunks_job(db_session, job, adapter, "stub-embedding-1536")
+        result = process_embed_chunks_job(
+            db_session, job, adapter, "stub-embedding-1536"
+        )
 
         assert result is True
         job_check = db_session.get(Job, job.id)
@@ -135,7 +141,9 @@ class TestProcessEmbedChunksJob:
         db_session.commit()
 
         adapter = StubModelAdapter()
-        result = process_embed_chunks_job(db_session, job, adapter, "stub-embedding-1536")
+        result = process_embed_chunks_job(
+            db_session, job, adapter, "stub-embedding-1536"
+        )
 
         assert result is False
         job_check = db_session.get(Job, job.id)
@@ -155,7 +163,9 @@ class TestProcessEmbedChunksJob:
         db_session.commit()
 
         adapter = StubModelAdapter()
-        result = process_embed_chunks_job(db_session, job, adapter, "stub-embedding-1536")
+        result = process_embed_chunks_job(
+            db_session, job, adapter, "stub-embedding-1536"
+        )
 
         assert result is False
         job_check = db_session.get(Job, job.id)
@@ -231,7 +241,9 @@ class TestProcessEmbedChunksJob:
         db_session.commit()
 
         adapter = StubModelAdapter()
-        result = process_embed_chunks_job(db_session, job, adapter, "stub-embedding-1536")
+        result = process_embed_chunks_job(
+            db_session, job, adapter, "stub-embedding-1536"
+        )
 
         assert result is False
         job_check = db_session.get(Job, job.id)

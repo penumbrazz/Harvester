@@ -52,7 +52,9 @@ def _to_schedule_response(schedule: WatchSchedule) -> ScheduleResponse:
         id=str(schedule.id),
         schedule_key=schedule.schedule_key,
         source_id=str(schedule.source_id),
-        topic_watch_id=str(schedule.topic_watch_id) if schedule.topic_watch_id else None,
+        topic_watch_id=str(schedule.topic_watch_id)
+        if schedule.topic_watch_id
+        else None,
         recipe_id=str(schedule.recipe_id),
         status=schedule.status,
         interval_seconds=schedule.interval_seconds,
@@ -86,7 +88,9 @@ def create_schedule(
     try:
         source_uuid = uuid.UUID(req.source_id)
     except ValueError:
-        raise HTTPException(status_code=422, detail="Invalid source_id format") from None
+        raise HTTPException(
+            status_code=422, detail="Invalid source_id format"
+        ) from None
 
     source = session.get(Source, source_uuid)
     if not source:
@@ -101,7 +105,9 @@ def create_schedule(
     try:
         recipe_uuid = uuid.UUID(req.recipe_id)
     except ValueError:
-        raise HTTPException(status_code=422, detail="Invalid recipe_id format") from None
+        raise HTTPException(
+            status_code=422, detail="Invalid recipe_id format"
+        ) from None
 
     recipe = session.get(Recipe, recipe_uuid)
     if not recipe:
@@ -118,7 +124,9 @@ def create_schedule(
         try:
             topic_uuid = uuid.UUID(req.topic_watch_id)
         except ValueError:
-            raise HTTPException(status_code=422, detail="Invalid topic_watch_id format") from None
+            raise HTTPException(
+                status_code=422, detail="Invalid topic_watch_id format"
+            ) from None
 
         topic = session.get(TopicWatch, topic_uuid)
         if not topic:
@@ -212,7 +220,9 @@ def _resolve_schedule(schedule_id: str, session: Session) -> WatchSchedule:
     try:
         parsed_uuid = uuid.UUID(schedule_id)
     except ValueError:
-        raise HTTPException(status_code=422, detail="Invalid schedule_id format") from None
+        raise HTTPException(
+            status_code=422, detail="Invalid schedule_id format"
+        ) from None
     schedule = session.get(WatchSchedule, parsed_uuid)
     if not schedule:
         raise HTTPException(status_code=404, detail="Schedule not found")
@@ -230,7 +240,12 @@ def pause_schedule(
 
     try:
         transition_entity(
-            session, schedule, SCHEDULE_TRANSITIONS, "paused", "api", "watch_schedule",
+            session,
+            schedule,
+            SCHEDULE_TRANSITIONS,
+            "paused",
+            "api",
+            "watch_schedule",
         )
     except ValueError as e:
         session.commit()
@@ -252,7 +267,12 @@ def resume_schedule(
 
     try:
         transition_entity(
-            session, schedule, SCHEDULE_TRANSITIONS, "active", "api", "watch_schedule",
+            session,
+            schedule,
+            SCHEDULE_TRANSITIONS,
+            "active",
+            "api",
+            "watch_schedule",
         )
     except ValueError as e:
         session.commit()
@@ -274,7 +294,12 @@ def disable_schedule(
 
     try:
         transition_entity(
-            session, schedule, SCHEDULE_TRANSITIONS, "disabled", "api", "watch_schedule",
+            session,
+            schedule,
+            SCHEDULE_TRANSITIONS,
+            "disabled",
+            "api",
+            "watch_schedule",
         )
     except ValueError as e:
         session.commit()
@@ -363,7 +388,12 @@ def list_schedules(
             ) from None
 
     total = query.count()
-    schedules = query.order_by(WatchSchedule.created_at.desc()).offset(offset).limit(limit).all()
+    schedules = (
+        query.order_by(WatchSchedule.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
     items = [_to_schedule_response(s) for s in schedules]
 
     return ScheduleListResponse(items=items, total=total, limit=limit, offset=offset)

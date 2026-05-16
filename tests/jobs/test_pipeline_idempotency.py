@@ -379,8 +379,6 @@ class TestVersionIdempotency:
             )
 
         versions = db_session.scalars(
-            sa.select(ItemVersion).where(
-                ItemVersion.content_item_id == item.id
-            )
+            sa.select(ItemVersion).where(ItemVersion.content_item_id == item.id)
         ).all()
         assert len(versions) == 3  # hash-1, hash-2, hash-3

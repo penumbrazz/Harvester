@@ -139,9 +139,7 @@ class TestScheduleCrawlPipeline:
         # Claim the job (simulate worker claiming)
         from harvester.jobs.repository import claim_next_jobs
 
-        claimed = claim_next_jobs(
-            db_session, "test-worker", limit=1, lanes=["crawl"]
-        )
+        claimed = claim_next_jobs(db_session, "test-worker", limit=1, lanes=["crawl"])
         assert len(claimed) == 1
         claimed_job = claimed[0]
 
@@ -200,9 +198,11 @@ class TestAutoScheduleClosedLoop:
     def _make_stop_after(n):
         """Create a should_stop callable that returns True after n calls."""
         counter = {"n": 0}
+
         def should_stop():
             counter["n"] += 1
             return counter["n"] > n
+
         return should_stop
 
     @patch("harvester.jobs.crawl_execution.write_archive")
@@ -361,7 +361,9 @@ class TestAutoScheduleClosedLoop:
             assert len(raw_objects) == 1
 
             # No embedding jobs should have been created automatically
-            embed_jobs = db_session.query(Job).filter(Job.job_type == "embed_chunks").all()
+            embed_jobs = (
+                db_session.query(Job).filter(Job.job_type == "embed_chunks").all()
+            )
             assert len(embed_jobs) == 0
 
     def test_auto_schedule_jobs_observable_via_queue(self, db_session):

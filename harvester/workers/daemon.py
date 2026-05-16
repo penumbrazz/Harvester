@@ -195,11 +195,15 @@ def _run_lane_loop(
                 sess.close()
 
         if stats["claimed"] == 0:
-            logger.debug("%s daemon: no jobs claimed, sleeping %ds", lane_label, poll_interval)
+            logger.debug(
+                "%s daemon: no jobs claimed, sleeping %ds", lane_label, poll_interval
+            )
             time.sleep(poll_interval)
 
         if should_stop and should_stop():
-            logger.info("%s daemon stop condition met after iteration, exiting loop", lane_label)
+            logger.info(
+                "%s daemon stop condition met after iteration, exiting loop", lane_label
+            )
             break
 
 
@@ -231,7 +235,12 @@ def run_crawl_once(
 ) -> dict[str, int]:
     """Claim and process a batch of crawl jobs."""
     return _run_lane_once(
-        session, _CRAWL_LANES, process_crawl_job, "crawl", limit=limit, worker_id=worker_id
+        session,
+        _CRAWL_LANES,
+        process_crawl_job,
+        "crawl",
+        limit=limit,
+        worker_id=worker_id,
     )
 
 
@@ -243,7 +252,12 @@ def run_extract_once(
 ) -> dict[str, int]:
     """Claim and process a batch of extract jobs."""
     return _run_lane_once(
-        session, _EXTRACT_LANES, process_extract_job, "extract", limit=limit, worker_id=worker_id
+        session,
+        _EXTRACT_LANES,
+        process_extract_job,
+        "extract",
+        limit=limit,
+        worker_id=worker_id,
     )
 
 

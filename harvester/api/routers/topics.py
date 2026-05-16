@@ -49,6 +49,7 @@ def create_topic(
     expires_at = None
     if req.ttl_seconds:
         from datetime import timedelta
+
         expires_at = datetime.now(UTC) + timedelta(seconds=req.ttl_seconds)
 
     topic = TopicWatch(
@@ -107,7 +108,9 @@ def attach_source_to_topic(
         .first()
     )
     if existing:
-        raise HTTPException(status_code=409, detail="Source already attached to this topic")
+        raise HTTPException(
+            status_code=409, detail="Source already attached to this topic"
+        )
 
     link = TopicSource(
         id=uuid.uuid4(),

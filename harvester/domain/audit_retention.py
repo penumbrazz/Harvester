@@ -39,13 +39,13 @@ def get_retention_days() -> int:
             f"HARVESTER_AUDIT_RETENTION_DAYS must be a positive integer, got: {raw!r}"
         ) from exc
     if value < 1:
-        raise ValueError(
-            f"HARVESTER_AUDIT_RETENTION_DAYS must be >= 1, got: {value}"
-        )
+        raise ValueError(f"HARVESTER_AUDIT_RETENTION_DAYS must be >= 1, got: {value}")
     return value
 
 
-def cleanup_audit_events(session: Session, *, now: datetime | None = None) -> CleanupResult:
+def cleanup_audit_events(
+    session: Session, *, now: datetime | None = None
+) -> CleanupResult:
     """Delete audit events older than the configured retention window.
 
     Parameters

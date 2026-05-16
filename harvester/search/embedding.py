@@ -42,10 +42,12 @@ def create_embedding_jobs(
         The newly created ``embed_chunks`` jobs.
     """
     pending_chunks = session.scalars(
-        sa.select(Chunk).where(
+        sa.select(Chunk)
+        .where(
             Chunk.item_version_id == item_version_id,
             Chunk.embedding_status == "pending",
-        ).order_by(Chunk.chunk_index)
+        )
+        .order_by(Chunk.chunk_index)
     ).all()
 
     created: list[Job] = []

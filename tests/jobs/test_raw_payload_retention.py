@@ -31,9 +31,7 @@ def _insert_raw_object(db_session, **overrides):
     columns = ", ".join(defaults.keys())
     placeholders = ", ".join(f":{k}" for k in defaults.keys())
     db_session.execute(
-        sa.text(
-            f"INSERT INTO raw_objects ({columns}) VALUES ({placeholders})"
-        ),
+        sa.text(f"INSERT INTO raw_objects ({columns}) VALUES ({placeholders})"),
         defaults,
     )
     return raw_id

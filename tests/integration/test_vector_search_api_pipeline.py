@@ -32,9 +32,7 @@ from tests.utils.factories import (
 def api_test_db():
     """Create an isolated test database for integration tests."""
     db_name = f"harvester_vec_int_{uuid.uuid4().hex[:8]}"
-    admin_url = (
-        "postgresql+psycopg://postgres:postgres123@192.168.0.114:5432/postgres"
-    )
+    admin_url = "postgresql+psycopg://postgres:postgres123@192.168.0.114:5432/postgres"
     test_url = admin_url.rsplit("/", 1)[0] + "/" + db_name
 
     admin_engine = create_engine(admin_url, isolation_level="AUTOCOMMIT")
@@ -150,12 +148,8 @@ async def test_vector_api_dedup_collapse(api_client, api_test_db):
     with Session(bind=engine) as session:
         uid = uuid.uuid4().hex[:8]
         src_id = insert_source(session, f"vec-dedup-src-{uid}")
-        ci_a_id = insert_content_item(
-            session, src_id, f"Dedup Canonical Article {uid}"
-        )
-        ci_b_id = insert_content_item(
-            session, src_id, f"Dedup Duplicate Article {uid}"
-        )
+        ci_a_id = insert_content_item(session, src_id, f"Dedup Canonical Article {uid}")
+        ci_b_id = insert_content_item(session, src_id, f"Dedup Duplicate Article {uid}")
         iv_a_id = insert_item_version(session, ci_a_id)
         iv_b_id = insert_item_version(session, ci_b_id)
         chunk_a_id = insert_chunk(session, iv_a_id, 0, "canonical chunk text")
@@ -219,9 +213,7 @@ async def test_adapter_factory_pipeline(api_client, api_test_db):
     with Session(bind=engine) as session:
         uid = uuid.uuid4().hex[:8]
         src_id = insert_source(session, f"factory-src-{uid}")
-        ci_id = insert_content_item(
-            session, src_id, f"Factory Pipeline Article {uid}"
-        )
+        ci_id = insert_content_item(session, src_id, f"Factory Pipeline Article {uid}")
         iv_id = insert_item_version(session, ci_id)
         chunk_id = insert_chunk(
             session, iv_id, 0, f"factory pipeline test content {uid}"
@@ -308,9 +300,7 @@ class TestLiveQwenSmoke:
             with Session(bind=engine) as session:
                 uid = uuid.uuid4().hex[:8]
                 src_id = insert_source(session, f"live-qwen-src-{uid}")
-                ci_id = insert_content_item(
-                    session, src_id, f"Live Qwen Test {uid}"
-                )
+                ci_id = insert_content_item(session, src_id, f"Live Qwen Test {uid}")
                 iv_id = insert_item_version(session, ci_id)
                 chunk_id = insert_chunk(
                     session, iv_id, 0, f"live qwen test content {uid}"

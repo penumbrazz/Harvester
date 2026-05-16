@@ -88,19 +88,16 @@ def run_scheduler_once(
     result = SchedulerResult()
 
     # Query active schedules that are due
-    schedules = (
-        session.scalars(
-            sa.select(WatchSchedule)
-            .where(
-                WatchSchedule.status == "active",
-                WatchSchedule.next_run_at <= now,
-            )
-            .order_by(WatchSchedule.next_run_at.asc())
-            .limit(limit)
-            .with_for_update(skip_locked=True)
+    schedules = session.scalars(
+        sa.select(WatchSchedule)
+        .where(
+            WatchSchedule.status == "active",
+            WatchSchedule.next_run_at <= now,
         )
-        .all()
-    )
+        .order_by(WatchSchedule.next_run_at.asc())
+        .limit(limit)
+        .with_for_update(skip_locked=True)
+    ).all()
 
     result.scanned = len(schedules)
 
@@ -220,7 +217,10 @@ def _should_run_cleanup(now: datetime) -> bool:
     if _last_cleanup_at is None:
         return True
     interval_hours = int(
-        os.environ.get("HARVESTER_AUDIT_CLEANUP_INTERVAL_HOURS", str(DEFAULT_CLEANUP_INTERVAL_HOURS))
+        os.environ.get(
+            "HARVESTER_AUDIT_CLEANUP_INTERVAL_HOURS",
+            str(DEFAULT_CLEANUP_INTERVAL_HOURS),
+        )
     )
     return (now - _last_cleanup_at) >= timedelta(hours=interval_hours)
 
@@ -319,5 +319,7 @@ def run_scheduler_loop(
             time.sleep(poll_interval)
 
         if should_stop and should_stop():
-            logger.info("Scheduler daemon stop condition met after iteration, exiting loop")
+            logger.info(
+                "Scheduler daemon stop condition met after iteration, exiting loop"
+            )
             break

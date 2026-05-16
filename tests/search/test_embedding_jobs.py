@@ -82,9 +82,7 @@ class TestCreateEmbeddingJobs:
         session.flush()
         return session.get(Chunk, chunk_id)
 
-    def test_creates_jobs_for_pending_chunks(
-        self, db_session: Session
-    ):
+    def test_creates_jobs_for_pending_chunks(self, db_session: Session):
         """Jobs must be created for chunks with embedding_status='pending'."""
         _, version = self._seed_item_version(db_session)
         self._seed_chunk(db_session, version.id, embedding_status="pending")
@@ -96,14 +94,10 @@ class TestCreateEmbeddingJobs:
             assert job.payload["item_version_id"] == str(version.id)
             assert job.status == "pending"
 
-    def test_no_jobs_for_embedded_chunks(
-        self, db_session: Session
-    ):
+    def test_no_jobs_for_embedded_chunks(self, db_session: Session):
         """Chunks with embedding_status='done' must NOT produce jobs."""
         _, version = self._seed_item_version(db_session)
-        self._seed_chunk(
-            db_session, version.id, embedding_status="done"
-        )
+        self._seed_chunk(db_session, version.id, embedding_status="done")
 
         jobs = create_embedding_jobs(db_session, version.id)
         assert len(jobs) == 0
@@ -115,9 +109,7 @@ class TestCreateEmbeddingJobs:
         jobs = create_embedding_jobs(db_session, version.id)
         assert len(jobs) == 0
 
-    def test_mixed_status_only_pending_get_jobs(
-        self, db_session: Session
-    ):
+    def test_mixed_status_only_pending_get_jobs(self, db_session: Session):
         """Only pending chunks get jobs; done/failed chunks are skipped."""
         _, version = self._seed_item_version(db_session)
         self._seed_chunk(
@@ -144,9 +136,7 @@ class TestCreateEmbeddingJobs:
         for job in jobs:
             assert job.job_type == "embed_chunks"
 
-    def test_jobs_reference_correct_item_version(
-        self, db_session: Session
-    ):
+    def test_jobs_reference_correct_item_version(self, db_session: Session):
         """Each job payload must reference the correct item_version_id."""
         _, version = self._seed_item_version(db_session)
         self._seed_chunk(db_session, version.id, chunk_index=0)
@@ -155,9 +145,7 @@ class TestCreateEmbeddingJobs:
         assert len(jobs) == 1
         assert jobs[0].payload["item_version_id"] == str(version.id)
 
-    def test_never_creates_jobs_for_raw_payload(
-        self, db_session: Session
-    ):
+    def test_never_creates_jobs_for_raw_payload(self, db_session: Session):
         """Embedding jobs must NOT reference raw_objects — only chunks.
 
         This is a contract test: verify that the payload references

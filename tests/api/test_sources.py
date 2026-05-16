@@ -210,7 +210,9 @@ async def test_invalid_transition_persists_rejection_audit(api_client, api_test_
             {"eid": source_id},
         ).fetchone()
     engine.dispose()
-    assert row is not None, "Rejection audit event must be persisted after illegal transition"
+    assert row is not None, (
+        "Rejection audit event must be persisted after illegal transition"
+    )
     assert row[0] == "status_change_rejected"
 
 

@@ -6,26 +6,28 @@ from harvester.extractors.base import CandidateItem
 from harvester.extractors.cdc_fixture import CdcFixtureExtractor
 
 
-SAMPLE_PAYLOAD = json.dumps([
-    {
-        "id": 1,
-        "title": "First Article",
-        "url": "https://example.com/1",
-        "content": "Content of the first article.",
-    },
-    {
-        "id": 2,
-        "title": "Second Article",
-        "url": "https://example.com/2",
-        "content": "Content of the second article.",
-    },
-    {
-        "id": 3,
-        "title": "Third Article",
-        "url": "https://example.com/3",
-        "content": "Content of the third article.",
-    },
-])
+SAMPLE_PAYLOAD = json.dumps(
+    [
+        {
+            "id": 1,
+            "title": "First Article",
+            "url": "https://example.com/1",
+            "content": "Content of the first article.",
+        },
+        {
+            "id": 2,
+            "title": "Second Article",
+            "url": "https://example.com/2",
+            "content": "Content of the second article.",
+        },
+        {
+            "id": 3,
+            "title": "Third Article",
+            "url": "https://example.com/3",
+            "content": "Content of the third article.",
+        },
+    ]
+)
 
 
 class TestCdcFixtureExtractor:

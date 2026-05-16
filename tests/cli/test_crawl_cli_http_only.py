@@ -54,9 +54,7 @@ class TestCrawlCLIHttpOnly:
                     if "db" in node.module and "session" in str(
                         [alias.name for alias in (node.names or [])]
                     ):
-                        pytest.fail(
-                            f"CLI imports database session from {node.module}"
-                        )
+                        pytest.fail(f"CLI imports database session from {node.module}")
 
     def test_crawl_run_output_contains_ids(self):
         """CLI should output crawl_run_id, status, and raw_object_id."""

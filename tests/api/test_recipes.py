@@ -297,7 +297,12 @@ async def test_reject_recipe(api_client):
     # Arrange — create a pending recipe
     resp = await api_client.post(
         "/recipes",
-        json={"name": f"reject-{suffix}", "executor": "http_fetch", "config": {}, "risk_level": "low"},
+        json={
+            "name": f"reject-{suffix}",
+            "executor": "http_fetch",
+            "config": {},
+            "risk_level": "low",
+        },
         headers=headers,
     )
     assert resp.status_code == 201
@@ -325,7 +330,12 @@ async def test_resubmit_recipe(api_client):
     # Arrange — create and reject a recipe
     resp = await api_client.post(
         "/recipes",
-        json={"name": f"resubmit-{suffix}", "executor": "http_fetch", "config": {}, "risk_level": "low"},
+        json={
+            "name": f"resubmit-{suffix}",
+            "executor": "http_fetch",
+            "config": {},
+            "risk_level": "low",
+        },
         headers=headers,
     )
     recipe_id = resp.json()["id"]
@@ -353,7 +363,12 @@ async def test_deprecate_recipe(api_client):
     # Arrange — create and approve a recipe
     resp = await api_client.post(
         "/recipes",
-        json={"name": f"deprecate-{suffix}", "executor": "http_fetch", "config": {}, "risk_level": "low"},
+        json={
+            "name": f"deprecate-{suffix}",
+            "executor": "http_fetch",
+            "config": {},
+            "risk_level": "low",
+        },
         headers=headers,
     )
     recipe_id = resp.json()["id"]
@@ -381,7 +396,12 @@ async def test_patch_recipe(api_client):
     # Arrange — create a pending recipe
     resp = await api_client.post(
         "/recipes",
-        json={"name": f"patch-{suffix}", "executor": "http_fetch", "config": {}, "risk_level": "low"},
+        json={
+            "name": f"patch-{suffix}",
+            "executor": "http_fetch",
+            "config": {},
+            "risk_level": "low",
+        },
         headers=headers,
     )
     recipe_id = resp.json()["id"]
@@ -416,7 +436,12 @@ async def test_reject_approved_recipe_rejected(api_client):
     # Arrange — create and approve
     resp = await api_client.post(
         "/recipes",
-        json={"name": f"rej-app-{suffix}", "executor": "http_fetch", "config": {}, "risk_level": "low"},
+        json={
+            "name": f"rej-app-{suffix}",
+            "executor": "http_fetch",
+            "config": {},
+            "risk_level": "low",
+        },
         headers=headers,
     )
     recipe_id = resp.json()["id"]
@@ -438,7 +463,12 @@ async def test_resubmit_pending_recipe_rejected(api_client):
     # Arrange — create a pending recipe
     resp = await api_client.post(
         "/recipes",
-        json={"name": f"res-pend-{suffix}", "executor": "http_fetch", "config": {}, "risk_level": "low"},
+        json={
+            "name": f"res-pend-{suffix}",
+            "executor": "http_fetch",
+            "config": {},
+            "risk_level": "low",
+        },
         headers=headers,
     )
     recipe_id = resp.json()["id"]
@@ -459,7 +489,12 @@ async def test_deprecate_pending_recipe_rejected(api_client):
     # Arrange — create a pending recipe
     resp = await api_client.post(
         "/recipes",
-        json={"name": f"dep-pend-{suffix}", "executor": "http_fetch", "config": {}, "risk_level": "low"},
+        json={
+            "name": f"dep-pend-{suffix}",
+            "executor": "http_fetch",
+            "config": {},
+            "risk_level": "low",
+        },
         headers=headers,
     )
     recipe_id = resp.json()["id"]
