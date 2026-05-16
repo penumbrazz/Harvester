@@ -21,8 +21,11 @@ import { Select } from '../../components/ui/select'
 import { StatusPill } from '../../components/ui/status-pill'
 import { PaginationControls } from '../../components/common/pagination-controls'
 import { listContentItems, searchContentItems } from '../../lib/content-api'
+import { listSources } from '../../lib/source-api'
 import { formatDate } from '../../lib/format'
 import { cellStyle } from '../../lib/table-styles'
+import { ContentDetailModal } from './content-detail-modal'
+import type { Source } from '../../types/source'
 
 interface ContentLibraryPageProps {
   config: ApiConfig
@@ -42,6 +45,9 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
   const [statusFilter, setStatusFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [offset, setOffset] = useState(0)
+  const [sourceFilter, setSourceFilter] = useState('')
+  const [sources, setSources] = useState<Source[]>([])
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
 
   // View mode
   const [viewMode, setViewMode] = useState<ViewMode>('list')
@@ -62,6 +68,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
       const data = await listContentItems(config, {
         status: statusFilter || undefined,
         item_type: typeFilter || undefined,
+        source_id: sourceFilter || undefined,
         limit: PAGE_SIZE,
         offset,
       })
@@ -71,13 +78,20 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
     } finally {
       setLoading(false)
     }
-  }, [config, statusFilter, typeFilter, offset])
+  }, [config, statusFilter, typeFilter, sourceFilter, offset])
 
   useEffect(() => {
     if (config.baseUrl) {
       void fetchContent()
     }
   }, [config.baseUrl, fetchContent])
+
+  useEffect(() => {
+    if (!config.baseUrl) return
+    listSources(config, { limit: 100 })
+      .then((data) => setSources(data.items))
+      .catch(() => setSources([]))
+  }, [config])
 
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) return
@@ -102,7 +116,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
 
   const items = contentResponse?.items || []
   const total = contentResponse?.total || 0
-  const hasActiveFilters = statusFilter !== '' || typeFilter !== ''
+  const hasActiveFilters = statusFilter !== '' || typeFilter !== '' || sourceFilter !== ''
 
   return (
     <div
@@ -269,6 +283,21 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                 </option>
               ))}
             </Select>
+            <Select
+              data-testid="select-source-filter"
+              value={sourceFilter}
+              onChange={(e) => {
+                setSourceFilter(e.target.value)
+                setOffset(0)
+              }}
+            >
+              <option value="">全部来源</option>
+              {sources.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </Select>
             {/* View toggle */}
             <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
               <button
@@ -429,7 +458,11 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                 </thead>
                 <tbody>
                   {items.map((item) => (
-                    <ContentRow key={item.id} item={item} />
+                    <ContentRow
+                      key={item.id}
+                      item={item}
+                      onClick={() => setSelectedItemId(item.id)}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -450,7 +483,11 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
               }}
             >
               {items.map((item) => (
-                <ContentCard key={item.id} item={item} />
+                <ContentCard
+                  key={item.id}
+                  item={item}
+                  onClick={() => setSelectedItemId(item.id)}
+                />
               ))}
             </div>
           )}
@@ -469,14 +506,31 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
           )}
         </>
       )}
+      <ContentDetailModal
+        config={config}
+        contentItemId={selectedItemId}
+        onClose={() => setSelectedItemId(null)}
+      />
     </div>
   )
 }
 
 /** Table row for a content item in list view. */
-function ContentRow({ item }: { item: ContentItem }) {
+function ContentRow({ item, onClick }: { item: ContentItem; onClick: () => void }) {
   return (
-    <tr style={{ borderBottom: 'var(--border-whisper)' }}>
+    <tr
+      style={{
+        borderBottom: 'var(--border-whisper)',
+        cursor: 'pointer',
+      }}
+      onClick={onClick}
+      onMouseEnter={(e) => {
+        ;(e.currentTarget as HTMLElement).style.background = '#f6f5f4'
+      }}
+      onMouseLeave={(e) => {
+        ;(e.currentTarget as HTMLElement).style.background = ''
+      }}
+    >
       <td style={{ ...cellStyle, fontWeight: 500, maxWidth: '300px' }}>
         <div
           style={{
@@ -532,8 +586,12 @@ function ContentRow({ item }: { item: ContentItem }) {
 }
 
 /** Card for a content item in grid view. */
-function ContentCard({ item }: { item: ContentItem }) {
+function ContentCard({ item, onClick }: { item: ContentItem; onClick: () => void }) {
   return (
+    <div
+      style={{ cursor: 'pointer' }}
+      onClick={onClick}
+    >
     <Card
       style={{
         padding: 'var(--space-4)',
@@ -607,6 +665,7 @@ function ContentCard({ item }: { item: ContentItem }) {
         {formatDate(item.updated_at)}
       </div>
     </Card>
+    </div>
   )
 }
 
