@@ -8,6 +8,7 @@ import sqlalchemy as sa
 
 from harvester.db.models import Source
 from harvester.domain.state import (
+    CRAWL_TARGET_TRANSITIONS,
     SOURCE_TRANSITIONS,
     validate_transition,
     transition_entity,
@@ -48,6 +49,23 @@ class TestValidateTransition:
 
         # Assert
         assert result is False
+
+    def test_crawl_target_lifecycle_statuses(self):
+        """Crawl targets should support the minimal execution lifecycle."""
+        # Arrange
+        expected_statuses = {"pending", "running", "completed", "failed", "skipped"}
+
+        # Act
+        actual_statuses = set(CRAWL_TARGET_TRANSITIONS)
+
+        # Assert
+        assert expected_statuses.issubset(actual_statuses)
+        assert validate_transition(CRAWL_TARGET_TRANSITIONS, "pending", "running")
+        assert validate_transition(CRAWL_TARGET_TRANSITIONS, "pending", "skipped")
+        assert validate_transition(CRAWL_TARGET_TRANSITIONS, "running", "completed")
+        assert validate_transition(CRAWL_TARGET_TRANSITIONS, "running", "failed")
+        assert validate_transition(CRAWL_TARGET_TRANSITIONS, "failed", "pending")
+        assert not validate_transition(CRAWL_TARGET_TRANSITIONS, "completed", "running")
 
 
 class TestTransitionEntity:

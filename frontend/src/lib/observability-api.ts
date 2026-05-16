@@ -1,6 +1,7 @@
 import type { ApiConfig } from '../types/api'
 import type {
   CrawlRunListResponse,
+  CrawlTargetListResponse,
   DashboardSummary,
   FailuresResponse,
   JobListResponse,
@@ -53,6 +54,28 @@ export function getRecentFailures(
 ): Promise<FailuresResponse> {
   const path = limit ? `/failures/recent?limit=${limit}` : '/failures/recent'
   return apiRequest<FailuresResponse>(config, path)
+}
+
+/** Fetch paginated crawl target list with optional filters. */
+export function listCrawlTargets(
+  config: ApiConfig,
+  filters?: {
+    source_id?: string
+    target_role?: string
+    status?: string
+    limit?: number
+    offset?: number
+  },
+): Promise<CrawlTargetListResponse> {
+  const params = new URLSearchParams()
+  if (filters?.source_id) params.set('source_id', filters.source_id)
+  if (filters?.target_role) params.set('target_role', filters.target_role)
+  if (filters?.status) params.set('status', filters.status)
+  if (filters?.limit) params.set('limit', String(filters.limit))
+  if (filters?.offset) params.set('offset', String(filters.offset))
+  const query = params.toString()
+  const path = query ? `/crawl/targets?${query}` : '/crawl/targets'
+  return apiRequest<CrawlTargetListResponse>(config, path)
 }
 
 /** Fetch paginated job list with optional filters. */

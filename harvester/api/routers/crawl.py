@@ -1,4 +1,4 @@
-"""Crawl run API endpoints — execution and list view."""
+"""Crawl run API endpoints — execution, list view, and target summaries."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from harvester.api.auth import require_api_token
 from harvester.api.deps import get_db_session
-from harvester.db.models import CrawlRun
+from harvester.db.models import CrawlRun, CrawlTarget
 from harvester.jobs.crawl_execution import CrawlExecutionError, execute_crawl
 
 logger = logging.getLogger(__name__)
@@ -145,3 +145,93 @@ def list_crawl_runs(
     ]
 
     return CrawlRunListResponse(items=items, total=total, limit=limit, offset=offset)
+
+
+# ---------------------------------------------------------------------------
+# Crawl Target summaries
+# ---------------------------------------------------------------------------
+
+
+class CrawlTargetItem(BaseModel):
+    """A crawl target summary for the operations view — no raw payload."""
+
+    id: str
+    source_id: str
+    target_url: str
+    target_role: str
+    media_type: str
+    status: str
+    depth: int
+    priority: int = 0
+    failure_count: int = 0
+    last_error: str | None = None
+    external_item_id: str | None = None
+    final_url: str | None = None
+    first_seen_at: datetime
+    last_seen_at: datetime | None = None
+
+
+class CrawlTargetListResponse(BaseModel):
+    items: list[CrawlTargetItem]
+    total: int
+    limit: int
+    offset: int
+
+
+@router.get("/targets", response_model=CrawlTargetListResponse)
+def list_crawl_targets(
+    source_id: str | None = Query(None, description="Filter by source ID"),
+    target_role: str | None = Query(None, description="Filter by target role"),
+    status: str | None = Query(None, description="Filter by status"),
+    limit: int = Query(20, ge=1, le=100, description="Page size"),
+    offset: int = Query(0, ge=0, description="Page offset"),
+    _token: str = _Token,
+    session: Session = _Session,
+):
+    """Return a paginated list of crawl targets with status and error info.
+
+    Does NOT expose raw payload or internal storage fields.
+    """
+    query = session.query(CrawlTarget)
+
+    if source_id:
+        try:
+            query = query.filter(CrawlTarget.source_id == uuid.UUID(source_id))
+        except ValueError:
+            raise HTTPException(
+                status_code=422, detail="Invalid source_id UUID format"
+            ) from None
+    if target_role:
+        query = query.filter(CrawlTarget.target_role == target_role)
+    if status:
+        query = query.filter(CrawlTarget.status == status)
+
+    total = query.count()
+    rows = (
+        query.order_by(desc(CrawlTarget.last_seen_at))
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    items = [
+        CrawlTargetItem(
+            id=str(r.id),
+            source_id=str(r.source_id),
+            target_url=r.target_url,
+            target_role=r.target_role,
+            media_type=r.media_type,
+            status=r.status,
+            depth=r.depth,
+            priority=r.priority,
+            failure_count=r.failure_count,
+            last_error=r.last_error,
+            external_item_id=r.external_item_id,
+            final_url=r.final_url,
+            first_seen_at=r.first_seen_at,
+            last_seen_at=r.last_seen_at,
+        )
+        for r in rows
+    ]
+
+    return CrawlTargetListResponse(items=items, total=total, limit=limit, offset=offset)

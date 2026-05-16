@@ -16,7 +16,7 @@ import pytest
 import sqlalchemy as sa
 
 from harvester.adapters.firecrawl import CrawlResult
-from harvester.db.models import CrawlRun, RawObject, Source, Recipe
+from harvester.db.models import CrawlRun, CrawlTarget, RawObject, Source, Recipe
 from harvester.domain.fetch_policy import FetchPolicyResult, REASON_PRIVATE_IP
 from harvester.domain.state import CRAWL_RUN_TRANSITIONS
 from harvester.jobs.archive import ArchiveConfig, ArchiveWriteResult
@@ -24,6 +24,7 @@ from harvester.jobs.crawl_execution import (
     CrawlExecutionError,
     execute_crawl,
 )
+from harvester.jobs.crawl_targets import upsert_crawl_target
 
 
 def _insert_source(db_session, *, status="watched", name=None, url=None, **overrides):
@@ -147,6 +148,69 @@ class TestApprovedSourceSuccess:
         assert result.status == "completed"
         assert result.raw_object_id is not None
 
+    def test_successful_target_crawl_uses_target_url_and_updates_target(
+        self, db_session
+    ):
+        source_id = _insert_source(
+            db_session,
+            status="watched",
+            url="https://www.chinacdc.cn/jksj/jksj04_14249/",
+        )
+        recipe_id = _insert_recipe(
+            db_session,
+            approval_status="approved",
+            risk_level="low",
+        )
+        db_session.commit()
+        target, _ = upsert_crawl_target(
+            db_session,
+            source_id=source_id,
+            recipe_id=recipe_id,
+            target_url="https://www.chinacdc.cn/jksj/jksj04_14249/202605/t.html",
+            target_role="detail",
+            media_type="html",
+            depth=1,
+        )
+        db_session.commit()
+
+        crawl_result = CrawlResult(
+            original_url=target.target_url,
+            final_url=target.target_url,
+            status_code=200,
+            content_type="text/html",
+            payload_text="<html>target content</html>",
+        )
+
+        with (
+            patch(
+                "harvester.jobs.crawl_execution.check_fetch_policy",
+                return_value=FetchPolicyResult(allowed=True),
+            ) as mock_policy,
+            patch(
+                "harvester.jobs.crawl_execution.execute_adapter_crawl",
+                return_value=crawl_result,
+            ) as mock_adapter,
+            patch(
+                "harvester.jobs.crawl_execution.write_archive",
+                return_value=_make_archive_result(),
+            ),
+        ):
+            result = execute_crawl(
+                session=db_session,
+                source_id=source_id,
+                recipe_id=recipe_id,
+                target_id=target.id,
+                actor="test",
+            )
+
+        assert result.status == "completed"
+        mock_adapter.assert_called_once_with(target.target_url)
+        assert mock_policy.call_args_list[0].args[0] == target.target_url
+        updated = db_session.get(CrawlTarget, target.id)
+        assert updated.status == "completed"
+        assert updated.last_raw_object_id == result.raw_object_id
+        assert updated.final_url == target.target_url
+
 
 class TestUnapprovedSourceRejection:
     """Unapproved or missing sources MUST be rejected."""
@@ -250,6 +314,128 @@ class TestPolicyDenial:
             )
         assert result.status == "failed"
         assert "policy" in result.error_message.lower() or "private" in result.error_message.lower()
+
+
+class TestTargetCrawlFailures:
+    """Target crawl failures should update target diagnostics."""
+
+    def _seed_target(self, db_session):
+        source_id = _insert_source(
+            db_session,
+            status="watched",
+            url="https://www.chinacdc.cn/jksj/jksj04_14249/",
+        )
+        recipe_id = _insert_recipe(
+            db_session,
+            approval_status="approved",
+            risk_level="low",
+        )
+        db_session.commit()
+        target, _ = upsert_crawl_target(
+            db_session,
+            source_id=source_id,
+            recipe_id=recipe_id,
+            target_url="https://www.chinacdc.cn/jksj/jksj04_14249/202605/t.html",
+            target_role="detail",
+            media_type="html",
+            depth=1,
+        )
+        db_session.commit()
+        return source_id, recipe_id, target
+
+    def test_policy_denial_fails_target(self, db_session):
+        """Fetch policy denial should mark target failed without raw object."""
+        source_id, recipe_id, target = self._seed_target(db_session)
+
+        with patch(
+            "harvester.jobs.crawl_execution.check_fetch_policy",
+            return_value=FetchPolicyResult(allowed=False, reason=REASON_PRIVATE_IP),
+        ):
+            result = execute_crawl(
+                session=db_session,
+                source_id=source_id,
+                recipe_id=recipe_id,
+                target_id=target.id,
+                actor="test",
+            )
+
+        updated = db_session.get(CrawlTarget, target.id)
+        assert result.status == "failed"
+        assert updated.status == "failed"
+        assert updated.failure_count == 1
+        assert "policy" in updated.last_error.lower()
+        assert updated.last_raw_object_id is None
+
+    def test_redirect_denial_fails_target(self, db_session):
+        """Redirect policy denial should mark target failed."""
+        source_id, recipe_id, target = self._seed_target(db_session)
+        crawl_result = CrawlResult(
+            original_url=target.target_url,
+            final_url="http://127.0.0.1/private",
+            status_code=302,
+            content_type="text/html",
+            payload_text="redirected",
+        )
+
+        with (
+            patch(
+                "harvester.jobs.crawl_execution.check_fetch_policy",
+                side_effect=[
+                    FetchPolicyResult(allowed=True),
+                    FetchPolicyResult(allowed=False, reason=REASON_PRIVATE_IP),
+                ],
+            ),
+            patch(
+                "harvester.jobs.crawl_execution.execute_adapter_crawl",
+                return_value=crawl_result,
+            ),
+        ):
+            result = execute_crawl(
+                session=db_session,
+                source_id=source_id,
+                recipe_id=recipe_id,
+                target_id=target.id,
+                actor="test",
+            )
+
+        updated = db_session.get(CrawlTarget, target.id)
+        assert result.status == "failed"
+        assert updated.status == "failed"
+        assert updated.failure_count == 1
+        assert "redirect" in updated.last_error.lower()
+
+    def test_adapter_error_fails_target_and_remains_retryable(self, db_session):
+        """Adapter errors should mark target failed and stay retryable."""
+        source_id, recipe_id, target = self._seed_target(db_session)
+        crawl_result = CrawlResult(
+            original_url=target.target_url,
+            error="Firecrawl returned HTTP 502",
+        )
+
+        with (
+            patch(
+                "harvester.jobs.crawl_execution.check_fetch_policy",
+                return_value=FetchPolicyResult(allowed=True),
+            ),
+            patch(
+                "harvester.jobs.crawl_execution.execute_adapter_crawl",
+                return_value=crawl_result,
+            ),
+        ):
+            with pytest.raises(CrawlExecutionError) as exc_info:
+                execute_crawl(
+                    session=db_session,
+                    source_id=source_id,
+                    recipe_id=recipe_id,
+                    target_id=target.id,
+                    actor="test",
+                )
+
+        updated = db_session.get(CrawlTarget, target.id)
+        assert exc_info.value.retryable is True
+        assert updated.status == "failed"
+        assert updated.failure_count == 1
+        assert "502" in updated.last_error
 
 
 class TestAdapterFailure:

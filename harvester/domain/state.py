@@ -52,6 +52,14 @@ CRAWL_RUN_TRANSITIONS: dict[str, list[str]] = {
     "failed": ["pending"],
 }
 
+CRAWL_TARGET_TRANSITIONS: dict[str, list[str]] = {
+    "pending": ["running", "skipped", "failed"],
+    "running": ["completed", "failed", "skipped"],
+    "completed": ["pending"],
+    "failed": ["pending", "skipped"],
+    "skipped": ["pending"],
+}
+
 
 # ---------------------------------------------------------------------------
 # Validation

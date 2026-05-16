@@ -99,6 +99,19 @@ def process_crawl_job(session: Session, job: Job) -> bool:
             )
             return False
 
+    target_id: uuid.UUID | None = None
+    target_id_raw = payload.get("target_id")
+    if target_id_raw:
+        try:
+            target_id = uuid.UUID(str(target_id_raw))
+        except (ValueError, AttributeError):
+            _dead_letter_job(
+                session,
+                job,
+                f"Invalid target_id in payload: {target_id_raw!r}",
+            )
+            return False
+
     # --- Execute crawl ---
     try:
         result = execute_crawl(
@@ -107,6 +120,7 @@ def process_crawl_job(session: Session, job: Job) -> bool:
             recipe_id=recipe_id,
             actor="scheduler",
             topic_watch_id=topic_watch_id,
+            target_id=target_id,
         )
     except CrawlExecutionError as exc:
         if exc.retryable:

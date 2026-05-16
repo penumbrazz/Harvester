@@ -1,6 +1,11 @@
 """Tests for the extractor interface (CandidateItem and Extractor protocol)."""
 
-from harvester.extractors.base import CandidateItem
+from harvester.extractors.base import (
+    CandidateItem,
+    DiscoveredTarget,
+    ExtractionOutput,
+    normalize_extraction_output,
+)
 
 
 class TestCandidateItem:
@@ -58,6 +63,60 @@ class TestCandidateItem:
         item = CandidateItem(title="hello")
         assert hasattr(item, "__dataclass_fields__")
         assert item.title == "hello"
+
+
+class TestDiscoveredTarget:
+    """Tests for the DiscoveredTarget dataclass."""
+
+    def test_custom_values(self):
+        """DiscoveredTarget should describe a crawl target candidate."""
+        target = DiscoveredTarget(
+            target_url="https://www.chinacdc.cn/detail.html",
+            target_role="detail",
+            media_type="html",
+            content_type="text/html",
+            depth=1,
+            priority=5,
+            external_item_id="cncdc-flu-weekly:2026:18",
+        )
+
+        assert target.target_url == "https://www.chinacdc.cn/detail.html"
+        assert target.target_role == "detail"
+        assert target.media_type == "html"
+        assert target.content_type == "text/html"
+        assert target.depth == 1
+        assert target.priority == 5
+        assert target.external_item_id == "cncdc-flu-weekly:2026:18"
+
+
+class TestExtractionOutput:
+    """Tests for combined extractor output."""
+
+    def test_combines_items_and_discovered_targets(self):
+        """ExtractionOutput should carry content candidates and target candidates."""
+        output = ExtractionOutput(
+            items=[CandidateItem(title="weekly report")],
+            discovered_targets=[
+                DiscoveredTarget(
+                    target_url="https://www.chinacdc.cn/detail.html",
+                    target_role="detail",
+                    media_type="html",
+                    content_type="text/html",
+                )
+            ],
+        )
+
+        assert len(output.items) == 1
+        assert len(output.discovered_targets) == 1
+
+    def test_legacy_candidate_list_is_normalized(self):
+        """Existing extractors returning list[CandidateItem] should stay compatible."""
+        legacy = [CandidateItem(title="legacy")]
+
+        output = normalize_extraction_output(legacy)
+
+        assert output.items == legacy
+        assert output.discovered_targets == []
 
 
 class TestExtractorProtocol:

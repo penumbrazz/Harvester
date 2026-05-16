@@ -86,6 +86,9 @@ def claim_next_jobs(
         session.flush()
 
     # Build the core query: pending jobs that are ready to run.
+    # Fetch a larger candidate set so that fairness filtering in Python
+    # still has enough rows to reach the desired claim count.
+    candidate_limit = limit * 4
     stmt = (
         sa.select(Job)
         .where(
@@ -93,7 +96,7 @@ def claim_next_jobs(
             sa.or_(Job.run_after.is_(None), Job.run_after <= now),
         )
         .order_by(Job.priority.desc(), Job.created_at.asc())
-        .limit(limit)
+        .limit(candidate_limit)
         .with_for_update(skip_locked=True)
     )
 
@@ -223,6 +226,8 @@ def fail_job(
             payload=job.payload,
             attempts=job.attempts,
             max_attempts=job.max_attempts,
+            source_id=job.source_id,
+            lane=job.lane,
             created_at=datetime.datetime.now(datetime.UTC),
         )
         session.add(retry_job)

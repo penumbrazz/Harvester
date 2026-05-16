@@ -75,6 +75,45 @@ export interface FailureItem {
 export interface FailuresResponse {
   crawl_runs: FailureItem[]
   jobs: FailureItem[]
+  targets: FailedTargetItem[]
+}
+
+/** A failed crawl target from the failures API. */
+export interface FailedTargetItem {
+  id: string
+  target_url: string
+  target_role: string
+  media_type: string
+  status: string
+  failure_count: number
+  last_error: string | null
+  created_at: string
+}
+
+/** A single crawl target summary. */
+export interface CrawlTarget {
+  id: string
+  source_id: string
+  target_url: string
+  target_role: string
+  media_type: string
+  status: string
+  depth: number
+  priority: number
+  failure_count: number
+  last_error: string | null
+  external_item_id: string | null
+  final_url: string | null
+  first_seen_at: string
+  last_seen_at: string | null
+}
+
+/** Paginated crawl target list response. */
+export interface CrawlTargetListResponse {
+  items: CrawlTarget[]
+  total: number
+  limit: number
+  offset: number
 }
 
 /** Crawl run trigger request payload. */

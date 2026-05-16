@@ -111,7 +111,7 @@ def approve_recipe(
             status_attr="approval_status",
         )
     except ValueError as e:
-        session.rollback()
+        session.commit()
         raise HTTPException(status_code=400, detail=str(e)) from e
 
     session.commit()

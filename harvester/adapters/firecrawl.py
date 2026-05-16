@@ -62,12 +62,14 @@ class FirecrawlAdapter:
         api_key: str | None = None,
         scrape_path: str = "/v1/scrape",
         timeout: float = 30.0,
+        max_bytes: int | None = None,
         client: httpx.Client | None = None,
     ) -> None:
         self._base_url = base_url.rstrip("/")
         self._api_key = api_key
         self._scrape_path = scrape_path
         self._timeout = timeout
+        self._max_bytes = max_bytes
         self._client = client or httpx.Client(timeout=timeout)
 
     def crawl(self, url: str) -> CrawlResult:
@@ -128,6 +130,10 @@ class FirecrawlAdapter:
         if not content_type and isinstance(content, str):
             content_type = "text/html"
 
+        size_error = self._check_size_limit(content, url)
+        if size_error:
+            return size_error
+
         return CrawlResult(
             original_url=url,
             final_url=final_url,
@@ -136,6 +142,15 @@ class FirecrawlAdapter:
             payload_text=content,
             metadata=metadata,
         )
+
+    def _check_size_limit(self, content: str, url: str) -> CrawlResult | None:
+        """Return an error CrawlResult if content exceeds max_bytes, else None."""
+        if self._max_bytes and len(content.encode("utf-8")) > self._max_bytes:
+            return CrawlResult(
+                original_url=url,
+                error=f"Response payload exceeds max_bytes limit ({self._max_bytes})",
+            )
+        return None
 
     @classmethod
     def from_env(cls) -> FirecrawlAdapter:
@@ -159,10 +174,13 @@ class FirecrawlAdapter:
         api_key = os.environ.get("FIRECRAWL_API_KEY") or None
         scrape_path = os.environ.get("FIRECRAWL_SCRAPE_PATH", "/v1/scrape")
         timeout = float(os.environ.get("FIRECRAWL_TIMEOUT", "30"))
+        max_bytes_str = os.environ.get("FIRECRAWL_MAX_BYTES")
+        max_bytes = int(max_bytes_str) if max_bytes_str else None
 
         return cls(
             base_url=base_url,
             api_key=api_key,
             scrape_path=scrape_path,
             timeout=timeout,
+            max_bytes=max_bytes,
         )

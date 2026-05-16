@@ -74,6 +74,7 @@ def _make_crawl_job(
     source_id: uuid.UUID,
     recipe_id: uuid.UUID,
     topic_watch_id: uuid.UUID | None = None,
+    target_id: uuid.UUID | None = None,
     job_type: str = "crawl",
 ):
     """Create a pending crawl job for testing."""
@@ -89,6 +90,7 @@ def _make_crawl_job(
                 if topic_watch_id
                 else {}
             ),
+            **({"target_id": str(target_id)} if target_id else {}),
         },
     )
     db_session.add(job)
@@ -142,6 +144,26 @@ class TestCrawlHandlerSuccess:
         crawl_runs = db_session.query(CrawlRun).all()
         assert len(crawl_runs) == 1
         assert crawl_runs[0].status == "completed"
+
+    @patch("harvester.workers.crawl.execute_crawl")
+    def test_target_id_payload_passed_to_crawl_service(self, mock_execute, db_session):
+        """Crawl jobs with target_id should pass it to execute_crawl."""
+        mock_execute.return_value = MagicMock(status="completed")
+        source_id = _insert_source(db_session)
+        recipe_id = _insert_recipe(db_session)
+        target_id = uuid.uuid4()
+        job = _make_crawl_job(
+            db_session,
+            source_id=source_id,
+            recipe_id=recipe_id,
+            target_id=target_id,
+        )
+
+        result = process_crawl_job(db_session, job)
+
+        assert result is True
+        mock_execute.assert_called_once()
+        assert mock_execute.call_args.kwargs["target_id"] == target_id
 
 
 class TestCrawlHandlerPermanentErrors:

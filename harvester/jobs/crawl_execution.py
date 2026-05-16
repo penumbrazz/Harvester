@@ -14,7 +14,8 @@ from datetime import UTC, datetime
 from sqlalchemy.orm import Session
 
 from harvester.adapters.firecrawl import CrawlResult
-from harvester.db.models import CrawlRun, RawObject, Recipe, Source
+from harvester.adapters.binary_fetch import BinaryFetchResult, fetch_binary
+from harvester.db.models import CrawlRun, CrawlTarget, RawObject, Recipe, Source
 from harvester.domain.audit import write_audit
 from harvester.jobs.repository import create_job
 from harvester.domain.fetch_policy import check_fetch_policy
@@ -84,6 +85,7 @@ def execute_crawl(
     recipe_id: uuid.UUID,
     actor: str = "system",
     topic_watch_id: uuid.UUID | None = None,
+    target_id: uuid.UUID | None = None,
 ) -> CrawlExecutionResult:
     """Execute a public web crawl run.
 
@@ -122,9 +124,25 @@ def execute_crawl(
             f"Recipe {recipe_id} has high risk_level, not allowed for crawl"
         )
 
+    target: CrawlTarget | None = None
+    crawl_url = source.url
+    if target_id is not None:
+        target = session.get(CrawlTarget, target_id)
+        if target is None:
+            raise CrawlExecutionError(f"CrawlTarget {target_id} not found")
+        if target.source_id != source_id:
+            raise CrawlExecutionError(
+                f"CrawlTarget {target_id} does not belong to source {source_id}"
+            )
+        if target.recipe_id != recipe_id:
+            raise CrawlExecutionError(
+                f"CrawlTarget {target_id} does not belong to recipe {recipe_id}"
+            )
+        crawl_url = target.target_url
+
     logger.info(
-        "crawl.start source=%s recipe=%s url=%s actor=%s",
-        source_id, recipe_id, source.url, actor,
+        "crawl.start source=%s recipe=%s target=%s url=%s actor=%s",
+        source_id, recipe_id, target_id, crawl_url, actor,
     )
 
     # 3. Create pending crawl run
@@ -144,11 +162,17 @@ def execute_crawl(
 
     try:
         # 4. Check fetch policy
-        policy = check_fetch_policy(source.url)
+        if target is not None:
+            _mark_target_running(target)
+            session.flush()
+
+        policy = check_fetch_policy(crawl_url)
         if not policy.allowed:
             reason = f"Fetch policy denied: {policy.reason}"
             logger.warning("crawl.policy_denied run=%s %s", run_id, reason)
             _fail_crawl_run(session, crawl_run, reason)
+            if target is not None:
+                _fail_crawl_target(target, reason)
             write_audit(
                 session,
                 actor=actor,
@@ -174,36 +198,62 @@ def execute_crawl(
             "crawl_run",
         )
         session.flush()
-        logger.info("crawl.running run=%s fetching %s", run_id, source.url)
+        logger.info("crawl.running run=%s fetching %s", run_id, crawl_url)
 
-        # 6. Execute adapter crawl
-        crawl_result = execute_adapter_crawl(source.url)
+        # 6. Execute fetch (binary for PDF targets, adapter crawl otherwise)
+        is_pdf_target = target is not None and target.media_type == "pdf"
 
-        if crawl_result.error:
-            logger.error(
-                "crawl.adapter_failed run=%s error=%s", run_id, crawl_result.error,
-            )
-            _fail_crawl_run(session, crawl_run, crawl_result.error)
-            write_audit(
-                session,
-                actor=actor,
-                action="crawl_adapter_failed",
-                entity_type="crawl_run",
-                entity_id=run_id,
-                reason=crawl_result.error,
-            )
-            session.commit()
-            raise CrawlExecutionError(
-                crawl_result.error, retryable=True
-            )
+        if is_pdf_target:
+            binary_result = fetch_binary(crawl_url)
+            if binary_result.error:
+                logger.error(
+                    "crawl.binary_failed run=%s error=%s",
+                    run_id, binary_result.error,
+                )
+                _fail_crawl_run(session, crawl_run, binary_result.error)
+                if target is not None:
+                    _fail_crawl_target(target, binary_result.error)
+                write_audit(
+                    session,
+                    actor=actor,
+                    action="crawl_binary_failed",
+                    entity_type="crawl_run",
+                    entity_id=run_id,
+                    reason=binary_result.error,
+                )
+                session.commit()
+                raise CrawlExecutionError(
+                    binary_result.error, retryable=True
+                )
 
-        # 7. Check redirect target policy
-        if crawl_result.final_url and crawl_result.final_url != source.url:
-            redirect_policy = check_fetch_policy(crawl_result.final_url)
-            if not redirect_policy.allowed:
-                reason = f"Redirect target denied: {redirect_policy.reason}"
-                logger.warning("crawl.redirect_denied run=%s %s", run_id, reason)
+            # Check redirect target policy
+            if binary_result.final_url and binary_result.final_url != crawl_url:
+                redirect_policy = check_fetch_policy(binary_result.final_url)
+                if not redirect_policy.allowed:
+                    reason = f"Redirect target denied: {redirect_policy.reason}"
+                    logger.warning("crawl.redirect_denied run=%s %s", run_id, reason)
+                    _fail_crawl_run(session, crawl_run, reason)
+                    if target is not None:
+                        _fail_crawl_target(target, reason)
+                    session.commit()
+                    return CrawlExecutionResult(
+                        crawl_run_id=run_id,
+                        status="failed",
+                        error_message=reason,
+                    )
+
+            # Enforce payload size before archiving
+            pdf_payload_bytes = binary_result.payload_bytes or b""
+            max_bytes = _get_max_payload_bytes()
+            if len(pdf_payload_bytes) > max_bytes:
+                reason = (
+                    f"Payload size {len(pdf_payload_bytes)} bytes "
+                    f"exceeds maximum {max_bytes} bytes"
+                )
+                logger.warning("crawl.oversized run=%s %s", run_id, reason)
                 _fail_crawl_run(session, crawl_run, reason)
+                if target is not None:
+                    _fail_crawl_target(target, reason)
                 session.commit()
                 return CrawlExecutionResult(
                     crawl_run_id=run_id,
@@ -211,18 +261,78 @@ def execute_crawl(
                     error_message=reason,
                 )
 
-        # 8. Write payload to archive
-        payload_bytes = (crawl_result.payload_text or "").encode("utf-8")
-        logger.info(
-            "crawl.archiving run=%s payload_size=%d content_type=%s",
-            run_id, len(payload_bytes), crawl_result.content_type,
-        )
-        archive_result = write_archive(
-            payload=payload_bytes,
-            source_id=source_id,
-            crawl_run_id=run_id,
-            content_type=crawl_result.content_type or "text/html",
-        )
+            pdf_content_type = (
+                binary_result.content_type or "application/pdf"
+            )
+            logger.info(
+                "crawl.archiving run=%s payload_size=%d content_type=%s",
+                run_id, len(pdf_payload_bytes), pdf_content_type,
+            )
+            archive_result = write_archive(
+                payload=pdf_payload_bytes,
+                source_id=source_id,
+                crawl_run_id=run_id,
+                content_type=pdf_content_type,
+            )
+            final_url = binary_result.final_url
+            content_type = pdf_content_type
+            status_code = binary_result.status_code
+        else:
+            crawl_result = execute_adapter_crawl(crawl_url)
+
+            if crawl_result.error:
+                logger.error(
+                    "crawl.adapter_failed run=%s error=%s",
+                    run_id, crawl_result.error,
+                )
+                _fail_crawl_run(session, crawl_run, crawl_result.error)
+                if target is not None:
+                    _fail_crawl_target(target, crawl_result.error)
+                write_audit(
+                    session,
+                    actor=actor,
+                    action="crawl_adapter_failed",
+                    entity_type="crawl_run",
+                    entity_id=run_id,
+                    reason=crawl_result.error,
+                )
+                session.commit()
+                raise CrawlExecutionError(
+                    crawl_result.error, retryable=True
+                )
+
+            # Check redirect target policy
+            if crawl_result.final_url and crawl_result.final_url != crawl_url:
+                redirect_policy = check_fetch_policy(crawl_result.final_url)
+                if not redirect_policy.allowed:
+                    reason = f"Redirect target denied: {redirect_policy.reason}"
+                    logger.warning(
+                        "crawl.redirect_denied run=%s %s", run_id, reason
+                    )
+                    _fail_crawl_run(session, crawl_run, reason)
+                    if target is not None:
+                        _fail_crawl_target(target, reason)
+                    session.commit()
+                    return CrawlExecutionResult(
+                        crawl_run_id=run_id,
+                        status="failed",
+                        error_message=reason,
+                    )
+
+            payload_bytes = (crawl_result.payload_text or "").encode("utf-8")
+            logger.info(
+                "crawl.archiving run=%s payload_size=%d content_type=%s",
+                run_id, len(payload_bytes), crawl_result.content_type,
+            )
+            archive_result = write_archive(
+                payload=payload_bytes,
+                source_id=source_id,
+                crawl_run_id=run_id,
+                content_type=crawl_result.content_type or "text/html",
+            )
+            final_url = crawl_result.final_url
+            content_type = crawl_result.content_type or "text/html"
+            status_code = crawl_result.status_code
 
         # 9. Create raw_object metadata
         raw_id = uuid.uuid4()
@@ -241,14 +351,20 @@ def execute_crawl(
         session.add(raw_object)
         session.flush()
 
+        if target is not None:
+            _complete_crawl_target(
+                target,
+                raw_object_id=raw_id,
+                final_url=final_url,
+            )
+
         # 10. Update crawl_run with success
         crawl_run.raw_object_id = raw_id
-        crawl_run.http_status = crawl_result.status_code
-        crawl_run.content_type = crawl_result.content_type
+        crawl_run.http_status = status_code
+        crawl_run.content_type = content_type
         crawl_run.fetch_fingerprint = archive_result.content_hash
 
-        if crawl_result.final_url:
-            crawl_run.completed_at = datetime.now(UTC)
+        crawl_run.completed_at = datetime.now(UTC)
 
         transition_entity(
             session,
@@ -267,8 +383,9 @@ def execute_crawl(
             entity_id=run_id,
             after_state={
                 "raw_object_id": str(raw_id),
-                "final_url": crawl_result.final_url,
-                "http_status": crawl_result.status_code,
+                "final_url": final_url,
+                "http_status": status_code,
+                "target_id": str(target_id) if target_id else None,
             },
         )
 
@@ -285,7 +402,7 @@ def execute_crawl(
         session.commit()
         logger.info(
             "crawl.completed run=%s raw_object=%s http_status=%s bytes=%d",
-            run_id, raw_id, crawl_result.status_code, archive_result.byte_size,
+            run_id, raw_id, status_code, archive_result.byte_size,
         )
         return CrawlExecutionResult(
             crawl_run_id=run_id,
@@ -298,6 +415,8 @@ def execute_crawl(
     except Exception as exc:
         logger.exception("crawl.unexpected_error run=%s", run_id)
         _fail_crawl_run(session, crawl_run, str(exc))
+        if target is not None:
+            _fail_crawl_target(target, str(exc))
         session.commit()
         raise CrawlExecutionError(str(exc), retryable=True) from exc
 
@@ -308,3 +427,37 @@ def _fail_crawl_run(session: Session, crawl_run: CrawlRun, error_message: str) -
         crawl_run.status = "failed"
     crawl_run.error_message = error_message
     crawl_run.completed_at = datetime.now(UTC)
+
+
+def _mark_target_running(target: CrawlTarget) -> None:
+    """Mark a crawl target as running before fetching."""
+    target.status = "running"
+    target.updated_at = datetime.now(UTC)
+
+
+def _complete_crawl_target(
+    target: CrawlTarget,
+    *,
+    raw_object_id: uuid.UUID,
+    final_url: str | None,
+) -> None:
+    """Mark a crawl target as completed after a successful fetch."""
+    target.status = "completed"
+    target.last_raw_object_id = raw_object_id
+    target.final_url = final_url
+    target.last_error = None
+    target.updated_at = datetime.now(UTC)
+
+
+def _fail_crawl_target(target: CrawlTarget, error_message: str) -> None:
+    """Mark a crawl target as failed and record diagnostic context."""
+    target.status = "failed"
+    target.failure_count += 1
+    target.last_error = error_message
+    target.updated_at = datetime.now(UTC)
+
+
+def _get_max_payload_bytes() -> int:
+    """Read max payload bytes from archive config."""
+    from harvester.jobs.archive import ArchiveConfig
+    return ArchiveConfig.from_env().max_payload_bytes

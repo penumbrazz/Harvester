@@ -18,6 +18,7 @@ content_item / item_version / chunk 才是资料库和搜索层。
 - API token、source/topic/recipe 状态机、失败查询。
 - Postgres job/frontier、抽取 pipeline、去重、raw payload retention metadata。
 - CDC/Sina fixture extractor、deterministic fixture soak。
+- Discovered crawl targets（list → detail → PDF 三级发现）、crawl target API、PDF binary fetch、PDF text extraction、target traceability。
 - keyword search、pgvector-ready chunk/vector search、Docker Compose smoke 基座。
 - 真实公开网页抓取：Firecrawl adapter、fetch policy（DNS/IP 分类、redirect 复检）、raw payload archive、crawl API/CLI、CDC smoke。
 - Watch scheduler：watch_schedules 表、schedule API/CLI、one-shot scheduler、crawl job handler、crawl worker、队列状态查看。
@@ -317,6 +318,64 @@ curl -H "Authorization: Bearer $HARVESTER_API_TOKEN" \
 ```
 
 ### 架构约束
+
+- **Scheduler 只创建 `crawl` job**，不直接调用网络抓取 adapter。
+- **Embedding 只能从 `item_version -> chunk` 开始**，不能对 raw HTML/API payload 做 embedding。
+- 默认 embedding worker 不会认领 `crawl` 或 `extract` job，各 job type 完全隔离。
+
+## Discovered Targets 与 PDF 资产
+
+Harvester 支持 Source 页面发现的子目标抓取，典型场景为列表页 → 详情页 → PDF 资产的三级流水线。
+
+### 数据模型
+
+- **CrawlTarget**：从固定 Source 发现的子 URL，有 `target_role`（list/detail/asset）、`media_type`（html/pdf）、`status`（pending/running/completed/failed/skipped）和 `parent_target_id` 构成树状关系。
+- Target 通过 recipe 的 `discovery` 配置约束允许的 host、path prefix、content type、depth 和最大数量。
+
+### CDC 周报配置示例
+
+```json
+{
+  "discovery": {
+    "enabled": true,
+    "max_depth": 2,
+    "max_targets_per_run": 20,
+    "allowed_hosts": ["www.chinacdc.cn"],
+    "allowed_path_prefixes": ["/jksj/jksj04_14249/"],
+    "allowed_content_types": ["text/html", "application/pdf"]
+  }
+}
+```
+
+Pipeline 自动识别 CDC 周报列表页（`/jksj/jksj04_14249/`）和详情页 URL pattern，发现 PDF 资产后绕过 Firecrawl 直接 HTTP 下载。
+
+### Target API
+
+```bash
+# 查看所有 target
+curl -H "Authorization: Bearer $HARVESTER_API_TOKEN" \
+  http://localhost:8001/crawl/targets
+
+# 按 source 过滤
+curl -H "Authorization: Bearer $HARVESTER_API_TOKEN" \
+  "http://localhost:8001/crawl/targets?source_id=<source-id>"
+
+# 按角色和状态过滤
+curl -H "Authorization: Bearer $HARVESTER_API_TOKEN" \
+  "http://localhost:8001/crawl/targets?target_role=asset&status=failed"
+
+# 查看失败 target
+curl -H "Authorization: Bearer $HARVESTER_API_TOKEN" \
+  http://localhost:8001/failures/recent
+```
+
+Target API 只返回摘要信息（URL、角色、状态、错误），不暴露 raw payload 或存储路径。
+
+### CDC Live Smoke
+
+```bash
+HARVESTER_CDC_LIVE_SMOKE=1 uv run pytest tests/jobs/test_cdc_live_smoke.py -v
+```
 
 - **Scheduler 只创建 `crawl` job**，不直接调用网络抓取 adapter。
 - **Embedding 只能从 `item_version -> chunk` 开始**，不能对 raw HTML/API payload 做 embedding。

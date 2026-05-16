@@ -26,12 +26,44 @@ class CandidateItem:
     extra: dict[str, Any] = field(default_factory=dict)
 
 
+@dataclass
+class DiscoveredTarget:
+    """A crawl target candidate discovered while extracting a raw object."""
+
+    target_url: str
+    target_role: str
+    media_type: str = "unknown"
+    content_type: str | None = None
+    external_item_id: str | None = None
+    parent_target_id: str | None = None
+    depth: int = 0
+    priority: int = 0
+    extra: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ExtractionOutput:
+    """Combined extractor output for content items and discovered targets."""
+
+    items: list[CandidateItem] = field(default_factory=list)
+    discovered_targets: list[DiscoveredTarget] = field(default_factory=list)
+
+
+def normalize_extraction_output(
+    output: list[CandidateItem] | ExtractionOutput,
+) -> ExtractionOutput:
+    """Normalize legacy and new extractor return values."""
+    if isinstance(output, ExtractionOutput):
+        return output
+    return ExtractionOutput(items=output, discovered_targets=[])
+
+
 class Extractor(Protocol):
     """Protocol for raw object extractors."""
 
     def extract(
         self, raw_metadata: dict, raw_payload: str | bytes
-    ) -> list[CandidateItem]:
+    ) -> list[CandidateItem] | ExtractionOutput:
         """Extract candidate items from a raw object.
 
         Parameters

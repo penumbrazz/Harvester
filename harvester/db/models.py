@@ -193,6 +193,101 @@ class RawObject(Base):
 
 
 # ---------------------------------------------------------------------------
+# Crawl Targets
+# ---------------------------------------------------------------------------
+
+
+class CrawlTarget(Base):
+    """A discovered URL target controlled by a fixed source boundary."""
+
+    __tablename__ = "crawl_targets"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    source_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("sources.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    recipe_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("recipes.id"), nullable=False
+    )
+    parent_target_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("crawl_targets.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    discovered_from_raw_object_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("raw_objects.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    target_url: Mapped[str] = mapped_column(Text, nullable=False)
+    final_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    canonical_url: Mapped[str] = mapped_column(Text, nullable=False)
+    canonical_url_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    target_role: Mapped[str] = mapped_column(String(32), nullable=False)
+    media_type: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="unknown"
+    )
+    external_item_id: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="pending"
+    )
+    depth: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_raw_object_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("raw_objects.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    failure_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    first_seen_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow
+    )
+    last_seen_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow
+    )
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow
+    )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utcnow, onupdate=_utcnow
+    )
+
+    __table_args__ = (
+        sa.CheckConstraint(
+            "target_role IN ('list', 'detail', 'asset')",
+            name="ck_crawl_targets_target_role",
+        ),
+        sa.CheckConstraint(
+            "media_type IN ('html', 'pdf', 'unknown')",
+            name="ck_crawl_targets_media_type",
+        ),
+        sa.CheckConstraint(
+            "status IN ('pending', 'running', 'completed', 'failed', 'skipped')",
+            name="ck_crawl_targets_status",
+        ),
+        sa.CheckConstraint("depth >= 0", name="ck_crawl_targets_depth"),
+        sa.CheckConstraint(
+            "failure_count >= 0", name="ck_crawl_targets_failure_count"
+        ),
+        sa.UniqueConstraint(
+            "source_id",
+            "target_role",
+            "canonical_url_hash",
+            name="uq_crawl_targets_source_role_canonical",
+        ),
+        sa.Index("ix_crawl_targets_source_status", "source_id", "status"),
+        sa.Index("ix_crawl_targets_parent_target_id", "parent_target_id"),
+        sa.Index("ix_crawl_targets_last_seen_at", "last_seen_at"),
+        sa.Index("ix_crawl_targets_external_item_id", "external_item_id"),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Content Items and Observations
 # ---------------------------------------------------------------------------
 
