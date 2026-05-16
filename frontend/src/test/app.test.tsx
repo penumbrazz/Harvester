@@ -162,10 +162,17 @@ describe('API connection status', () => {
     const user = userEvent.setup()
     render(<App />)
 
+    // loadApiConfig() returns a default baseUrl, so the form starts collapsed.
+    // Click the edit button to open the config form.
+    await user.click(screen.getByTestId('edit-config-button'))
+
     const baseUrlInput = screen.getByTestId('input-api-base-url')
     const tokenInput = screen.getByTestId('input-api-token')
 
+    // Clear existing default values before typing new ones
+    await user.clear(baseUrlInput)
     await user.type(baseUrlInput, 'http://localhost:8001')
+    await user.clear(tokenInput)
     await user.type(tokenInput, 'test-token')
 
     const saveButton = screen.getByTestId('save-config-button')
@@ -181,8 +188,18 @@ describe('API connection status', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.type(screen.getByTestId('input-api-base-url'), 'http://api.test')
-    await user.type(screen.getByTestId('input-api-token'), 'my-token')
+    // loadApiConfig() returns a default baseUrl, so the form starts collapsed.
+    // Click the edit button to open the config form.
+    await user.click(screen.getByTestId('edit-config-button'))
+
+    const baseUrlInput = screen.getByTestId('input-api-base-url')
+    const tokenInput = screen.getByTestId('input-api-token')
+
+    // Clear existing default values before typing new ones
+    await user.clear(baseUrlInput)
+    await user.type(baseUrlInput, 'http://api.test')
+    await user.clear(tokenInput)
+    await user.type(tokenInput, 'my-token')
     await user.click(screen.getByTestId('save-config-button'))
 
     const stored = JSON.parse(localStorage.getItem('harvester-api-config') || '{}')

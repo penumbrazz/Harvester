@@ -244,7 +244,7 @@ describe('ContentLibraryPage - pagination', () => {
     render(<ContentLibraryPage config={config} />)
 
     await waitFor(() => {
-      expect(screen.getByTestId('content-pagination')).toBeInTheDocument()
+      expect(screen.getByTestId('pagination-controls')).toBeInTheDocument()
     })
 
     expect(screen.getByText(/1-20 of 50/)).toBeInTheDocument()
