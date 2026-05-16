@@ -649,3 +649,91 @@ async def test_list_sources_negative_offset(api_client):
         headers={"Authorization": "Bearer test-secret"},
     )
     assert resp.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Task 2 — PATCH /sources/{id} API tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_patch_source_updates_fields(api_client, api_test_db):
+    """PATCH /sources/{id} should update name, url, trust_level and write audit."""
+    # Arrange — create a candidate source
+    tag = uuid.uuid4().hex[:6]
+    resp = await api_client.post(
+        "/sources/propose",
+        json={
+            "name": f"patch-{tag}",
+            "kind": "web",
+            "url": "https://old.example.com",
+            "trust_level": "low",
+        },
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    source_id = resp.json()["id"]
+
+    # Act — patch with new values
+    new_name = f"patched-{tag}"
+    resp = await api_client.patch(
+        f"/sources/{source_id}",
+        json={
+            "name": new_name,
+            "url": "https://new.example.com",
+            "trust_level": "high",
+        },
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Assert — response reflects updated fields
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["name"] == new_name
+    assert data["url"] == "https://new.example.com"
+    assert data["trust_level"] == "high"
+
+    # Assert — audit event with action='source.update' exists
+    engine = create_engine(api_test_db)
+    with engine.connect() as conn:
+        row = conn.execute(
+            sa.text(
+                "SELECT action, after_state FROM audit_events "
+                "WHERE entity_id = :eid AND action = 'source.update' "
+                "ORDER BY created_at DESC LIMIT 1"
+            ),
+            {"eid": source_id},
+        ).fetchone()
+    engine.dispose()
+    assert row is not None, "Update audit event must be persisted after PATCH"
+    assert row[0] == "source.update"
+    after = row[1] if isinstance(row[1], dict) else __import__("json").loads(row[1])
+    assert after.get("name") == new_name
+    assert after.get("url") == "https://new.example.com"
+    assert after.get("trust_level") == "high"
+
+
+@pytest.mark.asyncio
+async def test_patch_archived_source_rejected(api_client):
+    """PATCH /sources/{id} on an archived source should return 400."""
+    # Arrange — create and archive a source
+    name = f"patch-arch-{uuid.uuid4().hex[:6]}"
+    resp = await api_client.post(
+        "/sources/propose",
+        json={"name": name, "kind": "web"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    source_id = resp.json()["id"]
+    await api_client.post(
+        f"/sources/{source_id}/archive",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Act — try to patch the archived source
+    resp = await api_client.patch(
+        f"/sources/{source_id}",
+        json={"name": f"should-not-work-{uuid.uuid4().hex[:6]}"},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+
+    # Assert
+    assert resp.status_code == 400
