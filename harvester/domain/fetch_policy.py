@@ -10,6 +10,7 @@ audit, and CLI can all reference the same denial codes.
 
 from __future__ import annotations
 
+import os
 import socket
 from dataclasses import dataclass
 from ipaddress import IPv4Address, IPv6Address, ip_address
@@ -73,7 +74,16 @@ def check_fetch_policy(url: str) -> FetchPolicyResult:
 
     Returns a FetchPolicyResult with allowed=True if the URL passes all
     checks, or allowed=False with a stable reason string otherwise.
+
+    When HARVESTER_FETCH_POLICY_SKIP_DNS is set to "1", the DNS/IP check
+    is bypassed entirely. This is intended for development and home-lab
+    use behind a trusted proxy (e.g. Surge/ClashX in Fake-IP mode) where
+    DNS returns RFC 2544 addresses that Python marks as private.
     """
+    # Bypass all checks when running behind a trusted proxy.
+    if os.environ.get("HARVESTER_FETCH_POLICY_SKIP_DNS", "").strip() == "1":
+        return FetchPolicyResult(allowed=True, reason=None)
+
     parsed = urlparse(url)
 
     # Protocol check

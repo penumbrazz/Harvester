@@ -2,9 +2,10 @@
 
 Covers: protocol rejection, localhost rejection, private IP rejection,
 link-local rejection, public domain allowance, DNS resolution failure,
-and redirect final URL re-validation.
+redirect final URL re-validation, and DNS skip bypass.
 """
 
+import os
 from ipaddress import IPv4Address, IPv6Address
 from unittest.mock import patch
 
@@ -223,3 +224,43 @@ class TestFetchPolicyResult:
         result = FetchPolicyResult(allowed=False, reason=REASON_PRIVATE_IP)
         assert result.allowed is False
         assert result.reason == REASON_PRIVATE_IP
+
+
+class TestSkipDNSBypass:
+    """When HARVESTER_FETCH_POLICY_SKIP_DNS=1, all URLs are allowed."""
+
+    def test_skip_dns_bypasses_private_ip(self):
+        """Private IP URLs are allowed when bypass is active."""
+        with patch.dict(os.environ, {"HARVESTER_FETCH_POLICY_SKIP_DNS": "1"}):
+            result = check_fetch_policy("http://192.168.1.1/admin")
+            assert result.allowed is True
+            assert result.reason is None
+
+    def test_skip_dns_bypasses_localhost(self):
+        """Localhost URLs are allowed when bypass is active."""
+        with patch.dict(os.environ, {"HARVESTER_FETCH_POLICY_SKIP_DNS": "1"}):
+            result = check_fetch_policy("http://localhost:8080/secret")
+            assert result.allowed is True
+            assert result.reason is None
+
+    def test_skip_dns_bypasses_fake_ip_range(self):
+        """RFC 2544 Fake-IP addresses (used by Surge/ClashX) are allowed."""
+        with patch.dict(os.environ, {"HARVESTER_FETCH_POLICY_SKIP_DNS": "1"}):
+            result = check_fetch_policy("http://198.18.0.100/api")
+            assert result.allowed is True
+            assert result.reason is None
+
+    def test_skip_dns_off_still_blocks_private(self):
+        """When bypass is not set, private IPs are still blocked."""
+        with patch.dict(os.environ, {}, clear=True):
+            # Ensure the env var is NOT set
+            os.environ.pop("HARVESTER_FETCH_POLICY_SKIP_DNS", None)
+            result = check_fetch_policy("http://192.168.1.1/admin")
+            assert result.allowed is False
+            assert result.reason == REASON_PRIVATE_IP
+
+    def test_skip_dns_requires_exact_value(self):
+        """Only "1" (not "true" or "yes") activates the bypass."""
+        with patch.dict(os.environ, {"HARVESTER_FETCH_POLICY_SKIP_DNS": "true"}):
+            result = check_fetch_policy("http://192.168.1.1/admin")
+            assert result.allowed is False
