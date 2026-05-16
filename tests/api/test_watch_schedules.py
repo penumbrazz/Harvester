@@ -547,3 +547,156 @@ async def test_list_schedules_filter_by_recipe_id(api_client, api_test_db):
     data = resp.json()
     assert len(data["items"]) >= 1
     assert all(s["recipe_id"] == recipe_id for s in data["items"])
+
+
+# ---------------------------------------------------------------------------
+# POST /schedules/{id}/pause, /resume, /disable — state transition tests
+# ---------------------------------------------------------------------------
+
+
+def _make_active_schedule(db_url: str) -> tuple[str, str]:
+    """Insert source + recipe + active schedule, return (schedule_id, db_url)."""
+    src_id = _insert_source(db_url)
+    recipe_id = _insert_recipe(db_url)
+    sched_id = _insert_schedule(db_url, src_id, recipe_id, status="active")
+    return sched_id
+
+
+def _pause_schedule_direct(db_url: str, sched_id: str) -> None:
+    """Set schedule status to 'paused' directly in the database."""
+    engine = create_engine(db_url)
+    with engine.connect() as conn:
+        conn.execute(
+            text("UPDATE watch_schedules SET status = 'paused' WHERE id = :id"),
+            {"id": uuid.UUID(sched_id)},
+        )
+        conn.commit()
+    engine.dispose()
+
+
+def _disable_schedule_direct(db_url: str, sched_id: str) -> None:
+    """Set schedule status to 'disabled' directly in the database."""
+    engine = create_engine(db_url)
+    with engine.connect() as conn:
+        conn.execute(
+            text("UPDATE watch_schedules SET status = 'disabled' WHERE id = :id"),
+            {"id": uuid.UUID(sched_id)},
+        )
+        conn.commit()
+    engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_pause_schedule(api_client, api_test_db):
+    """POST /schedules/{id}/pause transitions active -> paused."""
+    sched_id = _make_active_schedule(api_test_db)
+
+    resp = await api_client.post(
+        f"/schedules/{sched_id}/pause",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "paused"
+    assert data["id"] == sched_id
+
+
+@pytest.mark.asyncio
+async def test_resume_schedule(api_client, api_test_db):
+    """POST /schedules/{id}/resume transitions paused -> active."""
+    sched_id = _make_active_schedule(api_test_db)
+    _pause_schedule_direct(api_test_db, sched_id)
+
+    resp = await api_client.post(
+        f"/schedules/{sched_id}/resume",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "active"
+    assert data["id"] == sched_id
+
+
+@pytest.mark.asyncio
+async def test_disable_schedule(api_client, api_test_db):
+    """POST /schedules/{id}/disable transitions active -> disabled."""
+    sched_id = _make_active_schedule(api_test_db)
+
+    resp = await api_client.post(
+        f"/schedules/{sched_id}/disable",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "disabled"
+    assert data["id"] == sched_id
+
+
+@pytest.mark.asyncio
+async def test_disable_paused_schedule(api_client, api_test_db):
+    """POST /schedules/{id}/disable transitions paused -> disabled."""
+    sched_id = _make_active_schedule(api_test_db)
+    _pause_schedule_direct(api_test_db, sched_id)
+
+    resp = await api_client.post(
+        f"/schedules/{sched_id}/disable",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "disabled"
+    assert data["id"] == sched_id
+
+
+@pytest.mark.asyncio
+async def test_patch_schedule(api_client, api_test_db):
+    """PATCH /schedules/{id} updates interval_seconds."""
+    sched_id = _make_active_schedule(api_test_db)
+
+    resp = await api_client.patch(
+        f"/schedules/{sched_id}",
+        json={"interval_seconds": 7200},
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["interval_seconds"] == 7200
+    assert data["id"] == sched_id
+
+
+@pytest.mark.asyncio
+async def test_pause_already_paused_rejected(api_client, api_test_db):
+    """Pausing an already paused schedule returns 400."""
+    sched_id = _make_active_schedule(api_test_db)
+    _pause_schedule_direct(api_test_db, sched_id)
+
+    resp = await api_client.post(
+        f"/schedules/{sched_id}/pause",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_resume_active_schedule_rejected(api_client, api_test_db):
+    """Resuming an active (not paused) schedule returns 400."""
+    sched_id = _make_active_schedule(api_test_db)
+
+    resp = await api_client.post(
+        f"/schedules/{sched_id}/resume",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_disable_already_disabled_rejected(api_client, api_test_db):
+    """Disabling an already disabled schedule returns 400."""
+    sched_id = _make_active_schedule(api_test_db)
+    _disable_schedule_direct(api_test_db, sched_id)
+
+    resp = await api_client.post(
+        f"/schedules/{sched_id}/disable",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert resp.status_code == 400
