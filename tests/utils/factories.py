@@ -71,16 +71,29 @@ def insert_content_item(
     return ci_id
 
 
-def insert_item_version(session: Session, content_item_id: uuid.UUID) -> uuid.UUID:
+def insert_item_version(
+    session: Session,
+    content_item_id: uuid.UUID,
+    *,
+    normalized_text: str | None = None,
+    language: str | None = None,
+) -> uuid.UUID:
     """Insert an item_version row and return its id."""
     iv_id = uuid.uuid4()
     session.execute(
         sa.text(
             "INSERT INTO item_versions "
-            "(id, content_item_id, content_hash, created_at) "
-            "VALUES (:id, :ci_id, :hash, :ts)"
+            "(id, content_item_id, content_hash, normalized_text, language, created_at) "
+            "VALUES (:id, :ci_id, :hash, :text, :lang, :ts)"
         ),
-        {"id": iv_id, "ci_id": content_item_id, "hash": uuid.uuid4().hex, "ts": _now()},
+        {
+            "id": iv_id,
+            "ci_id": content_item_id,
+            "hash": uuid.uuid4().hex,
+            "text": normalized_text,
+            "lang": language,
+            "ts": _now(),
+        },
     )
     return iv_id
 
