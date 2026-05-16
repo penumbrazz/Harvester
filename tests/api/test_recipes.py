@@ -281,3 +281,191 @@ async def test_list_recipes_filter_by_executor(api_client):
     data = resp.json()
     assert len(data["items"]) >= 1
     assert all(r["executor"] == "http_fetch" for r in data["items"])
+
+
+# ---------------------------------------------------------------------------
+# POST /recipes/{id}/reject — reject endpoint tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_reject_recipe(api_client):
+    """POST /recipes/{id}/reject should transition pending -> rejected."""
+    headers = {"Authorization": "Bearer test-secret"}
+    suffix = uuid.uuid4().hex[:6]
+
+    # Arrange — create a pending recipe
+    resp = await api_client.post(
+        "/recipes",
+        json={"name": f"reject-{suffix}", "executor": "http_fetch", "config": {}, "risk_level": "low"},
+        headers=headers,
+    )
+    assert resp.status_code == 201
+    recipe_id = resp.json()["id"]
+
+    # Act — reject it
+    resp = await api_client.post(f"/recipes/{recipe_id}/reject", headers=headers)
+
+    # Assert
+    assert resp.status_code == 200
+    assert resp.json()["approval_status"] == "rejected"
+
+
+# ---------------------------------------------------------------------------
+# POST /recipes/{id}/resubmit — resubmit endpoint tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_resubmit_recipe(api_client):
+    """POST /recipes/{id}/resubmit should transition rejected -> pending."""
+    headers = {"Authorization": "Bearer test-secret"}
+    suffix = uuid.uuid4().hex[:6]
+
+    # Arrange — create and reject a recipe
+    resp = await api_client.post(
+        "/recipes",
+        json={"name": f"resubmit-{suffix}", "executor": "http_fetch", "config": {}, "risk_level": "low"},
+        headers=headers,
+    )
+    recipe_id = resp.json()["id"]
+    await api_client.post(f"/recipes/{recipe_id}/reject", headers=headers)
+
+    # Act — resubmit it
+    resp = await api_client.post(f"/recipes/{recipe_id}/resubmit", headers=headers)
+
+    # Assert
+    assert resp.status_code == 200
+    assert resp.json()["approval_status"] == "pending"
+
+
+# ---------------------------------------------------------------------------
+# POST /recipes/{id}/deprecate — deprecate endpoint tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_deprecate_recipe(api_client):
+    """POST /recipes/{id}/deprecate should transition approved -> deprecated."""
+    headers = {"Authorization": "Bearer test-secret"}
+    suffix = uuid.uuid4().hex[:6]
+
+    # Arrange — create and approve a recipe
+    resp = await api_client.post(
+        "/recipes",
+        json={"name": f"deprecate-{suffix}", "executor": "http_fetch", "config": {}, "risk_level": "low"},
+        headers=headers,
+    )
+    recipe_id = resp.json()["id"]
+    await api_client.post(f"/recipes/{recipe_id}/approve", headers=headers)
+
+    # Act — deprecate it
+    resp = await api_client.post(f"/recipes/{recipe_id}/deprecate", headers=headers)
+
+    # Assert
+    assert resp.status_code == 200
+    assert resp.json()["approval_status"] == "deprecated"
+
+
+# ---------------------------------------------------------------------------
+# PATCH /recipes/{id} — update endpoint tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_patch_recipe(api_client):
+    """PATCH /recipes/{id} should update name and config fields."""
+    headers = {"Authorization": "Bearer test-secret"}
+    suffix = uuid.uuid4().hex[:6]
+
+    # Arrange — create a pending recipe
+    resp = await api_client.post(
+        "/recipes",
+        json={"name": f"patch-{suffix}", "executor": "http_fetch", "config": {}, "risk_level": "low"},
+        headers=headers,
+    )
+    recipe_id = resp.json()["id"]
+
+    # Act — patch name and config
+    new_name = f"patched-{uuid.uuid4().hex[:6]}"
+    new_config = {"url": "https://example.com/updated"}
+    resp = await api_client.patch(
+        f"/recipes/{recipe_id}",
+        json={"name": new_name, "config": new_config},
+        headers=headers,
+    )
+
+    # Assert
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["name"] == new_name
+    assert data["executor"] == "http_fetch"
+
+
+# ---------------------------------------------------------------------------
+# Invalid state transition tests
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_reject_approved_recipe_rejected(api_client):
+    """Rejecting an already-approved recipe should return 400."""
+    headers = {"Authorization": "Bearer test-secret"}
+    suffix = uuid.uuid4().hex[:6]
+
+    # Arrange — create and approve
+    resp = await api_client.post(
+        "/recipes",
+        json={"name": f"rej-app-{suffix}", "executor": "http_fetch", "config": {}, "risk_level": "low"},
+        headers=headers,
+    )
+    recipe_id = resp.json()["id"]
+    await api_client.post(f"/recipes/{recipe_id}/approve", headers=headers)
+
+    # Act — try to reject approved recipe
+    resp = await api_client.post(f"/recipes/{recipe_id}/reject", headers=headers)
+
+    # Assert
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_resubmit_pending_recipe_rejected(api_client):
+    """Resubmitting a pending recipe should return 400 (already pending)."""
+    headers = {"Authorization": "Bearer test-secret"}
+    suffix = uuid.uuid4().hex[:6]
+
+    # Arrange — create a pending recipe
+    resp = await api_client.post(
+        "/recipes",
+        json={"name": f"res-pend-{suffix}", "executor": "http_fetch", "config": {}, "risk_level": "low"},
+        headers=headers,
+    )
+    recipe_id = resp.json()["id"]
+
+    # Act — try to resubmit while still pending
+    resp = await api_client.post(f"/recipes/{recipe_id}/resubmit", headers=headers)
+
+    # Assert
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_deprecate_pending_recipe_rejected(api_client):
+    """Deprecating a pending recipe should return 400."""
+    headers = {"Authorization": "Bearer test-secret"}
+    suffix = uuid.uuid4().hex[:6]
+
+    # Arrange — create a pending recipe
+    resp = await api_client.post(
+        "/recipes",
+        json={"name": f"dep-pend-{suffix}", "executor": "http_fetch", "config": {}, "risk_level": "low"},
+        headers=headers,
+    )
+    recipe_id = resp.json()["id"]
+
+    # Act — try to deprecate while still pending
+    resp = await api_client.post(f"/recipes/{recipe_id}/deprecate", headers=headers)
+
+    # Assert
+    assert resp.status_code == 400
