@@ -81,3 +81,25 @@ export const CONTENT_STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: 'deduped', label: '已去重' },
   { value: 'archived', label: '已归档' },
 ]
+
+/** Item version summary from the backend detail endpoint. */
+export interface ItemVersionSummary {
+  id: string
+  normalized_text: string | null
+  language: string | null
+  content_hash: string
+  created_at: string
+}
+
+/** Content item detail response from GET /items/content/{id}. */
+export interface ContentDetailResponse {
+  id: string
+  item_type: string
+  title: string | null
+  canonical_url: string | null
+  status: string
+  source_name: string | null
+  created_at: string
+  updated_at: string
+  latest_version: ItemVersionSummary | null
+}
