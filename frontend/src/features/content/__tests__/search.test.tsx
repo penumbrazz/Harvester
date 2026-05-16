@@ -78,6 +78,9 @@ const vectorSearchResponse = {
 describe('ContentLibraryPage - keyword search', () => {
   it('performs keyword search when query is entered', async () => {
     mockFetch.mockResolvedValueOnce(
+      mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 }),
+    )
+    mockFetch.mockResolvedValueOnce(
       mockJsonResponse({ items: [], total: 0, limit: 20, offset: 0 }),
     )
     mockFetch.mockResolvedValueOnce(mockJsonResponse(keywordSearchResponse))
@@ -101,6 +104,9 @@ describe('ContentLibraryPage - keyword search', () => {
   })
 
   it('displays keyword search results with traceable fields', async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 }),
+    )
     mockFetch.mockResolvedValueOnce(
       mockJsonResponse({ items: [], total: 0, limit: 20, offset: 0 }),
     )
@@ -128,6 +134,9 @@ describe('ContentLibraryPage - keyword search', () => {
 describe('ContentLibraryPage - vector search', () => {
   it('switches to vector mode and performs vector search', async () => {
     mockFetch.mockResolvedValueOnce(
+      mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 }),
+    )
+    mockFetch.mockResolvedValueOnce(
       mockJsonResponse({ items: [], total: 0, limit: 20, offset: 0 }),
     )
     mockFetch.mockResolvedValueOnce(mockJsonResponse(vectorSearchResponse))
@@ -152,6 +161,9 @@ describe('ContentLibraryPage - vector search', () => {
   })
 
   it('displays vector search results with distance', async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 }),
+    )
     mockFetch.mockResolvedValueOnce(
       mockJsonResponse({ items: [], total: 0, limit: 20, offset: 0 }),
     )
@@ -178,6 +190,9 @@ describe('ContentLibraryPage - vector search', () => {
   })
 
   it('shows chunk text for vector results', async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 }),
+    )
     mockFetch.mockResolvedValueOnce(
       mockJsonResponse({ items: [], total: 0, limit: 20, offset: 0 }),
     )
@@ -206,6 +221,9 @@ describe('ContentLibraryPage - vector search', () => {
 
 describe('ContentLibraryPage - embedding unavailable', () => {
   it('shows 503 error when embedding adapter is unavailable', async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 }),
+    )
     mockFetch.mockResolvedValueOnce(
       mockJsonResponse({ items: [], total: 0, limit: 20, offset: 0 }),
     )
@@ -255,9 +273,15 @@ describe('ContentLibraryPage - search clear', () => {
       limit: 20,
       offset: 0,
     }
-    mockFetch.mockResolvedValueOnce(mockJsonResponse(mockItems))
-    mockFetch.mockResolvedValueOnce(mockJsonResponse(keywordSearchResponse))
-    mockFetch.mockResolvedValueOnce(mockJsonResponse(mockItems))
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 })
+      }
+      if (url.includes('/items/search')) {
+        return mockJsonResponse(keywordSearchResponse)
+      }
+      return mockJsonResponse(mockItems)
+    })
 
     const user = userEvent.setup()
     render(<ContentLibraryPage config={config} />)

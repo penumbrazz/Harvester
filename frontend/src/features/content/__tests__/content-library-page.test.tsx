@@ -76,9 +76,12 @@ const mockContentItems = {
 
 describe('ContentLibraryPage - list loading', () => {
   it('renders the page title', () => {
-    mockFetch.mockResolvedValue(
-      mockJsonResponse({ items: [], total: 0, limit: 20, offset: 0 }),
-    )
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 })
+      }
+      return mockJsonResponse({ items: [], total: 0, limit: 20, offset: 0 })
+    })
     render(<ContentLibraryPage config={config} />)
 
     expect(screen.getByText('内容库')).toBeInTheDocument()
@@ -92,7 +95,12 @@ describe('ContentLibraryPage - list loading', () => {
   })
 
   it('displays content items in a table after loading', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse(mockContentItems))
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 })
+      }
+      return mockJsonResponse(mockContentItems)
+    })
     render(<ContentLibraryPage config={config} />)
 
     await waitFor(() => {
@@ -105,7 +113,12 @@ describe('ContentLibraryPage - list loading', () => {
   })
 
   it('shows source name in the table', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse(mockContentItems))
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 })
+      }
+      return mockJsonResponse(mockContentItems)
+    })
     render(<ContentLibraryPage config={config} />)
 
     await waitFor(() => {
@@ -118,7 +131,12 @@ describe('ContentLibraryPage - list loading', () => {
   })
 
   it('shows status pills with correct variants', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse(mockContentItems))
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 })
+      }
+      return mockJsonResponse(mockContentItems)
+    })
     render(<ContentLibraryPage config={config} />)
 
     await waitFor(() => {
@@ -133,9 +151,12 @@ describe('ContentLibraryPage - list loading', () => {
 
 describe('ContentLibraryPage - empty state', () => {
   it('shows empty state when no content items exist', async () => {
-    mockFetch.mockResolvedValue(
-      mockJsonResponse({ items: [], total: 0, limit: 20, offset: 0 }),
-    )
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 })
+      }
+      return mockJsonResponse({ items: [], total: 0, limit: 20, offset: 0 })
+    })
     render(<ContentLibraryPage config={config} />)
 
     await waitFor(() => {
@@ -146,9 +167,12 @@ describe('ContentLibraryPage - empty state', () => {
   })
 
   it('shows filter hint when filters are active but no results', async () => {
-    mockFetch.mockResolvedValue(
-      mockJsonResponse({ items: [], total: 0, limit: 20, offset: 0 }),
-    )
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 })
+      }
+      return mockJsonResponse({ items: [], total: 0, limit: 20, offset: 0 })
+    })
     const user = userEvent.setup()
     render(<ContentLibraryPage config={config} />)
 
@@ -167,11 +191,16 @@ describe('ContentLibraryPage - empty state', () => {
 
 describe('ContentLibraryPage - error state', () => {
   it('shows error state when API fails', async () => {
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 500,
-      statusText: 'Internal Server Error',
-      text: () => Promise.resolve('Server error'),
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 })
+      }
+      return Promise.resolve({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        text: () => Promise.resolve('Server error'),
+      })
     })
     render(<ContentLibraryPage config={config} />)
 
@@ -183,7 +212,12 @@ describe('ContentLibraryPage - error state', () => {
 
 describe('ContentLibraryPage - filters', () => {
   it('sends item_type filter to the API', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse(mockContentItems))
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 })
+      }
+      return mockJsonResponse(mockContentItems)
+    })
     const user = userEvent.setup()
     render(<ContentLibraryPage config={config} />)
 
@@ -202,7 +236,12 @@ describe('ContentLibraryPage - filters', () => {
   })
 
   it('sends status filter to the API', async () => {
-    mockFetch.mockResolvedValue(mockJsonResponse(mockContentItems))
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 })
+      }
+      return mockJsonResponse(mockContentItems)
+    })
     const user = userEvent.setup()
     render(<ContentLibraryPage config={config} />)
 
@@ -223,8 +262,11 @@ describe('ContentLibraryPage - filters', () => {
 
 describe('ContentLibraryPage - pagination', () => {
   it('shows pagination info when there are many items', async () => {
-    mockFetch.mockResolvedValue(
-      mockJsonResponse({
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 })
+      }
+      return mockJsonResponse({
         items: Array.from({ length: 20 }, (_, i) => ({
           id: `ci-${i}`,
           item_type: 'article',
@@ -239,8 +281,8 @@ describe('ContentLibraryPage - pagination', () => {
         total: 50,
         limit: 20,
         offset: 0,
-      }),
-    )
+      })
+    })
     render(<ContentLibraryPage config={config} />)
 
     await waitFor(() => {
@@ -251,8 +293,11 @@ describe('ContentLibraryPage - pagination', () => {
   })
 
   it('navigates to next page when Next is clicked', async () => {
-    mockFetch.mockResolvedValue(
-      mockJsonResponse({
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 })
+      }
+      return mockJsonResponse({
         items: Array.from({ length: 20 }, (_, i) => ({
           id: `ci-${i}`,
           item_type: 'article',
@@ -267,8 +312,8 @@ describe('ContentLibraryPage - pagination', () => {
         total: 50,
         limit: 20,
         offset: 0,
-      }),
-    )
+      })
+    })
     const user = userEvent.setup()
     render(<ContentLibraryPage config={config} />)
 
@@ -282,6 +327,193 @@ describe('ContentLibraryPage - pagination', () => {
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('offset=20'),
         expect.any(Object),
+      )
+    })
+  })
+})
+
+describe('ContentLibraryPage - source filter', () => {
+  it('renders source filter dropdown', async () => {
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({
+          items: [
+            {
+              id: 'src-1',
+              name: 'TechBlog',
+              kind: 'rss',
+              status: 'watched',
+              url: null,
+              trust_level: 'medium',
+              failure_count: 0,
+              created_at: '2026-01-01T00:00:00Z',
+              updated_at: '2026-01-01T00:00:00Z',
+            },
+          ],
+          total: 1,
+          limit: 100,
+          offset: 0,
+        })
+      }
+      return mockJsonResponse({ items: [], total: 0, limit: 20, offset: 0 })
+    })
+    render(<ContentLibraryPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('select-source-filter')).toBeInTheDocument()
+    })
+
+    expect(screen.getByText('TechBlog')).toBeInTheDocument()
+  })
+
+  it('sends source_id filter to the API', async () => {
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({
+          items: [
+            {
+              id: 'src-1',
+              name: 'TechBlog',
+              kind: 'rss',
+              status: 'watched',
+              url: null,
+              trust_level: 'medium',
+              failure_count: 0,
+              created_at: '2026-01-01T00:00:00Z',
+              updated_at: '2026-01-01T00:00:00Z',
+            },
+          ],
+          total: 1,
+          limit: 100,
+          offset: 0,
+        })
+      }
+      return mockJsonResponse(mockContentItems)
+    })
+    const user = userEvent.setup()
+    render(<ContentLibraryPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('select-source-filter')).toBeInTheDocument()
+    })
+
+    await user.selectOptions(screen.getByTestId('select-source-filter'), 'src-1')
+
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('source_id=src-1'),
+        expect.any(Object),
+      )
+    })
+  })
+})
+
+describe('ContentLibraryPage - content detail modal', () => {
+  it('opens modal when a content row is clicked', async () => {
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 })
+      }
+      return mockJsonResponse(mockContentItems)
+    })
+    const user = userEvent.setup()
+    render(<ContentLibraryPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('content-table')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByText('Understanding TypeScript Generics'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('content-detail-modal')).toBeInTheDocument()
+    })
+  })
+
+  it('closes modal when close button is clicked', async () => {
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 })
+      }
+      if (url.includes('/items/content/ci-1')) {
+        return mockJsonResponse({
+          id: 'ci-1',
+          item_type: 'article',
+          title: 'Understanding TypeScript Generics',
+          canonical_url: 'https://example.com/ts-generics',
+          status: 'active',
+          source_name: 'TechBlog',
+          created_at: '2026-01-01T10:00:00Z',
+          updated_at: '2026-01-01T12:00:00Z',
+          latest_version: {
+            id: 'iv-1',
+            normalized_text: 'Full text of the article.',
+            language: 'en',
+            content_hash: 'abc123',
+            created_at: '2026-01-01T11:00:00Z',
+          },
+        })
+      }
+      return mockJsonResponse(mockContentItems)
+    })
+    const user = userEvent.setup()
+    render(<ContentLibraryPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('content-table')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByText('Understanding TypeScript Generics'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('content-detail-modal')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByTestId('close-content-detail-button'))
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('content-detail-modal')).not.toBeInTheDocument()
+    })
+  })
+
+  it('displays full article text in modal', async () => {
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/sources')) {
+        return mockJsonResponse({ items: [], total: 0, limit: 100, offset: 0 })
+      }
+      if (url.includes('/items/content/ci-1')) {
+        return mockJsonResponse({
+          id: 'ci-1',
+          item_type: 'article',
+          title: 'Understanding TypeScript Generics',
+          canonical_url: 'https://example.com/ts-generics',
+          status: 'active',
+          source_name: 'TechBlog',
+          created_at: '2026-01-01T10:00:00Z',
+          updated_at: '2026-01-01T12:00:00Z',
+          latest_version: {
+            id: 'iv-1',
+            normalized_text: 'This is the full article body text that was previously hidden.',
+            language: 'en',
+            content_hash: 'abc123',
+            created_at: '2026-01-01T11:00:00Z',
+          },
+        })
+      }
+      return mockJsonResponse(mockContentItems)
+    })
+    const user = userEvent.setup()
+    render(<ContentLibraryPage config={config} />)
+
+    await waitFor(() => {
+      expect(screen.getByTestId('content-table')).toBeInTheDocument()
+    })
+
+    await user.click(screen.getByText('Understanding TypeScript Generics'))
+
+    await waitFor(() => {
+      expect(screen.getByTestId('content-detail-body')).toHaveTextContent(
+        'This is the full article body text that was previously hidden.',
       )
     })
   })
