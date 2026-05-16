@@ -15,7 +15,6 @@ from tests.utils.factories import (
     insert_content_item,
     insert_item_version,
     insert_source,
-    insert_topic,
 )
 
 

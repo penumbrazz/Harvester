@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -117,10 +116,10 @@ def get_content_item_detail(
 
 @router.get("/content", response_model=ContentListResponse)
 def list_content_items(
-    source_id: Optional[UUID] = Query(None, description="Filter by source"),
-    topic_watch_id: Optional[UUID] = Query(None, description="Filter by topic watch"),
-    item_type: Optional[str] = Query(None, description="Filter by item type"),
-    status: Optional[str] = Query(None, description="Filter by status"),
+    source_id: UUID | None = Query(None, description="Filter by source"),
+    topic_watch_id: UUID | None = Query(None, description="Filter by topic watch"),
+    item_type: str | None = Query(None, description="Filter by item type"),
+    status: str | None = Query(None, description="Filter by status"),
     limit: int = Query(20, ge=1, le=100, description="Max results per page"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
     _token: str = _Token,
