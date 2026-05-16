@@ -3,7 +3,7 @@ import type { ApiConfig } from '../types/api'
 const API_CONFIG_KEY = 'harvester-api-config'
 
 const DEFAULT_CONFIG: ApiConfig = {
-  baseUrl: 'http://localhost:8001',
+  baseUrl: '',
   token: 'change-me-in-production',
 }
 
@@ -46,7 +46,10 @@ export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const url = `${config.baseUrl.replace(/\/+$/, '')}${path}`
+  // If baseUrl is set (user configured it in Overview), use absolute URL.
+  // If baseUrl is empty (default), use relative path with /api prefix (goes through Vite proxy).
+  const base = config.baseUrl?.replace(/\/+$/, '') || ''
+  const url = base ? `${base}${path}` : `/api${path}`
   const response = await fetch(url, {
     ...options,
     headers: {

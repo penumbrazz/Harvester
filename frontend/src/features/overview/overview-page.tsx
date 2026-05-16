@@ -35,11 +35,11 @@ const statusVariants: Record<
 export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
   const { status, errorMessage, check } = useHealthCheck(config)
   const [editConfig, setEditConfig] = useState<ApiConfig>(config)
-  const [editing, setEditing] = useState(!config.baseUrl)
+  const [editing, setEditing] = useState(false)
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
 
   const fetchSummary = useCallback(async () => {
-    if (!config.baseUrl || status !== 'connected') return
+    if (status !== 'connected') return
     try {
       const data = await getDashboardSummary(config)
       setSummary(data)

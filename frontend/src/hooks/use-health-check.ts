@@ -34,12 +34,6 @@ export function useHealthCheck(config: ApiConfig): UseHealthCheckReturn {
   }, [])
 
   const check = useCallback(async () => {
-    if (!config.baseUrl) {
-      safeSetStatus('error')
-      safeSetErrorMessage('API 地址未配置')
-      return
-    }
-
     safeSetStatus('checking')
     safeSetErrorMessage('')
 
