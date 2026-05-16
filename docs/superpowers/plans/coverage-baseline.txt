@@ -1,0 +1,22 @@
+# Harvester 测试覆盖率基线
+# 日期: 2026-05-16
+# 总覆盖率: 88%
+
+# 低于 40% 覆盖率的模块:
+# harvester/cli/__main__.py         0%
+# harvester/workers/extraction.py  27%
+
+# 低于 80% 覆盖率的模块:
+# harvester/workers/extraction.py  27%
+# harvester/workers/daemon.py      78%
+# harvester/workers/crawl.py       82%
+# harvester/jobs/extraction.py     83%
+# harvester/api/routers/sources.py 84%
+# harvester/jobs/scheduler.py      86%
+# harvester/jobs/repository.py     88%
+# harvester/cli/main.py            68%
+
+# 前端测试失败 (3):
+# 1. app.test.tsx: "allows configuring API base URL and token"
+# 2. app.test.tsx: "persists config to localStorage"
+# 3. content-library-page.test.tsx: "shows pagination info when there are many items"
