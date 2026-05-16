@@ -17,7 +17,10 @@ export function AppLayout({
   children,
 }: AppLayoutProps) {
   return (
-    <div data-testid="app-layout" style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div
+      data-testid="app-layout"
+      style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}
+    >
       <Sidebar items={navItems} activeKey={activeKey} onNavigate={onNavigate} />
       <main
         style={{

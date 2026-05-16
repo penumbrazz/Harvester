@@ -116,7 +116,8 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
 
   const items = contentResponse?.items || []
   const total = contentResponse?.total || 0
-  const hasActiveFilters = statusFilter !== '' || typeFilter !== '' || sourceFilter !== ''
+  const hasActiveFilters =
+    statusFilter !== '' || typeFilter !== '' || sourceFilter !== ''
 
   return (
     <div
@@ -588,83 +589,80 @@ function ContentRow({ item, onClick }: { item: ContentItem; onClick: () => void 
 /** Card for a content item in grid view. */
 function ContentCard({ item, onClick }: { item: ContentItem; onClick: () => void }) {
   return (
-    <div
-      style={{ cursor: 'pointer' }}
-      onClick={onClick}
-    >
-    <Card
-      style={{
-        padding: 'var(--space-4)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 'var(--space-2)',
-      }}
-    >
-      <div
+    <div style={{ cursor: 'pointer' }} onClick={onClick}>
+      <Card
         style={{
+          padding: 'var(--space-4)',
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
+          flexDirection: 'column',
+          gap: 'var(--space-2)',
         }}
       >
-        <h4
+        <div
           style={{
-            fontFamily: 'var(--font-family)',
-            fontSize: 'var(--font-size-base)',
-            fontWeight: 600,
-            margin: 0,
-            lineHeight: 1.3,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
           }}
         >
-          {item.title || '无标题'}
-        </h4>
-      </div>
-      <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
-        <StatusPill variant={CONTENT_STATUS_VARIANTS[item.status] || 'default'}>
-          {CONTENT_STATUS_LABELS[item.status] || item.status}
-        </StatusPill>
-        <StatusPill variant="default">{item.item_type}</StatusPill>
-      </div>
-      <div
-        style={{
-          fontSize: 'var(--font-size-sm)',
-          color: 'var(--color-warm-gray-500)',
-        }}
-      >
-        {item.source_name || '未知信息源'}
-      </div>
-      {item.canonical_url && (
-        <a
-          href={item.canonical_url}
-          target="_blank"
-          rel="noopener noreferrer"
+          <h4
+            style={{
+              fontFamily: 'var(--font-family)',
+              fontSize: 'var(--font-size-base)',
+              fontWeight: 600,
+              margin: 0,
+              lineHeight: 1.3,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+            }}
+          >
+            {item.title || '无标题'}
+          </h4>
+        </div>
+        <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+          <StatusPill variant={CONTENT_STATUS_VARIANTS[item.status] || 'default'}>
+            {CONTENT_STATUS_LABELS[item.status] || item.status}
+          </StatusPill>
+          <StatusPill variant="default">{item.item_type}</StatusPill>
+        </div>
+        <div
           style={{
-            color: 'var(--color-notion-blue)',
-            textDecoration: 'none',
+            fontSize: 'var(--font-size-sm)',
+            color: 'var(--color-warm-gray-500)',
+          }}
+        >
+          {item.source_name || '未知信息源'}
+        </div>
+        {item.canonical_url && (
+          <a
+            href={item.canonical_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: 'var(--color-notion-blue)',
+              textDecoration: 'none',
+              fontSize: 'var(--font-size-xs)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {item.canonical_url}
+          </a>
+        )}
+        <div
+          style={{
             fontSize: 'var(--font-size-xs)',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            color: 'var(--color-warm-gray-300)',
+            marginTop: 'auto',
           }}
         >
-          {item.canonical_url}
-        </a>
-      )}
-      <div
-        style={{
-          fontSize: 'var(--font-size-xs)',
-          color: 'var(--color-warm-gray-300)',
-          marginTop: 'auto',
-        }}
-      >
-        {formatDate(item.updated_at)}
-      </div>
-    </Card>
+          {formatDate(item.updated_at)}
+        </div>
+      </Card>
     </div>
   )
 }

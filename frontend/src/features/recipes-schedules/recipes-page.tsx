@@ -128,7 +128,10 @@ export function RecipesPage({ config }: RecipesPageProps) {
   )
 
   return (
-    <div data-testid="page-recipes" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+    <div
+      data-testid="page-recipes"
+      style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
+    >
       <div
         style={{
           display: 'flex',
@@ -373,7 +376,11 @@ export function RecipesPage({ config }: RecipesPageProps) {
       {!loading && error && (
         <p
           data-testid="recipes-error"
-          style={{ color: 'var(--color-orange)', fontSize: 'var(--font-size-sm)', flexShrink: 0 }}
+          style={{
+            color: 'var(--color-orange)',
+            fontSize: 'var(--font-size-sm)',
+            flexShrink: 0,
+          }}
         >
           {error}
         </p>

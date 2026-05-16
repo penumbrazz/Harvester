@@ -122,7 +122,10 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
   )
 
   return (
-    <div data-testid="page-schedules" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+    <div
+      data-testid="page-schedules"
+      style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
+    >
       <div
         style={{
           display: 'flex',
@@ -344,7 +347,11 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
       {!loading && error && (
         <p
           data-testid="schedules-error"
-          style={{ color: 'var(--color-orange)', fontSize: 'var(--font-size-sm)', flexShrink: 0 }}
+          style={{
+            color: 'var(--color-orange)',
+            fontSize: 'var(--font-size-sm)',
+            flexShrink: 0,
+          }}
         >
           {error}
         </p>

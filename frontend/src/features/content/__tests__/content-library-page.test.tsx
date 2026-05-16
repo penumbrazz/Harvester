@@ -493,7 +493,8 @@ describe('ContentLibraryPage - content detail modal', () => {
           updated_at: '2026-01-01T12:00:00Z',
           latest_version: {
             id: 'iv-1',
-            normalized_text: 'This is the full article body text that was previously hidden.',
+            normalized_text:
+              'This is the full article body text that was previously hidden.',
             language: 'en',
             content_hash: 'abc123',
             created_at: '2026-01-01T11:00:00Z',

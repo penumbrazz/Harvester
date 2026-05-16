@@ -6,7 +6,10 @@ import { Button } from '../../components/ui/button'
 import { Select } from '../../components/ui/select'
 import { StatusPill } from '../../components/ui/status-pill'
 import { PaginationControls } from '../../components/common/pagination-controls'
-import { ApprovedRecipeSelector, SourceSelector } from '../recipes-schedules/components/selectors'
+import {
+  ApprovedRecipeSelector,
+  SourceSelector,
+} from '../recipes-schedules/components/selectors'
 import { listCrawlRuns, triggerCrawlRun } from '../../lib/observability-api'
 import { formatDate } from '../../lib/format'
 import { cellStyle } from '../../lib/table-styles'

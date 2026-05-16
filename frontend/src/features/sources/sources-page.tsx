@@ -81,7 +81,10 @@ export function SourcesPage({ config }: SourcesPageProps) {
   }, [fetchSources])
 
   return (
-    <div data-testid="page-sources" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+    <div
+      data-testid="page-sources"
+      style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}
+    >
       <div
         style={{
           display: 'flex',
@@ -219,7 +222,11 @@ export function SourcesPage({ config }: SourcesPageProps) {
       {!loading && error && (
         <p
           data-testid="sources-error"
-          style={{ color: 'var(--color-orange)', fontSize: 'var(--font-size-sm)', flexShrink: 0 }}
+          style={{
+            color: 'var(--color-orange)',
+            fontSize: 'var(--font-size-sm)',
+            flexShrink: 0,
+          }}
         >
           {error}
         </p>

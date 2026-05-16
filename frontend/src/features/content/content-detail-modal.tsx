@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import type { ApiConfig } from '../../types/api'
 import type { ContentDetailResponse } from '../../types/content'
@@ -22,18 +22,26 @@ export function ContentDetailModal({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    if (!contentItemId) {
-      setDetail(null)
-      return
-    }
+  const fetchDetail = useCallback(async () => {
+    if (!contentItemId) return
     setLoading(true)
     setError('')
-    getContentItemDetail(config, contentItemId)
-      .then((data) => setDetail(data))
-      .catch((err) => setError(err instanceof Error ? err.message : '加载详情失败'))
-      .finally(() => setLoading(false))
+    setDetail(null)
+    try {
+      const data = await getContentItemDetail(config, contentItemId)
+      setDetail(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '加载详情失败')
+    } finally {
+      setLoading(false)
+    }
   }, [config, contentItemId])
+
+  useEffect(() => {
+    if (contentItemId) {
+      void fetchDetail()
+    }
+  }, [contentItemId, fetchDetail])
 
   useEffect(() => {
     if (!contentItemId) return
@@ -199,12 +207,8 @@ export function ContentDetailModal({
             minHeight: 0,
           }}
         >
-          {loading && (
-            <div style={{ color: '#615d59', fontSize: 14 }}>加载中...</div>
-          )}
-          {error && (
-            <div style={{ color: '#dd5b00', fontSize: 14 }}>{error}</div>
-          )}
+          {loading && <div style={{ color: '#615d59', fontSize: 14 }}>加载中...</div>}
+          {error && <div style={{ color: '#dd5b00', fontSize: 14 }}>{error}</div>}
           {!loading && !error && detail?.latest_version?.normalized_text && (
             <div
               style={{
@@ -221,9 +225,12 @@ export function ContentDetailModal({
           {!loading && !error && detail && !detail.latest_version && (
             <div style={{ color: '#a39e98', fontSize: 14 }}>暂无正文内容</div>
           )}
-          {!loading && !error && detail?.latest_version && !detail.latest_version.normalized_text && (
-            <div style={{ color: '#a39e98', fontSize: 14 }}>暂无正文内容</div>
-          )}
+          {!loading &&
+            !error &&
+            detail?.latest_version &&
+            !detail.latest_version.normalized_text && (
+              <div style={{ color: '#a39e98', fontSize: 14 }}>暂无正文内容</div>
+            )}
         </div>
       </div>
     </div>
