@@ -172,4 +172,31 @@ test.describe('Source Management E2E', () => {
     await page.getByTestId('input-source-search').fill('e2e-search-xyz')
     await expect(page.getByText(uniqueName)).toBeVisible()
   })
+
+  test('resumes a paused source', async ({ page }) => {
+    await page.getByTestId('nav-sources').click()
+    await expect(page.getByTestId('page-sources')).toBeVisible()
+
+    await page.getByTestId('new-source-button').click()
+    const uniqueName = `e2e-resume-src-${Date.now()}`
+    await page.getByTestId('input-source-name').fill(uniqueName)
+    await page.getByTestId('submit-propose-source').click()
+    await expect(page.getByText(uniqueName)).toBeVisible()
+
+    const sourceRow = page.locator('tr', { hasText: uniqueName })
+
+    // candidate -> testing -> watched
+    await sourceRow.getByTestId(/action-promote-/).click()
+    await expect(sourceRow.getByText('测试中')).toBeVisible()
+    await sourceRow.getByTestId(/action-promote-/).click()
+    await expect(sourceRow.getByText('监控中')).toBeVisible()
+
+    // watched -> paused
+    await sourceRow.getByTestId(/action-pause-/).click()
+    await expect(sourceRow.getByText('已暂停')).toBeVisible()
+
+    // paused -> watched (resume)
+    await sourceRow.getByTestId(/action-resume-/).click()
+    await expect(sourceRow.getByText('监控中')).toBeVisible()
+  })
 })
