@@ -102,10 +102,10 @@ content_item / item_version / chunk 才是资料库和搜索层。
 
 ### Python（Backend、Executor、Shared）
 
-**标准：** PEP 8、Black 格式化（行长度：88）、isort、必须使用类型提示
+**标准：** PEP 8、Ruff 格式化（行长度：88）、必须使用类型提示
 
 ```bash
-black . && isort .
+uv run ruff format . && uv run ruff check --fix .
 ```
 
 **准则：**
@@ -160,15 +160,18 @@ npm run format && npm run lint
 # 示例：feat(backend): add Ghost YAML import API
 ```
 
-### Git 钩子（Husky）
+### Git 钩子
 
-| 钩子 | 用途 |
-|------|------|
-| `pre-commit` | Python 格式化（black + isort）、前端 lint-staged |
-| `commit-msg` | 验证提交信息格式 |
-| `pre-push` | AI 推送质量检查 |
+目前项目未配置自动 git hooks。提交前请手动运行格式化和测试：
 
-**⚠️ AI 智能体必须遵守 Git 钩子输出——修复问题，禁止使用 `--no-verify`**
+```bash
+# Backend
+uv run ruff format . && uv run ruff check --fix .
+uv run pytest tests/ -q
+
+# Frontend
+cd frontend && npm run format && npm run lint && npm test -- --run
+```
 
 
 ---
