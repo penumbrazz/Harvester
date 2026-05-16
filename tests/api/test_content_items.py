@@ -295,3 +295,102 @@ async def test_content_list_does_not_return_raw_payload(
     assert "content_hash" not in item
     assert "payload" not in item
     assert "raw_html" not in item
+
+
+# --- Content detail endpoint ---
+
+
+@pytest.mark.asyncio
+async def test_content_detail_returns_item_with_version(
+    content_api_client, content_test_db
+):
+    """GET /items/content/{id} should return item metadata + latest version text."""
+    engine = create_engine(content_test_db)
+    with Session(bind=engine) as session:
+        src_id = insert_source(session, "detail-src")
+        ci_id = insert_content_item(
+            session,
+            src_id,
+            "Detail Test Article",
+            canonical_url="https://example.com/detail",
+        )
+        insert_item_version(
+            session,
+            ci_id,
+            normalized_text="Full article body text here.",
+            language="en",
+        )
+        session.commit()
+    engine.dispose()
+
+    response = await content_api_client.get(
+        f"/items/content/{ci_id}",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == str(ci_id)
+    assert data["title"] == "Detail Test Article"
+    assert data["source_name"] == "detail-src"
+    assert data["latest_version"] is not None
+    assert data["latest_version"]["normalized_text"] == "Full article body text here."
+    assert data["latest_version"]["language"] == "en"
+
+
+@pytest.mark.asyncio
+async def test_content_detail_returns_null_version_when_no_version(
+    content_api_client, content_test_db
+):
+    """GET /items/content/{id} should return latest_version as null when no versions exist."""
+    engine = create_engine(content_test_db)
+    with Session(bind=engine) as session:
+        src_id = insert_source(session, "no-version-src")
+        ci_id = insert_content_item(session, src_id, "No Version Article")
+        session.commit()
+    engine.dispose()
+
+    response = await content_api_client.get(
+        f"/items/content/{ci_id}",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["latest_version"] is None
+
+
+@pytest.mark.asyncio
+async def test_content_detail_returns_404_for_missing_id(content_api_client):
+    """GET /items/content/{id} should return 404 for non-existent id."""
+    fake_id = uuid.uuid4()
+    response = await content_api_client.get(
+        f"/items/content/{fake_id}",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_content_detail_returns_latest_of_multiple_versions(
+    content_api_client, content_test_db
+):
+    """GET /items/content/{id} should return the most recent version."""
+    engine = create_engine(content_test_db)
+    with Session(bind=engine) as session:
+        src_id = insert_source(session, "multi-version-src")
+        ci_id = insert_content_item(session, src_id, "Multi Version Article")
+        insert_item_version(
+            session, ci_id, normalized_text="First version text", language="en"
+        )
+        insert_item_version(
+            session, ci_id, normalized_text="Second version text", language="en"
+        )
+        session.commit()
+    engine.dispose()
+
+    response = await content_api_client.get(
+        f"/items/content/{ci_id}",
+        headers={"Authorization": "Bearer test-secret"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["latest_version"]["normalized_text"] == "Second version text"
