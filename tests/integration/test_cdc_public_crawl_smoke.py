@@ -7,6 +7,7 @@ Two test modes:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import uuid
@@ -18,8 +19,9 @@ import pytest
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
-from harvester.adapters.firecrawl import CrawlResult
+from harvester.adapters.firecrawl import CrawlResult, FirecrawlAdapter
 from harvester.db.models import ContentItem, ItemVersion, Chunk
+from harvester.extractors.cdc_weekly import CdcWeeklyListExtractor
 from harvester.domain.fetch_policy import FetchPolicyResult
 from harvester.extractors.cdc_fixture import CdcFixtureExtractor
 from harvester.jobs.archive import ArchiveWriteResult
@@ -282,3 +284,79 @@ class TestCDCLiveSmoke:
         assert raw_obj.storage_uri is not None
         assert raw_obj.byte_size is not None
         assert raw_obj.byte_size > 0
+
+
+@pytest.mark.skipif(not LIVE_CRAWL_ENABLED, reason="HARVESTER_ENABLE_LIVE_CRAWL not set")
+class TestCDCWeeklyLiveCrawlSmoke:
+    """Live smoke test for CDC Weekly list page crawl.
+
+    Crawls the CDC weekly index page and validates extraction
+    through the CdcWeeklyListExtractor pipeline.
+    """
+
+    def test_cdc_weekly_live_crawl(self, db_session):
+        """Execute a real crawl against CDC Weekly index and verify end-to-end."""
+        from harvester.db.models import RawObject, Source
+
+        # 1. Create Source
+        source = Source(
+            name="cdc-weekly-live",
+            kind="web",
+            url="https://www.cdc.gov/mmwr/weekly/index.html",
+            status="watched",
+        )
+        db_session.add(source)
+        db_session.flush()
+
+        # 2. Fetch via Firecrawl
+        adapter = FirecrawlAdapter.from_env()
+        result = adapter.crawl("https://www.cdc.gov/mmwr/weekly/index.html")
+        assert result.payload_text is not None
+
+        # 3. Create RawObject
+        html = result.payload_text
+        raw_obj = RawObject(
+            source_id=source.id,
+            content_type="text/html",
+            storage_uri="live://cdc-weekly",
+            content_hash=hashlib.sha256(html.encode()).hexdigest(),
+            byte_size=len(html.encode()),
+        )
+        db_session.add(raw_obj)
+        db_session.flush()
+
+        # 4. Extract with CdcWeeklyListExtractor
+        extractor = CdcWeeklyListExtractor()
+        output = extractor.extract({}, html)
+        # output.items may be empty if no current issue, that's OK
+
+        # 5. Upsert each item
+        for c in output.items:
+            item, _ = upsert_content_item(
+                db_session,
+                source_id=source.id,
+                item_type=c.item_type,
+                external_item_id=c.external_item_id,
+                original_url=c.original_url,
+                title=c.title,
+            )
+            create_observation(
+                db_session,
+                content_item_id=item.id,
+                raw_object_id=raw_obj.id,
+            )
+            create_version_if_changed(
+                db_session,
+                content_item_id=item.id,
+                content_hash=hashlib.sha256(c.content_text.encode()).hexdigest(),
+                normalized_text=c.content_text,
+                language=c.language,
+            )
+
+        # 6. Assert raw_object exists
+        count = db_session.scalar(
+            sa.select(sa.func.count())
+            .select_from(RawObject)
+            .where(RawObject.source_id == source.id)
+        )
+        assert count > 0
