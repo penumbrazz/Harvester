@@ -3,8 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ApiConfig } from '../../types/api'
 import type { Source } from '../../types/source'
 import { STATUS_LABELS } from '../../types/source'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
+import { Button, Input } from 'animal-island-ui'
 import { Select } from '../../components/ui/select'
 import { PaginationControls } from '../../components/common/pagination-controls'
 import { listSources } from '../../lib/source-api'
@@ -112,7 +111,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
       <p
         style={{
           fontSize: 'var(--font-size-sm)',
-          color: 'var(--color-warm-gray-500)',
+          color: 'var(--color-text-body)',
           marginBottom: 'var(--space-4)',
           lineHeight: 'var(--line-height-normal)',
           flexShrink: 0,
@@ -143,32 +142,22 @@ export function SourcesPage({ config }: SourcesPageProps) {
         </div>
         <Select
           data-testid="select-status-filter"
+          options={STATUS_FILTER_OPTIONS.map((opt) => ({ key: opt.value, label: opt.label }))}
           value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value)
+          onChange={(val) => {
+            setStatusFilter(val)
             setOffset(0)
           }}
-        >
-          {STATUS_FILTER_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </Select>
+        />
         <Select
           data-testid="select-kind-filter"
+          options={KIND_FILTER_OPTIONS.map((opt) => ({ key: opt.value, label: opt.label }))}
           value={kindFilter}
-          onChange={(e) => {
-            setKindFilter(e.target.value)
+          onChange={(val) => {
+            setKindFilter(val)
             setOffset(0)
           }}
-        >
-          {KIND_FILTER_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </Select>
+        />
       </div>
 
       {/* Propose form */}
@@ -178,9 +167,9 @@ export function SourcesPage({ config }: SourcesPageProps) {
           style={{
             marginBottom: 'var(--space-4)',
             padding: 'var(--space-4)',
-            backgroundColor: 'var(--color-warm-white)',
+            backgroundColor: 'var(--color-bg-content)',
             borderRadius: 'var(--radius-lg)',
-            border: 'var(--border-whisper)',
+            border: 'var(--border-default)',
             flexShrink: 0,
           }}
         >
@@ -207,7 +196,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
         <p
           data-testid="sources-loading"
           style={{
-            color: 'var(--color-warm-gray-500)',
+            color: 'var(--color-text-body)',
             fontSize: 'var(--font-size-sm)',
             flexShrink: 0,
           }}
@@ -237,7 +226,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
           style={{
             textAlign: 'center',
             padding: 'var(--space-8) var(--space-4)',
-            color: 'var(--color-warm-gray-300)',
+            color: 'var(--color-text-secondary)',
             flexShrink: 0,
           }}
         >
@@ -263,7 +252,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
           style={{
             flex: 1,
             overflow: 'auto',
-            border: 'var(--border-whisper)',
+            border: 'var(--border-default)',
             borderRadius: 'var(--radius-lg)',
             minHeight: 0,
           }}
@@ -279,8 +268,8 @@ export function SourcesPage({ config }: SourcesPageProps) {
             <thead>
               <tr
                 style={{
-                  borderBottom: 'var(--border-whisper)',
-                  backgroundColor: 'var(--color-warm-white)',
+                  borderBottom: 'var(--border-default)',
+                  backgroundColor: 'var(--color-bg-content)',
                 }}
               >
                 {[
@@ -299,7 +288,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
                       padding: '10px var(--space-3)',
                       fontSize: 'var(--font-size-xs)',
                       fontWeight: 600,
-                      color: 'var(--color-warm-gray-500)',
+                      color: 'var(--color-text-body)',
                       textAlign: 'left',
                       textTransform: 'uppercase',
                       letterSpacing: '0.125px',

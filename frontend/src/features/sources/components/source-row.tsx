@@ -3,9 +3,8 @@ import { useCallback, useState } from 'react'
 import type { ApiConfig } from '../../../types/api'
 import type { Source, SourceStatus, UpdateSourceRequest } from '../../../types/source'
 import { SOURCE_ACTIONS, STATUS_LABELS, STATUS_VARIANTS } from '../../../types/source'
-import { Button } from '../../../components/ui/button'
+import { Button, Input } from 'animal-island-ui'
 import { ConfirmDialog } from '../../../components/ui/confirm-dialog'
-import { Input } from '../../../components/ui/input'
 import { StatusPill } from '../../../components/ui/status-pill'
 import {
   archiveSource,
@@ -114,7 +113,7 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
           <div
             style={{
               padding: 'var(--space-3)',
-              backgroundColor: 'var(--color-warm-white)',
+              backgroundColor: 'var(--color-bg-content)',
             }}
           >
             <div
@@ -125,19 +124,25 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
                 alignItems: 'flex-end',
               }}
             >
-              <Input
-                label="名称"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                data-testid="edit-source-name"
-              />
-              <Input
-                label="URL"
-                value={editUrl}
-                onChange={(e) => setEditUrl(e.target.value)}
-                data-testid="edit-source-url"
-                placeholder="https://..."
-              />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label htmlFor="edit-source-name" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--color-text-body)' }}>名称</label>
+                <Input
+                  id="edit-source-name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  data-testid="edit-source-name"
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label htmlFor="edit-source-url" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--color-text-body)' }}>URL</label>
+                <Input
+                  id="edit-source-url"
+                  value={editUrl}
+                  onChange={(e) => setEditUrl(e.target.value)}
+                  data-testid="edit-source-url"
+                  placeholder="https://..."
+                />
+              </div>
               <Button
                 onClick={() => void handleEditSubmit()}
                 disabled={editSubmitting}
@@ -146,7 +151,7 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
                 {editSubmitting ? '保存中...' : '保存'}
               </Button>
               <Button
-                variant="ghost"
+                type="text"
                 onClick={() => setEditing(false)}
                 disabled={editSubmitting}
                 data-testid="edit-source-cancel"
@@ -179,7 +184,7 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
           <span
             style={{
               fontWeight: 600,
-              color: 'var(--color-primary-text)',
+              color: 'var(--color-text-primary)',
             }}
           >
             {source.name}
@@ -214,7 +219,7 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
             {allowedActions.map((action) => (
               <Button
                 key={action}
-                variant={DANGEROUS_ACTIONS.has(action) ? 'ghost' : 'secondary'}
+                type={DANGEROUS_ACTIONS.has(action) ? 'text' : 'default'}
                 disabled={loading}
                 onClick={() => {
                   if (action === 'edit') {

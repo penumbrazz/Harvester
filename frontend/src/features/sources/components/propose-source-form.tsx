@@ -2,8 +2,7 @@ import { useCallback, useState } from 'react'
 
 import type { ApiConfig } from '../../../types/api'
 import type { SourceKind } from '../../../types/source'
-import { Button } from '../../../components/ui/button'
-import { Input } from '../../../components/ui/input'
+import { Button, Input } from 'animal-island-ui'
 import { Select } from '../../../components/ui/select'
 import { proposeSource } from '../../../lib/source-api'
 
@@ -82,51 +81,49 @@ export function ProposeSourceForm({
         gap: 'var(--space-3)',
       }}
     >
-      <Input
-        id="source-name"
-        label="名称"
-        placeholder="例如 TechNews"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        data-testid="input-source-name"
-      />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <label htmlFor="source-name" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--color-text-body)' }}>名称</label>
+        <Input
+          id="source-name"
+          placeholder="例如 TechNews"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          data-testid="input-source-name"
+        />
+      </div>
 
-      <Select
-        id="source-kind"
-        label="类型"
-        data-testid="select-source-kind"
-        value={kind}
-        onChange={(e) => setKind(e.target.value as SourceKind)}
-      >
-        {KIND_OPTIONS.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </Select>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <label htmlFor="source-kind" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--color-text-body)' }}>类型</label>
+        <Select
+          id="source-kind"
+          data-testid="select-source-kind"
+          options={KIND_OPTIONS.map((opt) => ({ key: opt.value, label: opt.label }))}
+          value={kind}
+          onChange={(val) => setKind(val as SourceKind)}
+        />
+      </div>
 
-      <Input
-        id="source-url"
-        label="URL"
-        placeholder="https://example.com"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        data-testid="input-source-url"
-      />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <label htmlFor="source-url" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--color-text-body)' }}>URL</label>
+        <Input
+          id="source-url"
+          placeholder="https://example.com"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          data-testid="input-source-url"
+        />
+      </div>
 
-      <Select
-        id="source-trust"
-        label="信任级别"
-        data-testid="select-source-trust"
-        value={trustLevel}
-        onChange={(e) => setTrustLevel(e.target.value)}
-      >
-        {TRUST_OPTIONS.map((level) => (
-          <option key={level} value={level}>
-            {TRUST_LABELS[level]}
-          </option>
-        ))}
-      </Select>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <label htmlFor="source-trust" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--color-text-body)' }}>信任级别</label>
+        <Select
+          id="source-trust"
+          data-testid="select-source-trust"
+          options={TRUST_OPTIONS.map((level) => ({ key: level, label: TRUST_LABELS[level] }))}
+          value={trustLevel}
+          onChange={setTrustLevel}
+        />
+      </div>
 
       {error && (
         <p
@@ -142,12 +139,12 @@ export function ProposeSourceForm({
       )}
 
       <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-        <Button type="submit" disabled={submitting} data-testid="submit-propose-source">
+        <Button htmlType="submit" type="primary" disabled={submitting} data-testid="submit-propose-source">
           {submitting ? '创建中...' : '创建信息源'}
         </Button>
         <Button
-          type="button"
-          variant="secondary"
+          htmlType="button"
+          type="default"
           onClick={onCancel}
           data-testid="cancel-propose-source"
         >
