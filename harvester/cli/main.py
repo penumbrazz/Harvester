@@ -362,16 +362,25 @@ def schedule_create(
 def worker_once(
     limit: int = typer.Option(10, "--limit", help="Max jobs to process"),
     job_type: str = typer.Option(
-        "embed_chunks", "--job-type", help="Job type to process (embed_chunks or crawl)"
+        "embed_chunks",
+        "--job-type",
+        help="Job type to process (embed_chunks, crawl, or extract)",
     ),
 ) -> None:
     """Run the worker once and exit."""
-    from harvester.workers.daemon import _make_session, run_crawl_once, run_once
+    from harvester.workers.daemon import (
+        _make_session,
+        run_crawl_once,
+        run_extract_once,
+        run_once,
+    )
 
     session = _make_session()
     try:
         if job_type == "crawl":
             stats = run_crawl_once(session, limit=limit)
+        elif job_type == "extract":
+            stats = run_extract_once(session, limit=limit)
         else:
             from harvester.adapters.embedding_settings import create_embedding_adapter
 
@@ -404,11 +413,11 @@ def worker_run(
     job_type: str = typer.Option(
         "embed_chunks",
         "--job-type",
-        help="Job type to process: embed_chunks or crawl",
+        help="Job type to process: embed_chunks, crawl, or extract",
     ),
 ) -> None:
     """Run the worker daemon in a loop."""
-    valid_job_types = ("embed_chunks", "crawl")
+    valid_job_types = ("embed_chunks", "crawl", "extract")
     if job_type not in valid_job_types:
         typer.echo(
             f"Error: Invalid job type '{job_type}'. "
@@ -425,6 +434,17 @@ def worker_run(
             f"Starting crawl worker daemon (poll={poll_interval}s, limit={limit})"
         )
         run_crawl_loop(
+            _make_session,
+            poll_interval=poll_interval,
+            limit=limit,
+        )
+    elif job_type == "extract":
+        from harvester.workers.daemon import run_extract_loop
+
+        typer.echo(
+            f"Starting extract worker daemon (poll={poll_interval}s, limit={limit})"
+        )
+        run_extract_loop(
             _make_session,
             poll_interval=poll_interval,
             limit=limit,

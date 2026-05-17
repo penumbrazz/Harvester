@@ -308,3 +308,40 @@ def run_crawl_loop(
         worker_id=worker_id,
         should_stop=should_stop,
     )
+
+
+def run_extract_once(
+    session: Session,
+    *,
+    limit: int = 10,
+    worker_id: str | None = None,
+) -> dict[str, int]:
+    """Claim and process a batch of extract jobs."""
+    return _run_lane_once(
+        session,
+        _EXTRACT_LANES,
+        process_extract_job,
+        "extract",
+        limit=limit,
+        worker_id=worker_id,
+    )
+
+
+def run_extract_loop(
+    session_factory: Callable[[], Session],
+    *,
+    poll_interval: int = 10,
+    limit: int = 10,
+    worker_id: str | None = None,
+    should_stop: Callable[[], bool] | None = None,
+) -> None:
+    """Run the extract worker in a loop for daemon mode."""
+    _run_lane_loop(
+        session_factory,
+        run_extract_once,
+        "Extract",
+        poll_interval=poll_interval,
+        limit=limit,
+        worker_id=worker_id,
+        should_stop=should_stop,
+    )
