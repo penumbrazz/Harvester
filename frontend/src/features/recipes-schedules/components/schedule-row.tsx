@@ -11,9 +11,7 @@ import {
   SCHEDULE_STATUS_LABELS,
   SCHEDULE_STATUS_VARIANTS,
 } from '../../../types/schedule'
-import { Button } from '../../../components/ui/button'
-import { ConfirmDialog } from '../../../components/ui/confirm-dialog'
-import { Input } from '../../../components/ui/input'
+import { Button, Input, Modal } from 'animal-island-ui'
 import { StatusPill } from '../../../components/ui/status-pill'
 import {
   disableSchedule,
@@ -144,7 +142,7 @@ export function ScheduleRow({ schedule, config, onChanged }: ScheduleRowProps) {
           <div
             style={{
               padding: 'var(--space-3)',
-              backgroundColor: 'var(--color-warm-white)',
+              backgroundColor: 'var(--color-bg-content)',
             }}
           >
             <div
@@ -155,27 +153,57 @@ export function ScheduleRow({ schedule, config, onChanged }: ScheduleRowProps) {
                 alignItems: 'flex-end',
               }}
             >
-              <Input
-                label="间隔（秒）"
-                value={editInterval}
-                onChange={(e) => setEditInterval(e.target.value)}
-                data-testid="edit-schedule-interval"
-                type="number"
-                min={60}
-              />
-              <Input
-                label="优先级"
-                value={editPriority}
-                onChange={(e) => setEditPriority(e.target.value)}
-                data-testid="edit-schedule-priority"
-                type="number"
-              />
-              <Input
-                label="通道"
-                value={editLane}
-                onChange={(e) => setEditLane(e.target.value)}
-                data-testid="edit-schedule-lane"
-              />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label
+                  style={{
+                    fontSize: 'var(--font-size-sm)',
+                    fontWeight: 500,
+                    color: 'var(--color-text-body)',
+                  }}
+                >
+                  间隔（秒）
+                </label>
+                <Input
+                  value={editInterval}
+                  onChange={(e) => setEditInterval(e.target.value)}
+                  data-testid="edit-schedule-interval"
+                  type="number"
+                  min={60}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label
+                  style={{
+                    fontSize: 'var(--font-size-sm)',
+                    fontWeight: 500,
+                    color: 'var(--color-text-body)',
+                  }}
+                >
+                  优先级
+                </label>
+                <Input
+                  value={editPriority}
+                  onChange={(e) => setEditPriority(e.target.value)}
+                  data-testid="edit-schedule-priority"
+                  type="number"
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label
+                  style={{
+                    fontSize: 'var(--font-size-sm)',
+                    fontWeight: 500,
+                    color: 'var(--color-text-body)',
+                  }}
+                >
+                  通道
+                </label>
+                <Input
+                  value={editLane}
+                  onChange={(e) => setEditLane(e.target.value)}
+                  data-testid="edit-schedule-lane"
+                />
+              </div>
               <Button
                 onClick={() => void handleEditSubmit()}
                 disabled={editSubmitting}
@@ -184,7 +212,7 @@ export function ScheduleRow({ schedule, config, onChanged }: ScheduleRowProps) {
                 {editSubmitting ? '保存中...' : '保存'}
               </Button>
               <Button
-                variant="ghost"
+                type="text"
                 onClick={() => setEditing(false)}
                 disabled={editSubmitting}
                 data-testid="edit-schedule-cancel"
@@ -222,7 +250,7 @@ export function ScheduleRow({ schedule, config, onChanged }: ScheduleRowProps) {
             whiteSpace: 'nowrap',
           }}
         >
-          <span style={{ fontWeight: 600, color: 'var(--color-primary-text)' }}>
+          <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
             {schedule.schedule_key}
           </span>
         </td>
@@ -251,7 +279,7 @@ export function ScheduleRow({ schedule, config, onChanged }: ScheduleRowProps) {
             {allowedActions.map((action) => (
               <Button
                 key={action}
-                variant={DANGEROUS_ACTIONS.has(action) ? 'ghost' : 'secondary'}
+                type={DANGEROUS_ACTIONS.has(action) ? 'text' : 'default'}
                 disabled={loading}
                 onClick={() => {
                   if (action === 'edit') {
@@ -285,15 +313,26 @@ export function ScheduleRow({ schedule, config, onChanged }: ScheduleRowProps) {
           </div>
         </td>
       </tr>
-      <ConfirmDialog
+      <Modal
         open={confirmAction !== null}
         title="确认操作"
-        message={`确定要${confirmAction ? ACTION_LABELS[confirmAction] : ''}调度计划「${schedule.schedule_key.slice(0, 24)}...」吗？`}
-        confirmLabel={confirmAction ? ACTION_LABELS[confirmAction] : '确认'}
-        loading={loading}
-        onConfirm={handleConfirmOk}
-        onCancel={() => setConfirmAction(null)}
-      />
+        onClose={() => setConfirmAction(null)}
+        footer={
+          <>
+            <Button type="default" onClick={() => setConfirmAction(null)}>
+              取消
+            </Button>
+            <Button type="primary" onClick={handleConfirmOk}>
+              {confirmAction ? ACTION_LABELS[confirmAction] : '确认'}
+            </Button>
+          </>
+        }
+      >
+        <p>
+          确定要{confirmAction ? ACTION_LABELS[confirmAction] : ''}
+          调度计划「{schedule.schedule_key.slice(0, 24)}...」吗？
+        </p>
+      </Modal>
     </>
   )
 }

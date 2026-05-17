@@ -13,9 +13,7 @@ import {
   RECIPE_ACTIONS,
   RISK_LEVEL_OPTIONS,
 } from '../../../types/recipe'
-import { Button } from '../../../components/ui/button'
-import { ConfirmDialog } from '../../../components/ui/confirm-dialog'
-import { Input } from '../../../components/ui/input'
+import { Button, Input, Modal } from 'animal-island-ui'
 import { Select } from '../../../components/ui/select'
 import { StatusPill } from '../../../components/ui/status-pill'
 import {
@@ -43,6 +41,16 @@ const ACTION_LABELS: Record<string, string> = {
 }
 
 const DANGEROUS_ACTIONS = new Set(['reject', 'deprecate'])
+
+const EXECUTOR_FORM_OPTIONS = EXECUTOR_OPTIONS.map((opt) => ({
+  key: opt.value,
+  label: opt.label,
+}))
+
+const RISK_FORM_OPTIONS = RISK_LEVEL_OPTIONS.map((opt) => ({
+  key: opt.value,
+  label: opt.label,
+}))
 
 export function RecipeRow({ recipe, config, onChanged }: RecipeRowProps) {
   const [loading, setLoading] = useState(false)
@@ -127,7 +135,7 @@ export function RecipeRow({ recipe, config, onChanged }: RecipeRowProps) {
           <div
             style={{
               padding: 'var(--space-3)',
-              backgroundColor: 'var(--color-warm-white)',
+              backgroundColor: 'var(--color-bg-content)',
             }}
           >
             <div
@@ -138,36 +146,56 @@ export function RecipeRow({ recipe, config, onChanged }: RecipeRowProps) {
                 alignItems: 'flex-end',
               }}
             >
-              <Input
-                label="名称"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                data-testid="edit-recipe-name"
-              />
-              <Select
-                label="执行器"
-                value={editExecutor}
-                onChange={(e) => setEditExecutor(e.target.value)}
-                data-testid="edit-recipe-executor"
-              >
-                {EXECUTOR_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
-              <Select
-                label="风险级别"
-                value={editRiskLevel}
-                onChange={(e) => setEditRiskLevel(e.target.value)}
-                data-testid="edit-recipe-risk"
-              >
-                {RISK_LEVEL_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label
+                  style={{
+                    fontSize: 'var(--font-size-sm)',
+                    fontWeight: 500,
+                    color: 'var(--color-text-body)',
+                  }}
+                >
+                  名称
+                </label>
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  data-testid="edit-recipe-name"
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label
+                  style={{
+                    fontSize: 'var(--font-size-sm)',
+                    fontWeight: 500,
+                    color: 'var(--color-text-body)',
+                  }}
+                >
+                  执行器
+                </label>
+                <Select
+                  options={EXECUTOR_FORM_OPTIONS}
+                  value={editExecutor}
+                  onChange={setEditExecutor}
+                  data-testid="edit-recipe-executor"
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label
+                  style={{
+                    fontSize: 'var(--font-size-sm)',
+                    fontWeight: 500,
+                    color: 'var(--color-text-body)',
+                  }}
+                >
+                  风险级别
+                </label>
+                <Select
+                  options={RISK_FORM_OPTIONS}
+                  value={editRiskLevel}
+                  onChange={setEditRiskLevel}
+                  data-testid="edit-recipe-risk"
+                />
+              </div>
               <Button
                 onClick={() => void handleEditSubmit()}
                 disabled={editSubmitting}
@@ -176,7 +204,7 @@ export function RecipeRow({ recipe, config, onChanged }: RecipeRowProps) {
                 {editSubmitting ? '保存中...' : '保存'}
               </Button>
               <Button
-                variant="ghost"
+                type="text"
                 onClick={() => setEditing(false)}
                 disabled={editSubmitting}
                 data-testid="edit-recipe-cancel"
@@ -206,7 +234,7 @@ export function RecipeRow({ recipe, config, onChanged }: RecipeRowProps) {
     <>
       <tr data-testid={`recipe-row-${recipe.id}`}>
         <td style={cellStyle}>
-          <span style={{ fontWeight: 600, color: 'var(--color-primary-text)' }}>
+          <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
             {recipe.name}
           </span>
         </td>
@@ -228,7 +256,7 @@ export function RecipeRow({ recipe, config, onChanged }: RecipeRowProps) {
             {allowedActions.map((action) => (
               <Button
                 key={action}
-                variant={DANGEROUS_ACTIONS.has(action) ? 'ghost' : 'secondary'}
+                type={DANGEROUS_ACTIONS.has(action) ? 'text' : 'default'}
                 disabled={loading}
                 onClick={() => {
                   if (action === 'edit') {
@@ -262,15 +290,26 @@ export function RecipeRow({ recipe, config, onChanged }: RecipeRowProps) {
           </div>
         </td>
       </tr>
-      <ConfirmDialog
+      <Modal
         open={confirmAction !== null}
         title="确认操作"
-        message={`确定要${confirmAction ? ACTION_LABELS[confirmAction] : ''}配方「${recipe.name}」吗？`}
-        confirmLabel={confirmAction ? ACTION_LABELS[confirmAction] : '确认'}
-        loading={loading}
-        onConfirm={handleConfirmOk}
-        onCancel={() => setConfirmAction(null)}
-      />
+        onClose={() => setConfirmAction(null)}
+        footer={
+          <>
+            <Button type="default" onClick={() => setConfirmAction(null)}>
+              取消
+            </Button>
+            <Button type="primary" onClick={handleConfirmOk}>
+              {confirmAction ? ACTION_LABELS[confirmAction] : '确认'}
+            </Button>
+          </>
+        }
+      >
+        <p>
+          确定要{confirmAction ? ACTION_LABELS[confirmAction] : ''}
+          配方「{recipe.name}」吗？
+        </p>
+      </Modal>
     </>
   )
 }

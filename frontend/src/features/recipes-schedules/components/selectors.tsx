@@ -1,15 +1,16 @@
-import { type ChangeEvent, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import type { ApiConfig } from '../../../types/api'
 import type { Recipe } from '../../../types/recipe'
 import type { Source } from '../../../types/source'
 import { listRecipes } from '../../../lib/recipe-api'
 import { listSources } from '../../../lib/source-api'
+import { Select } from '../../../components/ui/select'
 
 interface SourceSelectorProps {
   config: ApiConfig
   value: string
-  onChange: (e: ChangeEvent<HTMLSelectElement>) => void
+  onChange: (value: string) => void
   /** Only show sources that are schedulable (watched or active). */
   schedulableOnly?: boolean
   id?: string
@@ -39,42 +40,31 @@ export function SourceSelector({
     ? sources.filter((s) => s.status === 'watched' || s.status === 'active')
     : sources
 
+  const options = [
+    { key: '', label: '选择信息源...' },
+    ...filtered.map((s) => ({ key: s.id, label: `${s.name} (${s.status})` })),
+  ]
+
   return (
-    <select
+    <Select
       id={id}
+      options={options}
       value={value}
       onChange={onChange}
       data-testid={rest['data-testid'] || 'select-source'}
-      style={{
-        padding: '6px',
-        borderRadius: 'var(--radius-sm)',
-        border: 'var(--border-input)',
-        fontFamily: 'var(--font-family)',
-        fontSize: 'var(--font-size-base)',
-        color: 'rgba(0,0,0,0.9)',
-        backgroundColor: 'var(--color-white)',
-        outline: 'none',
-      }}
-    >
-      <option value="">选择信息源...</option>
-      {filtered.map((s) => (
-        <option key={s.id} value={s.id}>
-          {s.name} ({s.status})
-        </option>
-      ))}
-    </select>
+    />
   )
 }
 
 interface ApprovedRecipeSelectorProps {
   config: ApiConfig
   value: string
-  onChange: (e: ChangeEvent<HTMLSelectElement>) => void
+  onChange: (value: string) => void
   id?: string
   'data-testid'?: string
 }
 
-/** Selector that only shows approved recipes. Non-approved recipes show a reason. */
+/** Selector that only shows approved recipes. Non-approved recipes are excluded. */
 export function ApprovedRecipeSelector({
   config,
   value,
@@ -92,30 +82,21 @@ export function ApprovedRecipeSelector({
       .catch(() => setRecipes([]))
   }, [baseUrl, token])
 
+  const options = [
+    { key: '', label: '选择配方...' },
+    ...recipes.map((r) => ({
+      key: r.id,
+      label: `${r.name} (${r.executor})${r.approval_status !== 'approved' ? ` — ${r.approval_status}` : ''}`,
+    })),
+  ]
+
   return (
-    <select
+    <Select
       id={id}
+      options={options}
       value={value}
       onChange={onChange}
       data-testid={rest['data-testid'] || 'select-approved-recipe'}
-      style={{
-        padding: '6px',
-        borderRadius: 'var(--radius-sm)',
-        border: 'var(--border-input)',
-        fontFamily: 'var(--font-family)',
-        fontSize: 'var(--font-size-base)',
-        color: 'rgba(0,0,0,0.9)',
-        backgroundColor: 'var(--color-white)',
-        outline: 'none',
-      }}
-    >
-      <option value="">选择配方...</option>
-      {recipes.map((r) => (
-        <option key={r.id} value={r.id} disabled={r.approval_status !== 'approved'}>
-          {r.name} ({r.executor})
-          {r.approval_status !== 'approved' ? ` — ${r.approval_status}` : ''}
-        </option>
-      ))}
-    </select>
+    />
   )
 }

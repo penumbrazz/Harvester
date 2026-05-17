@@ -1,10 +1,9 @@
-import { type ChangeEvent, useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import type { ApiConfig } from '../../types/api'
 import type { Schedule } from '../../types/schedule'
 import { SCHEDULE_STATUS_OPTIONS } from '../../types/schedule'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
+import { Button, Input } from 'animal-island-ui'
 import { Select } from '../../components/ui/select'
 import { PaginationControls } from '../../components/common/pagination-controls'
 import { listSchedules, createSchedule } from '../../lib/schedule-api'
@@ -17,6 +16,11 @@ interface SchedulesPageProps {
 }
 
 const PAGE_SIZE = 20
+
+const SCHEDULE_STATUS_FILTER_OPTIONS = SCHEDULE_STATUS_OPTIONS.map((opt) => ({
+  key: opt.value,
+  label: opt.label,
+}))
 
 export function SchedulesPage({ config }: SchedulesPageProps) {
   const [schedules, setSchedules] = useState<Schedule[]>([])
@@ -58,12 +62,12 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
     void fetchSchedules()
   }, [config.baseUrl, fetchSchedules])
 
-  const handleSourceChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
-    setFormSourceId(e.target.value)
+  const handleSourceChange = useCallback((value: string) => {
+    setFormSourceId(value)
   }, [])
 
-  const handleRecipeChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
-    setFormRecipeId(e.target.value)
+  const handleRecipeChange = useCallback((value: string) => {
+    setFormRecipeId(value)
   }, [])
 
   const handleCreateSchedule = useCallback(
@@ -153,7 +157,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
       <p
         style={{
           fontSize: 'var(--font-size-sm)',
-          color: 'var(--color-warm-gray-500)',
+          color: 'var(--color-text-body)',
           marginBottom: 'var(--space-4)',
           lineHeight: 'var(--line-height-normal)',
           flexShrink: 0,
@@ -175,18 +179,13 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
       >
         <Select
           data-testid="select-schedule-status-filter"
+          options={SCHEDULE_STATUS_FILTER_OPTIONS}
           value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value)
+          onChange={(val) => {
+            setStatusFilter(val)
             setOffset(0)
           }}
-        >
-          {SCHEDULE_STATUS_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </Select>
+        />
       </div>
 
       {/* Create schedule form */}
@@ -196,9 +195,9 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
           style={{
             marginBottom: 'var(--space-4)',
             padding: 'var(--space-4)',
-            backgroundColor: 'var(--color-warm-white)',
+            backgroundColor: 'var(--color-bg-content)',
             borderRadius: 'var(--radius-lg)',
-            border: 'var(--border-whisper)',
+            border: 'var(--border-default)',
             flexShrink: 0,
           }}
         >
@@ -224,10 +223,9 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <label
                 style={{
-                  fontFamily: 'var(--font-family)',
                   fontSize: 'var(--font-size-sm)',
                   fontWeight: 500,
-                  color: 'var(--color-warm-gray-500)',
+                  color: 'var(--color-text-body)',
                 }}
               >
                 信息源（仅可调度的）
@@ -244,10 +242,9 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <label
                 style={{
-                  fontFamily: 'var(--font-family)',
                   fontSize: 'var(--font-size-sm)',
                   fontWeight: 500,
-                  color: 'var(--color-warm-gray-500)',
+                  color: 'var(--color-text-body)',
                 }}
               >
                 配方（仅已批准的）
@@ -260,35 +257,65 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
               />
             </div>
 
-            <Input
-              id="schedule-interval"
-              label="间隔时间（秒）"
-              placeholder="3600"
-              value={formInterval}
-              onChange={(e) => setFormInterval(e.target.value)}
-              data-testid="input-schedule-interval"
-              type="number"
-              min={60}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label
+                style={{
+                  fontSize: 'var(--font-size-sm)',
+                  fontWeight: 500,
+                  color: 'var(--color-text-body)',
+                }}
+              >
+                间隔时间（秒）
+              </label>
+              <Input
+                id="schedule-interval"
+                placeholder="3600"
+                value={formInterval}
+                onChange={(e) => setFormInterval(e.target.value)}
+                data-testid="input-schedule-interval"
+                type="number"
+                min={60}
+              />
+            </div>
 
-            <Input
-              id="schedule-priority"
-              label="优先级"
-              placeholder="0"
-              value={formPriority}
-              onChange={(e) => setFormPriority(e.target.value)}
-              data-testid="input-schedule-priority"
-              type="number"
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label
+                style={{
+                  fontSize: 'var(--font-size-sm)',
+                  fontWeight: 500,
+                  color: 'var(--color-text-body)',
+                }}
+              >
+                优先级
+              </label>
+              <Input
+                id="schedule-priority"
+                placeholder="0"
+                value={formPriority}
+                onChange={(e) => setFormPriority(e.target.value)}
+                data-testid="input-schedule-priority"
+                type="number"
+              />
+            </div>
 
-            <Input
-              id="schedule-lane"
-              label="通道（可选）"
-              placeholder="例如 default"
-              value={formLane}
-              onChange={(e) => setFormLane(e.target.value)}
-              data-testid="input-schedule-lane"
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label
+                style={{
+                  fontSize: 'var(--font-size-sm)',
+                  fontWeight: 500,
+                  color: 'var(--color-text-body)',
+                }}
+              >
+                通道（可选）
+              </label>
+              <Input
+                id="schedule-lane"
+                placeholder="例如 default"
+                value={formLane}
+                onChange={(e) => setFormLane(e.target.value)}
+                data-testid="input-schedule-lane"
+              />
+            </div>
 
             {formError && (
               <p
@@ -305,15 +332,14 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
 
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
               <Button
-                type="submit"
+                htmlType="submit"
                 disabled={formSubmitting}
                 data-testid="submit-create-schedule"
               >
                 {formSubmitting ? '创建中...' : '创建调度'}
               </Button>
               <Button
-                type="button"
-                variant="secondary"
+                type="default"
                 onClick={() => {
                   setShowForm(false)
                   setFormError('')
@@ -332,7 +358,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
         <p
           data-testid="schedules-loading"
           style={{
-            color: 'var(--color-warm-gray-500)',
+            color: 'var(--color-text-body)',
             fontSize: 'var(--font-size-sm)',
             flexShrink: 0,
           }}
@@ -362,7 +388,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
           style={{
             textAlign: 'center',
             padding: 'var(--space-8) var(--space-4)',
-            color: 'var(--color-warm-gray-300)',
+            color: 'var(--color-text-secondary)',
             flexShrink: 0,
           }}
         >
@@ -388,7 +414,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
           style={{
             flex: 1,
             overflow: 'auto',
-            border: 'var(--border-whisper)',
+            border: 'var(--border-default)',
             borderRadius: 'var(--radius-lg)',
             minHeight: 0,
           }}
@@ -404,8 +430,8 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
             <thead>
               <tr
                 style={{
-                  borderBottom: 'var(--border-whisper)',
-                  backgroundColor: 'var(--color-warm-white)',
+                  borderBottom: 'var(--border-default)',
+                  backgroundColor: 'var(--color-bg-content)',
                 }}
               >
                 {[
@@ -426,7 +452,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
                       padding: '10px var(--space-3)',
                       fontSize: 'var(--font-size-xs)',
                       fontWeight: 600,
-                      color: 'var(--color-warm-gray-500)',
+                      color: 'var(--color-text-body)',
                       textAlign: 'left',
                       textTransform: 'uppercase',
                       letterSpacing: '0.125px',
