@@ -3,7 +3,6 @@
 from harvester.extractors.base import CandidateItem
 from harvester.extractors.sina_7x24 import Sina7x24Extractor
 
-
 # Minimal sample with 3 items
 SAMPLE_3_ITEMS = """\
 [返回顶部](javascript:; "返回顶部")

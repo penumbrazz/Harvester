@@ -1,7 +1,6 @@
 """Tests for create_job idempotency behavior."""
 
 import uuid
-from datetime import datetime, timezone
 
 import sqlalchemy as sa
 

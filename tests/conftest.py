@@ -1,5 +1,7 @@
 """Shared pytest fixtures for Harvester tests."""
 
+from datetime import UTC
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -11,9 +13,9 @@ pytest_plugins = ["tests.db.conftest"]
 @pytest.fixture
 def frozen_time():
     """Return a fixed datetime for deterministic test results."""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    return datetime(2025, 1, 15, 12, 0, 0, tzinfo=timezone.utc)
+    return datetime(2025, 1, 15, 12, 0, 0, tzinfo=UTC)
 
 
 @pytest.fixture

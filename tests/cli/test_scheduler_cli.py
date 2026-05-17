@@ -7,18 +7,16 @@ not HTTP API). Tests verify the output contains expected stats.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
-from unittest.mock import MagicMock, patch
+from datetime import UTC, datetime, timedelta
+from unittest.mock import patch
 
-import sqlalchemy as sa
 from sqlalchemy import text
-
 from typer.testing import CliRunner
 
 
 def _insert_source(session) -> str:
     sid = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         text(
             "INSERT INTO sources "
@@ -33,7 +31,7 @@ def _insert_source(session) -> str:
 
 def _insert_recipe(session) -> str:
     rid = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         text(
             "INSERT INTO recipes "
@@ -48,7 +46,7 @@ def _insert_recipe(session) -> str:
 
 def _insert_schedule(session, source_id: str, recipe_id: str) -> str:
     sid = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     key = f"source:{source_id}:recipe:{recipe_id}"
     session.execute(
         text(

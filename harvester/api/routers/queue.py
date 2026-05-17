@@ -7,7 +7,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import String, desc, func, text
+from sqlalchemy import String, desc, text
 from sqlalchemy.orm import Session
 
 from harvester.api.auth import require_api_token

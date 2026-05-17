@@ -6,8 +6,6 @@ import json
 import re
 from pathlib import Path
 
-import pytest
-
 # Base paths
 FIXTURES_DIR = Path(__file__).parent
 RAW_DIR = FIXTURES_DIR / "raw"

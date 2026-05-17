@@ -1,12 +1,11 @@
 """Tests for job queue fairness — per-source cap, per-job-type cap, protected lanes."""
 
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
 import sqlalchemy as sa
 
-from harvester.db.models import Job
-from harvester.jobs.repository import claim_next_jobs, create_job
+from harvester.jobs.repository import claim_next_jobs
 
 
 def _insert_job(db_session, **overrides):
@@ -23,8 +22,8 @@ def _insert_job(db_session, **overrides):
         locked_until=None,
         source_id=None,
         lane=None,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     defaults.update(overrides)
     db_session.execute(
@@ -45,7 +44,7 @@ def _insert_job(db_session, **overrides):
 
 def _set_running(db_session, job_id, locked_by="worker", minutes=5):
     """Mark a job as running with a valid lease."""
-    future = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+    future = datetime.now(UTC) + timedelta(minutes=minutes)
     db_session.execute(
         sa.text(
             "UPDATE jobs SET status = 'running', locked_by = :lb, "

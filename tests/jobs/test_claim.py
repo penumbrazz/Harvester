@@ -1,11 +1,10 @@
 """Tests for job claim mechanics with FOR UPDATE SKIP LOCKED."""
 
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
 import sqlalchemy as sa
 
-from harvester.db.models import Job
 from harvester.jobs.repository import claim_next_jobs
 
 
@@ -19,8 +18,8 @@ def _insert_job(db_session, **overrides):
         attempts=0,
         max_attempts=3,
         run_after=None,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     defaults.update(overrides)
     db_session.execute(
@@ -93,7 +92,7 @@ class TestClaimNextJobs:
 
     def test_skips_future_jobs(self, db_session):
         """Should not claim jobs with run_after in the future."""
-        future = datetime.now(timezone.utc) + timedelta(hours=1)
+        future = datetime.now(UTC) + timedelta(hours=1)
         _insert_job(db_session, id=uuid.uuid4(), run_after=future)
         db_session.commit()
 
@@ -102,7 +101,7 @@ class TestClaimNextJobs:
 
     def test_claims_ready_job_with_past_run_after(self, db_session):
         """Should claim a job whose run_after is in the past."""
-        past = datetime.now(timezone.utc) - timedelta(hours=1)
+        past = datetime.now(UTC) - timedelta(hours=1)
         job_id = _insert_job(db_session, id=uuid.uuid4(), run_after=past)
         db_session.commit()
 

@@ -13,15 +13,13 @@ daemon loop, verifying the closed-loop pipeline works without manual one-shot.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Generator
 from contextlib import contextmanager
-from datetime import datetime, timedelta, timezone
-from typing import Generator
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
-from sqlalchemy.orm import Session
-
-import sqlalchemy as sa
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 from harvester.adapters.firecrawl import CrawlResult
 from harvester.db.models import CrawlRun, Job, RawObject
@@ -44,7 +42,7 @@ def _prevent_close(session: Session) -> Generator[Session, None, None]:
 
 def _insert_source(session) -> uuid.UUID:
     sid = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         text(
             "INSERT INTO sources "
@@ -64,7 +62,7 @@ def _insert_source(session) -> uuid.UUID:
 
 def _insert_recipe(session) -> uuid.UUID:
     rid = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     session.execute(
         text(
             "INSERT INTO recipes "
@@ -84,7 +82,7 @@ def _insert_schedule(
     interval_seconds: int = 3600,
 ) -> uuid.UUID:
     sid = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     key = f"source:{source_id}:recipe:{recipe_id}"
     session.execute(
         text(
@@ -124,7 +122,7 @@ class TestScheduleCrawlPipeline:
         db_session.commit()
 
         # Step 2: Run scheduler to enqueue crawl job
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         result = run_scheduler_once(db_session, now=now, limit=100)
         assert result.scanned == 1
         assert result.enqueued == 1
@@ -239,7 +237,7 @@ class TestAutoScheduleClosedLoop:
             content_type="text/html",
             byte_size=200,
             retention_days=7,
-            retain_until=datetime.now(timezone.utc) + timedelta(days=7),
+            retain_until=datetime.now(UTC) + timedelta(days=7),
         )
 
         with _prevent_close(db_session):
@@ -336,7 +334,7 @@ class TestAutoScheduleClosedLoop:
             content_type="text/html",
             byte_size=200,
             retention_days=7,
-            retain_until=datetime.now(timezone.utc) + timedelta(days=7),
+            retain_until=datetime.now(UTC) + timedelta(days=7),
         )
 
         with _prevent_close(db_session):

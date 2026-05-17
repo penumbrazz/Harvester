@@ -6,7 +6,6 @@ reduces a list of item version IDs to one representative per dedup group.
 
 import uuid
 
-import pytest
 from sqlalchemy.orm import Session
 
 from harvester.db.models import ContentItem, DedupGroup, ItemVersion, Source

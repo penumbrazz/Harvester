@@ -1,7 +1,7 @@
 """Tests for raw object metadata creation."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import sqlalchemy as sa
 
@@ -19,8 +19,8 @@ def _insert_source(db_session, **overrides):
         trust_level="medium",
         auth_required=False,
         failure_count=0,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     defaults.update(overrides)
     db_session.execute(
@@ -46,7 +46,7 @@ class TestRawObjectMetadata:
         db_session.commit()
 
         raw_id = uuid.uuid4()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         db_session.execute(
             sa.text(
                 "INSERT INTO raw_objects "
@@ -83,7 +83,7 @@ class TestRawObjectMetadata:
     def test_raw_object_default_values(self, db_session):
         """Raw object should have sensible defaults for optional fields."""
         raw_id = uuid.uuid4()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         db_session.execute(
             sa.text(
                 "INSERT INTO raw_objects (id, compressed, created_at) "
@@ -107,7 +107,7 @@ class TestRawObjectMetadata:
     def test_raw_object_with_retention_policy(self, db_session):
         """Should store retention policy and deadline."""
         raw_id = uuid.uuid4()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         retain_until = now + __import__("datetime").timedelta(days=7)
         db_session.execute(
             sa.text(
@@ -135,7 +135,7 @@ class TestRawObjectMetadata:
         source_id = _insert_source(db_session, id=uuid.uuid4())
         db_session.commit()
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         ids = [uuid.uuid4() for _ in range(3)]
         for raw_id in ids:
             db_session.execute(

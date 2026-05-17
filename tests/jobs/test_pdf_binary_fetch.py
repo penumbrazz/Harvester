@@ -6,13 +6,13 @@ not entering Postgres.
 
 import hashlib
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
 import sqlalchemy as sa
 
-from harvester.db.models import CrawlRun, CrawlTarget, RawObject, Source, Recipe
+from harvester.db.models import CrawlTarget, RawObject
 from harvester.domain.fetch_policy import FetchPolicyResult
 from harvester.jobs.archive import ArchiveWriteResult
 from harvester.jobs.crawl_execution import (
@@ -40,8 +40,8 @@ def _insert_source(db_session, *, url=None):
             trust_level="medium",
             auth_required=False,
             failure_count=0,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         ),
     )
     return source_id
@@ -64,8 +64,8 @@ def _insert_recipe(db_session):
             risk_level="low",
             approval_status="approved",
             version=1,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         ),
     )
     return recipe_id
@@ -99,7 +99,7 @@ def _make_archive_result(**overrides):
         byte_size=1024,
         content_type="application/pdf",
         retention_days=7,
-        retain_until=datetime.now(timezone.utc),
+        retain_until=datetime.now(UTC),
     )
     defaults.update(overrides)
     return ArchiveWriteResult(**defaults)

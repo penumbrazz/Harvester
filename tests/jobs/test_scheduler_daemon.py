@@ -7,10 +7,7 @@ and handles single-round exceptions with rollback and continued operation.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-from unittest.mock import MagicMock, call, patch
-
-import pytest
+from unittest.mock import MagicMock, patch
 
 from harvester.jobs.scheduler import SchedulerResult
 

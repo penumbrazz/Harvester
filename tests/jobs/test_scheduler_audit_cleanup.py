@@ -6,11 +6,8 @@ does not block scheduling, and start.sh path requires no changes.
 
 from __future__ import annotations
 
-import uuid
 from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock, patch
-
-import sqlalchemy as sa
 
 from harvester.domain.audit_retention import CleanupResult
 from harvester.jobs.scheduler import (

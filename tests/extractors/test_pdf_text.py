@@ -2,7 +2,6 @@
 
 from io import BytesIO
 
-import pytest
 from fpdf import FPDF
 
 from harvester.extractors.pdf_text import PdfTextExtractor

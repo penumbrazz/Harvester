@@ -4,7 +4,6 @@ Chunks must derive ONLY from item_versions.normalized_text, never from raw
 HTML/payload.  This module verifies the chunking contract.
 """
 
-import pytest
 
 from harvester.search.chunking import chunk_text
 

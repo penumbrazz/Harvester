@@ -9,17 +9,16 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime, timezone
-from unittest.mock import MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import patch
 
 import pytest
 import sqlalchemy as sa
 
 from harvester.adapters.firecrawl import CrawlResult
-from harvester.db.models import CrawlRun, CrawlTarget, RawObject, Source, Recipe
-from harvester.domain.fetch_policy import FetchPolicyResult, REASON_PRIVATE_IP
-from harvester.domain.state import CRAWL_RUN_TRANSITIONS
-from harvester.jobs.archive import ArchiveConfig, ArchiveWriteResult
+from harvester.db.models import CrawlTarget
+from harvester.domain.fetch_policy import REASON_PRIVATE_IP, FetchPolicyResult
+from harvester.jobs.archive import ArchiveWriteResult
 from harvester.jobs.crawl_execution import (
     CrawlExecutionError,
     execute_crawl,
@@ -38,8 +37,8 @@ def _insert_source(db_session, *, status="watched", name=None, url=None, **overr
         trust_level="medium",
         auth_required=False,
         failure_count=0,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     defaults.update(overrides)
     columns = ", ".join(defaults.keys())
@@ -63,8 +62,8 @@ def _insert_recipe(
         risk_level=risk_level,
         approval_status=approval_status,
         version=1,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     defaults.update(overrides)
     columns = ", ".join(defaults.keys())
@@ -85,8 +84,8 @@ def _insert_crawl_run(
         source_id=source_id,
         recipe_id=recipe_id,
         status=status,
-        started_at=datetime.now(timezone.utc),
-        created_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
+        created_at=datetime.now(UTC),
     )
     defaults.update(overrides)
     columns = ", ".join(defaults.keys())
@@ -106,7 +105,7 @@ def _make_archive_result(**overrides):
         byte_size=100,
         content_type="text/html",
         retention_days=7,
-        retain_until=datetime.now(timezone.utc),
+        retain_until=datetime.now(UTC),
     )
     defaults.update(overrides)
     return ArchiveWriteResult(**defaults)

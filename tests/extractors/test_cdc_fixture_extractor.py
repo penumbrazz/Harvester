@@ -5,7 +5,6 @@ import json
 from harvester.extractors.base import CandidateItem
 from harvester.extractors.cdc_fixture import CdcFixtureExtractor
 
-
 SAMPLE_PAYLOAD = json.dumps(
     [
         {

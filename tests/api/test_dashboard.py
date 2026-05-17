@@ -7,16 +7,17 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
 import sqlalchemy as sa
-from alembic import command
 from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
+
+from alembic import command
 
 
 @pytest.fixture(scope="module")
@@ -83,7 +84,7 @@ async def test_dashboard_summary_returns_counts(api_client, api_test_db):
     """GET /dashboard/summary should return key counts."""
     # Insert a source and a crawl run to verify counts
     engine = create_engine(api_test_db)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     source_id = uuid.uuid4()
     with Session(bind=engine) as session:
         session.execute(

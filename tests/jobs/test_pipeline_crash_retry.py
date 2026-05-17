@@ -1,11 +1,11 @@
 """Tests for partial extraction crash recovery — no duplicate items on retry."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import sqlalchemy as sa
 
-from harvester.db.models import ContentItem, ItemVersion, Job, Source
+from harvester.db.models import ContentItem, ItemVersion, Job
 from harvester.jobs.pipeline import (
     create_downstream_jobs,
     create_observation,
@@ -25,8 +25,8 @@ def _insert_source(db_session, **overrides):
         trust_level="medium",
         auth_required=False,
         failure_count=0,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     defaults.update(overrides)
     db_session.execute(
@@ -51,7 +51,7 @@ def _insert_raw_object(db_session):
             "INSERT INTO raw_objects (id, compressed, created_at) "
             "VALUES (:id, :compressed, :created_at)"
         ),
-        {"id": raw_id, "compressed": False, "created_at": datetime.now(timezone.utc)},
+        {"id": raw_id, "compressed": False, "created_at": datetime.now(UTC)},
     )
     return raw_id
 

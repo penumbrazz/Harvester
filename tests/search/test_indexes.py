@@ -5,7 +5,6 @@ and query the ``pg_class`` / ``pg_indexes`` system catalogs so that we
 confirm the Alembic migration actually created the expected indexes.
 """
 
-import pytest
 import sqlalchemy as sa
 
 

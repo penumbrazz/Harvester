@@ -5,7 +5,6 @@ import json
 from harvester.extractors.base import CandidateItem
 from harvester.extractors.sina_fixture import SinaFixtureExtractor
 
-
 SAMPLE_PAYLOAD = json.dumps(
     {
         "statuses": [

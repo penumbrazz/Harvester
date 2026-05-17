@@ -6,10 +6,9 @@ next_run_at, status, and the (status, next_run_at) index.
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
-import sqlalchemy as sa
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -24,7 +23,7 @@ def _insert_recipe(session: Session) -> uuid.UUID:
             "created_at, updated_at) "
             "VALUES (:id, 'test_recipe', 'firecrawl', 'low', 'approved', 1, :ts, :ts)"
         ),
-        {"id": rid, "ts": datetime.now(timezone.utc)},
+        {"id": rid, "ts": datetime.now(UTC)},
     )
     return rid
 
@@ -39,7 +38,7 @@ def _insert_source(session: Session) -> uuid.UUID:
             "created_at, updated_at) "
             "VALUES (:id, :name, 'rss', 'watched', 'medium', false, 0, :ts, :ts)"
         ),
-        {"id": sid, "name": f"src_{sid.hex[:8]}", "ts": datetime.now(timezone.utc)},
+        {"id": sid, "name": f"src_{sid.hex[:8]}", "ts": datetime.now(UTC)},
     )
     return sid
 
@@ -52,7 +51,7 @@ def _insert_topic(session: Session) -> uuid.UUID:
             "INSERT INTO topic_watches (id, name, status, created_at, updated_at) "
             "VALUES (:id, :name, 'active', :ts, :ts)"
         ),
-        {"id": tid, "name": f"topic_{tid.hex[:8]}", "ts": datetime.now(timezone.utc)},
+        {"id": tid, "name": f"topic_{tid.hex[:8]}", "ts": datetime.now(UTC)},
     )
     return tid
 
@@ -107,7 +106,7 @@ class TestWatchSchedulesSchema:
         """schedule_key must have a unique constraint."""
         src = _insert_source(db_connection)
         recipe = _insert_recipe(db_connection)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         key = "source:test:unique"
 
         db_connection.execute(
@@ -148,7 +147,7 @@ class TestWatchSchedulesSchema:
         """source_id must reference sources.id."""
         fake_id = uuid.uuid4()
         recipe = _insert_recipe(db_connection)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         with pytest.raises(Exception, match="foreign|violates|constraint"):
             db_connection.execute(
                 text(
@@ -171,7 +170,7 @@ class TestWatchSchedulesSchema:
         """recipe_id must reference recipes.id."""
         src = _insert_source(db_connection)
         fake_id = uuid.uuid4()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         with pytest.raises(Exception, match="foreign|violates|constraint"):
             db_connection.execute(
                 text(
@@ -195,7 +194,7 @@ class TestWatchSchedulesSchema:
         fake_id = uuid.uuid4()
         src = _insert_source(db_connection)
         recipe = _insert_recipe(db_connection)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         with pytest.raises(Exception, match="foreign|violates|constraint"):
             db_connection.execute(
                 text(
@@ -219,7 +218,7 @@ class TestWatchSchedulesSchema:
         """topic_watch_id can be null (source-only schedule)."""
         src = _insert_source(db_connection)
         recipe = _insert_recipe(db_connection)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         db_connection.execute(
             text(
                 "INSERT INTO watch_schedules "
@@ -267,7 +266,7 @@ class TestWatchSchedulesSchema:
         """status column should default to 'active'."""
         src = _insert_source(db_connection)
         recipe = _insert_recipe(db_connection)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         db_connection.execute(
             text(
                 "INSERT INTO watch_schedules "
@@ -295,7 +294,7 @@ class TestWatchSchedulesSchema:
         """priority column should default to 0."""
         src = _insert_source(db_connection)
         recipe = _insert_recipe(db_connection)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         db_connection.execute(
             text(
                 "INSERT INTO watch_schedules "

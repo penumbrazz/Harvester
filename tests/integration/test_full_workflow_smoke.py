@@ -15,19 +15,18 @@ Enable live crawl by setting HARVESTER_ENABLE_LIVE_CRAWL=1.
 
 from __future__ import annotations
 
-import json
 import os
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
 import sqlalchemy as sa
-from alembic import command
 from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, text
 
+from alembic import command
 from harvester.adapters.firecrawl import CrawlResult
 from harvester.domain.fetch_policy import FetchPolicyResult
 from harvester.jobs.archive import ArchiveWriteResult
@@ -104,7 +103,7 @@ def _make_archive_result():
         byte_size=256,
         content_type="text/html",
         retention_days=7,
-        retain_until=datetime.now(timezone.utc) + timedelta(days=7),
+        retain_until=datetime.now(UTC) + timedelta(days=7),
     )
 
 

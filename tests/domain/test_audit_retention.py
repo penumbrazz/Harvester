@@ -10,12 +10,10 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
-import sqlalchemy as sa
 import pytest
+import sqlalchemy as sa
 
-from harvester.domain.audit import write_audit
 from harvester.domain.audit_retention import (
-    DEFAULT_RETENTION_DAYS,
     CleanupResult,
     cleanup_audit_events,
     get_retention_days,
@@ -396,10 +394,10 @@ class TestCleanupDataSafety:
     def test_preserves_content_item_version_chunk(self, db_session):
         """Cleanup does not delete content items, item versions, or chunks."""
         from tests.utils.factories import (
-            insert_source,
+            insert_chunk,
             insert_content_item,
             insert_item_version,
-            insert_chunk,
+            insert_source,
         )
 
         now = datetime.now(UTC)

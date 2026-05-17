@@ -6,11 +6,11 @@ from unittest.mock import patch
 
 import pytest
 import sqlalchemy as sa
-from alembic import command
 from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine
 
+from alembic import command
 from harvester.api.app import create_app
 
 

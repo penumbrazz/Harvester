@@ -1,7 +1,7 @@
 """Tests for raw payload retention logic."""
 
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
 import sqlalchemy as sa
 
@@ -25,7 +25,7 @@ def _insert_raw_object(db_session, **overrides):
         retention_policy=None,
         retain_until=None,
         compressed=False,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     defaults.update(overrides)
     columns = ", ".join(defaults.keys())
@@ -55,9 +55,9 @@ class TestMarkRawObjectExtracted:
         raw_id = _insert_raw_object(db_session, id=uuid.uuid4())
         db_session.commit()
 
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
         mark_raw_object_extracted(db_session, raw_id)
-        after = datetime.now(timezone.utc)
+        after = datetime.now(UTC)
 
         raw_obj = db_session.get(RawObject, raw_id)
         assert raw_obj.retain_until is not None
@@ -80,7 +80,7 @@ class TestCleanupExpiredPayloads:
 
     def test_returns_expired_objects(self, db_session):
         """Should return raw objects whose retain_until has passed."""
-        past = datetime.now(timezone.utc) - timedelta(days=1)
+        past = datetime.now(UTC) - timedelta(days=1)
         expired_id = _insert_raw_object(
             db_session,
             id=uuid.uuid4(),
@@ -94,7 +94,7 @@ class TestCleanupExpiredPayloads:
 
     def test_skips_non_expired_objects(self, db_session):
         """Should not return raw objects whose retain_until is in the future."""
-        future = datetime.now(timezone.utc) + timedelta(days=7)
+        future = datetime.now(UTC) + timedelta(days=7)
         _insert_raw_object(
             db_session,
             id=uuid.uuid4(),
@@ -116,8 +116,8 @@ class TestCleanupExpiredPayloads:
 
     def test_mixed_expired_and_valid(self, db_session):
         """Should only return expired objects when mixing both."""
-        past = datetime.now(timezone.utc) - timedelta(days=1)
-        future = datetime.now(timezone.utc) + timedelta(days=7)
+        past = datetime.now(UTC) - timedelta(days=1)
+        future = datetime.now(UTC) + timedelta(days=7)
 
         expired_id = _insert_raw_object(
             db_session,
@@ -139,7 +139,7 @@ class TestCleanupExpiredPayloads:
 
     def test_does_not_delete_records(self, db_session):
         """Cleanup should only list expired objects, not delete them."""
-        past = datetime.now(timezone.utc) - timedelta(days=1)
+        past = datetime.now(UTC) - timedelta(days=1)
         expired_id = _insert_raw_object(
             db_session,
             id=uuid.uuid4(),

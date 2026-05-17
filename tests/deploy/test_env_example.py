@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 ENV_EXAMPLE = PROJECT_ROOT / ".env.example"
 

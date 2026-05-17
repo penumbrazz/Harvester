@@ -6,7 +6,6 @@ values.  No real network calls are made.
 """
 
 import json
-import math
 
 import httpx
 import pytest

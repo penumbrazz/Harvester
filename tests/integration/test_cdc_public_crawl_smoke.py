@@ -11,19 +11,18 @@ import hashlib
 import json
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 import sqlalchemy as sa
-from sqlalchemy.orm import Session
 
 from harvester.adapters.firecrawl import CrawlResult, FirecrawlAdapter
-from harvester.db.models import ContentItem, ItemVersion, Chunk
-from harvester.extractors.cdc_weekly import CdcWeeklyListExtractor
+from harvester.db.models import ContentItem
 from harvester.domain.fetch_policy import FetchPolicyResult
 from harvester.extractors.cdc_fixture import CdcFixtureExtractor
+from harvester.extractors.cdc_weekly import CdcWeeklyListExtractor
 from harvester.jobs.archive import ArchiveWriteResult
 from harvester.jobs.crawl_execution import execute_crawl
 from harvester.jobs.pipeline import (
@@ -31,7 +30,6 @@ from harvester.jobs.pipeline import (
     create_version_if_changed,
     upsert_content_item,
 )
-from harvester.search.keyword import keyword_search
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 CDC_RAW = FIXTURES_DIR / "raw" / "cdc-detail.html"
@@ -58,8 +56,8 @@ def _insert_source(db_session, *, url="https://www.cdc.gov"):
             trust_level="medium",
             auth_required=False,
             failure_count=0,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         ),
     )
     return source_id
@@ -83,8 +81,8 @@ def _insert_recipe(db_session):
             risk_level="low",
             approval_status="approved",
             version=1,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         ),
     )
     return recipe_id
@@ -98,7 +96,7 @@ def _make_archive_result():
         byte_size=500,
         content_type="text/html",
         retention_days=7,
-        retain_until=datetime.now(timezone.utc),
+        retain_until=datetime.now(UTC),
     )
 
 
@@ -209,7 +207,7 @@ class TestCDCFixtureIntegration:
                 storage_uri="file:///archive/search.raw",
                 byte_size=100,
                 compressed=False,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             ),
         )
         db_session.commit()

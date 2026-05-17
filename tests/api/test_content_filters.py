@@ -13,7 +13,6 @@ from sqlalchemy.orm import Session
 from alembic import command
 from tests.utils.factories import (
     insert_content_item,
-    insert_item_version,
     insert_source,
     insert_topic,
 )

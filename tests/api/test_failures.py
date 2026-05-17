@@ -2,16 +2,17 @@
 
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
 import sqlalchemy as sa
-from alembic import command
 from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
+
+from alembic import command
 
 
 @pytest.fixture(scope="module")
@@ -113,7 +114,7 @@ async def test_recent_failures_includes_dead_jobs(api_client, api_test_db):
                 "id": uuid.uuid4(),
                 "job_type": "crawl",
                 "err": "exhausted",
-                "ts": datetime.now(timezone.utc),
+                "ts": datetime.now(UTC),
             },
         )
         session.commit()

@@ -9,14 +9,13 @@ per-schedule error isolation, and stale next_run_at fast-forward.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
-import sqlalchemy as sa
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from harvester.db.models import Job, Source, TopicWatch, WatchSchedule
+from harvester.db.models import Job, WatchSchedule
 from harvester.jobs.scheduler import SchedulerResult, run_scheduler_once
 
 
@@ -146,7 +145,7 @@ class TestSchedulerSourceSchedule:
         recipe = _insert_recipe(db_session)
         _make_schedule(db_session, source_id=src, recipe_id=recipe)
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         result = run_scheduler_once(db_session, now=now, limit=100)
 
         assert isinstance(result, SchedulerResult)
@@ -164,7 +163,7 @@ class TestSchedulerSourceSchedule:
         src = _insert_source(db_session)
         recipe = _insert_recipe(db_session)
         interval = 3600
-        past = datetime.now(timezone.utc) - timedelta(hours=2)
+        past = datetime.now(UTC) - timedelta(hours=2)
         _make_schedule(
             db_session,
             source_id=src,
@@ -173,7 +172,7 @@ class TestSchedulerSourceSchedule:
             next_run_at=past,
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         run_scheduler_once(db_session, now=now, limit=100)
 
         schedule = db_session.query(WatchSchedule).first()
@@ -183,7 +182,7 @@ class TestSchedulerSourceSchedule:
         """Not-due schedule should not enqueue any job."""
         src = _insert_source(db_session)
         recipe = _insert_recipe(db_session)
-        future = datetime.now(timezone.utc) + timedelta(hours=2)
+        future = datetime.now(UTC) + timedelta(hours=2)
         _make_schedule(
             db_session,
             source_id=src,
@@ -191,7 +190,7 @@ class TestSchedulerSourceSchedule:
             next_run_at=future,
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         result = run_scheduler_once(db_session, now=now, limit=100)
 
         assert result.enqueued == 0
@@ -214,7 +213,7 @@ class TestSchedulerTopicSchedule:
             topic_watch_id=topic,
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         result = run_scheduler_once(db_session, now=now, limit=100)
 
         assert result.enqueued >= 1
@@ -235,7 +234,7 @@ class TestSchedulerTopicSchedule:
             topic_watch_id=topic,
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         result = run_scheduler_once(db_session, now=now, limit=100)
 
         assert result.enqueued == 0
@@ -253,7 +252,7 @@ class TestSchedulerTopicSchedule:
             topic_watch_id=topic,
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         result = run_scheduler_once(db_session, now=now, limit=100)
 
         assert result.enqueued == 0
@@ -269,7 +268,7 @@ class TestSchedulerIdempotency:
         recipe = _insert_recipe(db_session)
         _make_schedule(db_session, source_id=src, recipe_id=recipe)
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         result1 = run_scheduler_once(db_session, now=now, limit=100)
         result2 = run_scheduler_once(db_session, now=now, limit=100)
 
@@ -285,7 +284,7 @@ class TestSchedulerIdempotency:
         src = _insert_source(db_session)
         recipe = _insert_recipe(db_session)
         interval = 3600
-        past = datetime.now(timezone.utc) - timedelta(hours=2)
+        past = datetime.now(UTC) - timedelta(hours=2)
         _make_schedule(
             db_session,
             source_id=src,
@@ -294,7 +293,7 @@ class TestSchedulerIdempotency:
             next_run_at=past,
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         run_scheduler_once(db_session, now=now, limit=100)
         run_scheduler_once(db_session, now=now, limit=100)
 
@@ -317,7 +316,7 @@ class TestSchedulerPausedSchedule:
             status="paused",
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         result = run_scheduler_once(db_session, now=now, limit=100)
 
         assert result.enqueued == 0
@@ -344,7 +343,7 @@ class TestSchedulerPerScheduleErrorIsolation:
             source_id=src_b,
             recipe_id=recipe_b,
             interval_seconds=3600,
-            next_run_at=datetime.now(timezone.utc) - timedelta(hours=2),
+            next_run_at=datetime.now(UTC) - timedelta(hours=2),
         )
 
         # Schedule A — healthy; later next_run_at, processed SECOND.
@@ -355,10 +354,10 @@ class TestSchedulerPerScheduleErrorIsolation:
             source_id=src_a,
             recipe_id=recipe_a,
             interval_seconds=3600,
-            next_run_at=datetime.now(timezone.utc) - timedelta(hours=1),
+            next_run_at=datetime.now(UTC) - timedelta(hours=1),
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         original_create = __import__(
             "harvester.jobs.repository", fromlist=["create_job"]
@@ -394,10 +393,10 @@ class TestSchedulerPerScheduleErrorIsolation:
             source_id=src,
             recipe_id=recipe,
             interval_seconds=3600,
-            next_run_at=datetime.now(timezone.utc) - timedelta(hours=1),
+            next_run_at=datetime.now(UTC) - timedelta(hours=1),
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         with patch(
             "harvester.jobs.scheduler.create_job",
@@ -423,7 +422,7 @@ class TestSchedulerFastForward:
         """
         interval = 300  # 5 minutes
         # Schedule is 3 hours overdue (36 intervals missed)
-        stale_time = datetime.now(timezone.utc) - timedelta(hours=3)
+        stale_time = datetime.now(UTC) - timedelta(hours=3)
 
         src = _insert_source(db_session)
         recipe = _insert_recipe(db_session)
@@ -435,7 +434,7 @@ class TestSchedulerFastForward:
             next_run_at=stale_time,
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         run_scheduler_once(db_session, now=now, limit=100)
 
         schedule = db_session.get(WatchSchedule, sched_id)
@@ -455,7 +454,7 @@ class TestSchedulerFastForward:
         """A schedule overdue by less than one interval should advance by one."""
         interval = 3600
         # Overdue by 10 minutes
-        stale_time = datetime.now(timezone.utc) - timedelta(minutes=10)
+        stale_time = datetime.now(UTC) - timedelta(minutes=10)
 
         src = _insert_source(db_session)
         recipe = _insert_recipe(db_session)
@@ -467,7 +466,7 @@ class TestSchedulerFastForward:
             next_run_at=stale_time,
         )
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         run_scheduler_once(db_session, now=now, limit=100)
 
         schedule = db_session.get(WatchSchedule, sched_id)

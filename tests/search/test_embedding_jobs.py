@@ -9,7 +9,7 @@ import uuid
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
-from harvester.db.models import Chunk, ContentItem, ItemVersion, Job
+from harvester.db.models import Chunk, ContentItem, ItemVersion
 from harvester.search.embedding import create_embedding_jobs
 
 

@@ -7,17 +7,16 @@ retention metadata, and oversized payload rejection.
 from __future__ import annotations
 
 import hashlib
-import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
 from harvester.jobs.archive import (
     ArchiveConfig,
-    ArchiveWriter,
     ArchiveOversizedError,
+    ArchiveWriter,
 )
 
 
@@ -100,7 +99,7 @@ class TestArchiveWritePayload:
         )
         assert result.retention_days == 7
         assert result.retain_until is not None
-        assert result.retain_until > datetime.now(timezone.utc)
+        assert result.retain_until > datetime.now(UTC)
 
     def test_organizes_by_date_source(self, writer: ArchiveWriter, archive_dir: Path):
         """Archive files should be organized by date and source."""

@@ -1,12 +1,12 @@
 """Tests for lease expiry recovery and job retry logic."""
 
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
 
 import sqlalchemy as sa
 
 from harvester.db.models import Job
-from harvester.jobs.repository import claim_next_jobs, fail_job, create_job
+from harvester.jobs.repository import claim_next_jobs, fail_job
 
 
 def _insert_job(db_session, **overrides):
@@ -21,8 +21,8 @@ def _insert_job(db_session, **overrides):
         run_after=None,
         locked_by=None,
         locked_until=None,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     defaults.update(overrides)
     db_session.execute(
@@ -64,7 +64,7 @@ class TestLeaseExpiry:
         db_session.commit()
 
         # Simulate a worker claiming the job with an expired lease
-        past = datetime.now(timezone.utc) - timedelta(minutes=10)
+        past = datetime.now(UTC) - timedelta(minutes=10)
         _set_job_status(db_session, job_id, "running", "old-worker", past)
         db_session.commit()
 
@@ -81,7 +81,7 @@ class TestLeaseExpiry:
         db_session.commit()
 
         # Set a valid future lease
-        future = datetime.now(timezone.utc) + timedelta(minutes=5)
+        future = datetime.now(UTC) + timedelta(minutes=5)
         _set_job_status(db_session, job_id, "running", "active-worker", future)
         db_session.commit()
 
@@ -136,7 +136,7 @@ class TestRetryMechanism:
         )
         assert retry_job is not None
         assert retry_job.run_after is not None
-        assert retry_job.run_after > datetime.now(timezone.utc)
+        assert retry_job.run_after > datetime.now(UTC)
 
     def test_retry_job_has_lower_priority(self, db_session):
         """Retry jobs should have lower priority than the original."""

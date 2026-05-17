@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from datetime import datetime
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
@@ -64,12 +63,12 @@ class AuditEventListResponse(BaseModel):
 
 @router.get("/events", response_model=AuditEventListResponse)
 def list_audit_events(
-    entity_type: Optional[str] = Query(None),
-    entity_id: Optional[str] = Query(None),
-    action: Optional[str] = Query(None),
-    actor: Optional[str] = Query(None),
-    time_from: Optional[datetime] = Query(None),
-    time_to: Optional[datetime] = Query(None),
+    entity_type: str | None = Query(None),
+    entity_id: str | None = Query(None),
+    action: str | None = Query(None),
+    actor: str | None = Query(None),
+    time_from: datetime | None = Query(None),
+    time_to: datetime | None = Query(None),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     _token: str = _Token,

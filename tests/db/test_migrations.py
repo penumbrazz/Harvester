@@ -2,10 +2,10 @@
 
 import os
 
-import pytest
 import sqlalchemy as sa
-from alembic import command
 from alembic.config import Config
+
+from alembic import command
 
 
 def _alembic_cfg(test_db_url: str) -> Config:

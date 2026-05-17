@@ -13,11 +13,11 @@ import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
 from harvester.db.models import Chunk, CrawlRun, CrawlTarget, RawObject, Recipe, Source
+from harvester.domain.audit import write_audit
 from harvester.domain.discovery_scope import (
     parse_discovery_scope,
     validate_discovered_target,
 )
-from harvester.domain.audit import write_audit
 from harvester.extractors.base import CandidateItem, normalize_extraction_output
 from harvester.extractors.registry import get_extractor
 from harvester.jobs.crawl_targets import (
@@ -331,7 +331,7 @@ def _content_type_for_media_type(media_type: str) -> str:
 
 def _create_chunks_and_embedding_jobs(
     session: Session,
-    version: "ItemVersion",
+    version: ItemVersion,
 ) -> None:
     """Chunk item version text and enqueue embedding jobs."""
     if not version.normalized_text:

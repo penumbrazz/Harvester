@@ -9,17 +9,13 @@ import sqlalchemy as sa
 from harvester.db.models import (
     ContentItem,
     CrawlRun,
-    CrawlTarget,
     ItemVersion,
-    Job,
     RawObject,
     Recipe,
     Source,
 )
 from harvester.extractors.base import CandidateItem, ExtractionOutput
-from harvester.jobs.crawl_targets import upsert_crawl_target
 from harvester.jobs.extraction import execute_extraction
-
 
 DETAIL_URL = "https://www.chinacdc.cn/jksj/jksj04_14249/202605/t20260514_1835783.html"
 PDF_URL = "https://www.chinacdc.cn/jksj/jksj04_14249/202605/P020260514670474006354.pdf"

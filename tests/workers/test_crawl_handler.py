@@ -7,19 +7,16 @@ and topic_watch_id propagation.
 
 from __future__ import annotations
 
-import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
-import pytest
 import sqlalchemy as sa
 
 from harvester.adapters.firecrawl import CrawlResult
-from harvester.db.models import CrawlRun, Job, RawObject, Recipe, Source
-from harvester.domain.fetch_policy import FetchPolicyResult, REASON_PRIVATE_IP
+from harvester.db.models import CrawlRun, Job
+from harvester.domain.fetch_policy import REASON_PRIVATE_IP, FetchPolicyResult
 from harvester.jobs.archive import ArchiveWriteResult
-from harvester.jobs.crawl_execution import CrawlExecutionError
 from harvester.workers.crawl import process_crawl_job
 
 
@@ -37,7 +34,7 @@ def _insert_source(db_session, *, status="watched", url="https://example.com"):
             "name": f"crawl-src-{source_id.hex[:8]}",
             "url": url,
             "status": status,
-            "ts": datetime.now(timezone.utc),
+            "ts": datetime.now(UTC),
         },
     )
     return source_id
@@ -62,7 +59,7 @@ def _insert_recipe(
             "name": f"crawl-recipe-{recipe_id.hex[:8]}",
             "risk": risk_level,
             "approval": approval_status,
-            "ts": datetime.now(timezone.utc),
+            "ts": datetime.now(UTC),
         },
     )
     return recipe_id
@@ -120,7 +117,7 @@ class TestCrawlHandlerSuccess:
             content_type="text/html",
             byte_size=100,
             retention_days=7,
-            retain_until=datetime.now(timezone.utc),
+            retain_until=datetime.now(UTC),
         )
 
         source_id = _insert_source(db_session)
@@ -342,7 +339,7 @@ class TestCrawlHandlerTopicWatchId:
             content_type="text/html",
             byte_size=100,
             retention_days=7,
-            retain_until=datetime.now(timezone.utc),
+            retain_until=datetime.now(UTC),
         )
 
         # Create topic watch
@@ -356,7 +353,7 @@ class TestCrawlHandlerTopicWatchId:
             {
                 "id": topic_id,
                 "name": f"topic_{topic_id.hex[:8]}",
-                "ts": datetime.now(timezone.utc),
+                "ts": datetime.now(UTC),
             },
         )
 

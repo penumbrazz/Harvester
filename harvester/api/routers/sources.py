@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
@@ -68,8 +67,8 @@ class SourceListResponse(PaginatedResponse[SourceResponse]):
 
 @router.get("", response_model=SourceListResponse)
 def list_sources(
-    status_filter: Optional[str] = Query(None, alias="status"),
-    kind_filter: Optional[str] = Query(None, alias="kind"),
+    status_filter: str | None = Query(None, alias="status"),
+    kind_filter: str | None = Query(None, alias="kind"),
     limit: int = Query(20, ge=1, le=100, description="Page size"),
     offset: int = Query(0, ge=0, description="Page offset"),
     _token: str = _Token,

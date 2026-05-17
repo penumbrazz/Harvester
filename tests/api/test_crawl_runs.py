@@ -7,16 +7,17 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
 import sqlalchemy as sa
-from alembic import command
 from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
+
+from alembic import command
 
 
 @pytest.fixture(scope="module")
@@ -73,7 +74,7 @@ async def api_client(api_test_db):
 
 def _insert_source(db_url: str, *, name_prefix="crawl-list"):
     source_id = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     with Session(bind=create_engine(db_url)) as session:
         session.execute(
             sa.text(
@@ -109,7 +110,7 @@ def _insert_crawl_run(
     http_status=None,
 ):
     run_id = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     with Session(bind=create_engine(db_url)) as session:
         session.execute(
             sa.text(

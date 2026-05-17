@@ -18,7 +18,6 @@ from harvester.extractors.cdc_weekly import (
     CdcWeeklyDetailExtractor,
     CdcWeeklyListExtractor,
 )
-from harvester.extractors.pdf_text import PdfTextExtractor
 
 LIST_URL = "https://www.chinacdc.cn/jksj/jksj04_14249/"
 

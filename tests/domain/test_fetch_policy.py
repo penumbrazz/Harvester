@@ -6,24 +6,22 @@ redirect final URL re-validation, and DNS skip bypass.
 """
 
 import os
-from ipaddress import IPv4Address, IPv6Address
+from ipaddress import IPv4Address
 from unittest.mock import patch
 
 import pytest
 
 from harvester.domain.fetch_policy import (
-    FetchPolicyResult,
-    check_fetch_policy,
-    REASON_NON_HTTP_PROTOCOL,
-    REASON_LOCALHOST,
-    REASON_PRIVATE_IP,
+    REASON_DNS_FAILURE,
     REASON_LINK_LOCAL,
+    REASON_LOCALHOST,
     REASON_LOOPBACK,
     REASON_MULTICAST,
-    REASON_RESERVED,
+    REASON_NON_HTTP_PROTOCOL,
+    REASON_PRIVATE_IP,
     REASON_UNSPECIFIED,
-    REASON_DNS_FAILURE,
-    REASON_REDIRECT_TO_NON_PUBLIC,
+    FetchPolicyResult,
+    check_fetch_policy,
 )
 
 

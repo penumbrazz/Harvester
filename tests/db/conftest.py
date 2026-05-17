@@ -5,9 +5,10 @@ import uuid
 
 import pytest
 import sqlalchemy as sa
-from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine
+
+from alembic import command
 
 
 def _get_test_db_url() -> str:

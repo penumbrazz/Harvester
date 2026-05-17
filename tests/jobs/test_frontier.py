@@ -1,11 +1,10 @@
 """Tests for source frontier update and rewind logic."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import sqlalchemy as sa
 
-from harvester.db.models import Source, SourceFrontier
 from harvester.jobs.frontier import should_rewind, update_frontier
 
 
@@ -20,8 +19,8 @@ def _insert_source(db_session, **overrides):
         trust_level="medium",
         auth_required=False,
         failure_count=0,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
     defaults.update(overrides)
     db_session.execute(

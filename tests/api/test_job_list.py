@@ -7,16 +7,17 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
 import sqlalchemy as sa
-from alembic import command
 from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
+
+from alembic import command
 
 
 @pytest.fixture(scope="module")
@@ -83,7 +84,7 @@ def _insert_job(
     last_error=None,
 ):
     job_id = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     with Session(bind=create_engine(db_url)) as session:
         session.execute(
             sa.text(

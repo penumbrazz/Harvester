@@ -2,14 +2,15 @@
 
 import os
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
-from alembic import command
 from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, text
+
+from alembic import command
 
 
 @pytest.fixture(scope="module")
@@ -68,7 +69,7 @@ def _insert_source(db_url: str) -> str:
     """Insert a watched source and return its id as string."""
     engine = create_engine(db_url)
     sid = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     with engine.connect() as conn:
         conn.execute(
             text(
@@ -88,7 +89,7 @@ def _insert_active_source(db_url: str) -> str:
     """Insert an active source and return its id as string."""
     engine = create_engine(db_url)
     sid = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     with engine.connect() as conn:
         conn.execute(
             text(
@@ -108,7 +109,7 @@ def _insert_recipe(db_url: str, approval_status: str = "approved") -> str:
     """Insert a recipe and return its id as string."""
     engine = create_engine(db_url)
     rid = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     with engine.connect() as conn:
         conn.execute(
             text(
@@ -133,7 +134,7 @@ def _insert_topic(db_url: str, status: str = "active", ttl: int | None = None) -
     """Insert a topic watch and return its id as string."""
     engine = create_engine(db_url)
     tid = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     expires_at = now + timedelta(seconds=ttl) if ttl else None
     with engine.connect() as conn:
         conn.execute(
@@ -159,7 +160,7 @@ def _insert_topic(db_url: str, status: str = "active", ttl: int | None = None) -
 def _insert_topic_source(db_url: str, topic_id: str, source_id: str) -> None:
     """Link a source to a topic via topic_sources."""
     engine = create_engine(db_url)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     with engine.connect() as conn:
         conn.execute(
             text(
@@ -384,7 +385,7 @@ def _insert_schedule(db_url: str, source_id: str, recipe_id: str, **overrides) -
     """Insert a watch schedule and return its id."""
     engine = create_engine(db_url)
     sid = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     key = overrides.pop("schedule_key", f"source:{source_id}:recipe:{recipe_id}")
     with engine.connect() as conn:
         conn.execute(

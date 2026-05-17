@@ -1,7 +1,7 @@
 """Tests for harvester.domain.state transition validation and execution."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 import sqlalchemy as sa
@@ -10,8 +10,8 @@ from harvester.db.models import Source
 from harvester.domain.state import (
     CRAWL_TARGET_TRANSITIONS,
     SOURCE_TRANSITIONS,
-    validate_transition,
     transition_entity,
+    validate_transition,
 )
 
 
@@ -82,8 +82,8 @@ class TestTransitionEntity:
             trust_level="medium",
             auth_required=False,
             failure_count=0,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         db_session.add(source)
         db_session.commit()
@@ -118,8 +118,8 @@ class TestTransitionEntity:
             trust_level="medium",
             auth_required=False,
             failure_count=0,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         db_session.add(source)
         db_session.commit()
@@ -156,8 +156,8 @@ class TestTransitionEntity:
             trust_level="medium",
             auth_required=False,
             failure_count=0,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         db_session.add(source)
         db_session.commit()
@@ -184,8 +184,8 @@ class TestTransitionEntity:
             trust_level="medium",
             auth_required=False,
             failure_count=0,
-            created_at=datetime.now(timezone.utc),
-            updated_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
         db_session.add(source)
         db_session.commit()

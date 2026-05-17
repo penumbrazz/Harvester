@@ -8,16 +8,16 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
-from alembic import command
 from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, text
-
 from typer.testing import CliRunner
+
+from alembic import command
 
 
 @pytest.fixture(scope="module")
@@ -76,7 +76,7 @@ def _insert_job(db_url: str, job_type: str, status: str = "pending") -> str:
     """Insert a job row and return its id."""
     engine = create_engine(db_url)
     jid = uuid.uuid4()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     with engine.connect() as conn:
         conn.execute(
             text(
@@ -157,7 +157,7 @@ class TestQueueStatusCLI:
 
         # Insert a job via raw SQL
         jid = uuid.uuid4()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         db_session.execute(
             text(
                 "INSERT INTO jobs "

@@ -9,19 +9,19 @@ from __future__ import annotations
 import json
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 import pytest
 import sqlalchemy as sa
-from alembic import command
 from alembic.config import Config
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
+from alembic import command
 from harvester.adapters.firecrawl import CrawlResult
-from harvester.domain.fetch_policy import FetchPolicyResult, REASON_PRIVATE_IP
+from harvester.domain.fetch_policy import REASON_PRIVATE_IP, FetchPolicyResult
 from harvester.jobs.archive import ArchiveWriteResult
 
 
@@ -97,8 +97,8 @@ def _insert_source(db_url: str, *, status="watched", url="https://example.com"):
                 trust_level="medium",
                 auth_required=False,
                 failure_count=0,
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
             ),
         )
         session.commit()
@@ -124,8 +124,8 @@ def _insert_recipe(db_url: str, *, approval_status="approved", risk_level="low")
                 risk_level=risk_level,
                 approval_status=approval_status,
                 version=1,
-                created_at=datetime.now(timezone.utc),
-                updated_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
             ),
         )
         session.commit()
@@ -140,7 +140,7 @@ def _make_archive_result():
         byte_size=100,
         content_type="text/html",
         retention_days=7,
-        retain_until=datetime.now(timezone.utc),
+        retain_until=datetime.now(UTC),
     )
 
 

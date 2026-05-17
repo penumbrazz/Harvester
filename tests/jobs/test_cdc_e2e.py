@@ -3,7 +3,6 @@
 Uses deterministic fixtures — no network access.
 """
 
-import json
 import uuid
 from datetime import UTC, datetime
 from io import BytesIO
@@ -24,7 +23,6 @@ from harvester.db.models import (
     Recipe,
     Source,
 )
-from harvester.domain.urls import compute_canonical_url_hash
 from harvester.extractors.cdc_weekly import (
     CdcWeeklyDetailExtractor,
     CdcWeeklyListExtractor,
