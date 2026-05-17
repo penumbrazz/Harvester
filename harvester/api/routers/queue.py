@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-
 import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import desc, text
+from sqlalchemy import String, desc, func, text
 from sqlalchemy.orm import Session
 
 from harvester.api.auth import require_api_token
 from harvester.api.deps import get_db_session
-from harvester.db.models import Job
+from harvester.db.models import Job, Source
 
 router = APIRouter(prefix="/queue", tags=["queue"])
 
@@ -41,6 +40,7 @@ class JobItem(BaseModel):
     locked_until: datetime | None = None
     lane: str | None = None
     source_id: str | None = None
+    source_name: str | None = None
     last_error: str | None = None
     created_at: datetime
     updated_at: datetime
@@ -92,7 +92,9 @@ def list_jobs(
 
     Does NOT return raw payload data.
     """
-    query = session.query(Job)
+    query = session.query(Job, Source.name.label("source_name")).outerjoin(
+        Source, Job.source_id == Source.id.cast(String(36))
+    )
 
     if job_type:
         query = query.filter(Job.job_type == job_type)
@@ -113,20 +115,21 @@ def list_jobs(
 
     items = [
         JobItem(
-            id=str(j.id),
-            job_type=j.job_type,
-            status=j.status,
-            priority=j.priority,
-            attempts=j.attempts,
-            max_attempts=j.max_attempts,
-            run_after=j.run_after,
-            locked_by=j.locked_by,
-            locked_until=j.locked_until,
-            lane=j.lane,
-            source_id=j.source_id,
-            last_error=j.last_error,
-            created_at=j.created_at,
-            updated_at=j.updated_at,
+            id=str(j.Job.id),
+            job_type=j.Job.job_type,
+            status=j.Job.status,
+            priority=j.Job.priority,
+            attempts=j.Job.attempts,
+            max_attempts=j.Job.max_attempts,
+            run_after=j.Job.run_after,
+            locked_by=j.Job.locked_by,
+            locked_until=j.Job.locked_until,
+            lane=j.Job.lane,
+            source_id=j.Job.source_id,
+            source_name=j.source_name,
+            last_error=j.Job.last_error,
+            created_at=j.Job.created_at,
+            updated_at=j.Job.updated_at,
         )
         for j in rows
     ]

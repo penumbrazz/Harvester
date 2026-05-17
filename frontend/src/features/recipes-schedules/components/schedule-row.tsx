@@ -227,8 +227,8 @@ export function ScheduleRow({ schedule, config, onChanged }: ScheduleRowProps) {
           </span>
         </td>
         <td style={cellStyle}>
-          <span style={{ fontSize: 'var(--font-size-xs)', fontFamily: 'monospace' }}>
-            {schedule.source_id.slice(0, 8)}...
+          <span style={{ fontSize: 'var(--font-size-xs)' }}>
+            {schedule.source_name || '--'}
           </span>
         </td>
         <td style={cellStyle}>

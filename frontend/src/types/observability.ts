@@ -18,6 +18,7 @@ export interface CountByStatus {
 export interface CrawlRun {
   id: string
   source_id: string | null
+  source_name: string | null
   recipe_id: string | null
   status: string
   http_status: number | null
@@ -49,6 +50,7 @@ export interface Job {
   locked_until: string | null
   lane: string | null
   source_id: string | null
+  source_name: string | null
   last_error: string | null
   created_at: string
   updated_at: string

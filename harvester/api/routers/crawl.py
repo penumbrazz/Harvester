@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from harvester.api.auth import require_api_token
 from harvester.api.deps import get_db_session
-from harvester.db.models import CrawlRun, CrawlTarget
+from harvester.db.models import CrawlRun, CrawlTarget, Source
 from harvester.jobs.crawl_execution import CrawlExecutionError, execute_crawl
 
 logger = logging.getLogger(__name__)
@@ -41,6 +41,7 @@ class CrawlRunItem(BaseModel):
 
     id: str
     source_id: str | None = None
+    source_name: str | None = None
     recipe_id: str | None = None
     status: str
     http_status: int | None = None
@@ -110,7 +111,9 @@ def list_crawl_runs(
 
     Does NOT return raw HTML/API payload.
     """
-    query = session.query(CrawlRun)
+    query = session.query(CrawlRun, Source.name.label("source_name")).outerjoin(
+        Source, CrawlRun.source_id == Source.id
+    )
 
     if status:
         query = query.filter(CrawlRun.status == status)
@@ -127,16 +130,19 @@ def list_crawl_runs(
 
     items = [
         CrawlRunItem(
-            id=str(r.id),
-            source_id=str(r.source_id) if r.source_id else None,
-            recipe_id=str(r.recipe_id) if r.recipe_id else None,
-            status=r.status,
-            http_status=r.http_status,
-            error_message=r.error_message,
-            raw_object_id=str(r.raw_object_id) if r.raw_object_id else None,
-            started_at=r.started_at,
-            completed_at=r.completed_at,
-            created_at=r.created_at,
+            id=str(r.CrawlRun.id),
+            source_id=str(r.CrawlRun.source_id) if r.CrawlRun.source_id else None,
+            source_name=r.source_name,
+            recipe_id=str(r.CrawlRun.recipe_id) if r.CrawlRun.recipe_id else None,
+            status=r.CrawlRun.status,
+            http_status=r.CrawlRun.http_status,
+            error_message=r.CrawlRun.error_message,
+            raw_object_id=str(r.CrawlRun.raw_object_id)
+            if r.CrawlRun.raw_object_id
+            else None,
+            started_at=r.CrawlRun.started_at,
+            completed_at=r.CrawlRun.completed_at,
+            created_at=r.CrawlRun.created_at,
         )
         for r in rows
     ]

@@ -10,7 +10,7 @@ import uuid
 import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
-from harvester.db.models import ContentItem, ItemVersion
+from harvester.db.models import ContentItem, ItemVersion, Source
 from harvester.search.dedup import collapse_dedup_groups
 
 
@@ -40,7 +40,7 @@ def keyword_search(
 
     Returns:
         List of dicts with keys: item_id, title, canonical_url,
-        source_id, version_id, created_at.
+        source_id, source_name, version_id, created_at.
     """
     if not query or not query.strip():
         return []
@@ -61,17 +61,19 @@ def keyword_search(
         .subquery()
     )
 
-    # Main query: join content_items with their latest item_version
+    # Main query: join content_items with their latest item_version and source
     stmt = (
         sa.select(
             ContentItem.id.label("item_id"),
             ContentItem.title,
             ContentItem.canonical_url,
             ContentItem.source_id,
+            Source.name.label("source_name"),
             ItemVersion.id.label("version_id"),
             ItemVersion.created_at,
         )
         .join(ItemVersion, ItemVersion.content_item_id == ContentItem.id)
+        .outerjoin(Source, ContentItem.source_id == Source.id)
         .join(
             latest_version,
             sa.and_(

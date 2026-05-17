@@ -35,6 +35,7 @@ class ScheduleResponse(BaseModel):
     id: str
     schedule_key: str
     source_id: str
+    source_name: str | None = None
     topic_watch_id: str | None
     recipe_id: str
     status: str
@@ -46,12 +47,15 @@ class ScheduleResponse(BaseModel):
     created_at: datetime
 
 
-def _to_schedule_response(schedule: WatchSchedule) -> ScheduleResponse:
+def _to_schedule_response(
+    schedule: WatchSchedule, source_name: str | None = None
+) -> ScheduleResponse:
     """Serialize a WatchSchedule ORM object to ScheduleResponse."""
     return ScheduleResponse(
         id=str(schedule.id),
         schedule_key=schedule.schedule_key,
         source_id=str(schedule.source_id),
+        source_name=source_name,
         topic_watch_id=str(schedule.topic_watch_id)
         if schedule.topic_watch_id
         else None,
@@ -64,6 +68,20 @@ def _to_schedule_response(schedule: WatchSchedule) -> ScheduleResponse:
         lane=schedule.lane,
         created_at=schedule.created_at,
     )
+
+
+def _lookup_source_name(session: Session, source_id: uuid.UUID) -> str | None:
+    """Look up a source name by ID."""
+    source = session.get(Source, source_id)
+    return source.name if source else None
+
+
+def _to_schedule_response_with_session(
+    schedule: WatchSchedule, session: Session
+) -> ScheduleResponse:
+    """Serialize a WatchSchedule, auto-resolving source_name from session."""
+    name = _lookup_source_name(session, schedule.source_id)
+    return _to_schedule_response(schedule, source_name=name)
 
 
 def _build_schedule_key(
@@ -206,7 +224,7 @@ def create_schedule(
     session.commit()
     session.refresh(schedule)
 
-    return _to_schedule_response(schedule)
+    return _to_schedule_response(schedule, source_name=source.name)
 
 
 class ScheduleUpdateRequest(BaseModel):
@@ -253,7 +271,7 @@ def pause_schedule(
 
     session.commit()
     session.refresh(schedule)
-    return _to_schedule_response(schedule)
+    return _to_schedule_response_with_session(schedule, session)
 
 
 @router.post("/{schedule_id}/resume", response_model=ScheduleResponse)
@@ -280,7 +298,7 @@ def resume_schedule(
 
     session.commit()
     session.refresh(schedule)
-    return _to_schedule_response(schedule)
+    return _to_schedule_response_with_session(schedule, session)
 
 
 @router.post("/{schedule_id}/disable", response_model=ScheduleResponse)
@@ -307,7 +325,7 @@ def disable_schedule(
 
     session.commit()
     session.refresh(schedule)
-    return _to_schedule_response(schedule)
+    return _to_schedule_response_with_session(schedule, session)
 
 
 @router.patch("/{schedule_id}", response_model=ScheduleResponse)
@@ -350,7 +368,7 @@ def update_schedule(
     )
     session.commit()
     session.refresh(schedule)
-    return _to_schedule_response(schedule)
+    return _to_schedule_response_with_session(schedule, session)
 
 
 class ScheduleListResponse(PaginatedResponse[ScheduleResponse]):
@@ -368,7 +386,9 @@ def list_schedules(
     offset: int = Query(0, ge=0, description="Page offset"),
 ):
     """List watch schedules with pagination and optional filtering."""
-    query = session.query(WatchSchedule)
+    query = session.query(WatchSchedule, Source.name.label("source_name")).outerjoin(
+        Source, WatchSchedule.source_id == Source.id
+    )
 
     if status:
         query = query.filter(WatchSchedule.status == status)
@@ -388,12 +408,15 @@ def list_schedules(
             ) from None
 
     total = query.count()
-    schedules = (
+    rows = (
         query.order_by(WatchSchedule.created_at.desc())
         .offset(offset)
         .limit(limit)
         .all()
     )
-    items = [_to_schedule_response(s) for s in schedules]
+    items = [
+        _to_schedule_response(row.WatchSchedule, source_name=row.source_name)
+        for row in rows
+    ]
 
     return ScheduleListResponse(items=items, total=total, limit=limit, offset=offset)

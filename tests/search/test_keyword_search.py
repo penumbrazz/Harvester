@@ -163,6 +163,7 @@ class TestKeywordSearch:
             "title",
             "canonical_url",
             "source_id",
+            "source_name",
             "version_id",
             "created_at",
         }

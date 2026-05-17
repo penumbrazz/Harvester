@@ -725,7 +725,7 @@ function KeywordResults({ items }: { items: SearchResultItem[] }) {
               <td style={{ ...cellStyle, fontWeight: 500 }}>{item.title}</td>
               <td style={cellStyle}>
                 <span style={{ fontSize: 'var(--font-size-xs)' }}>
-                  {item.source_id ? item.source_id.substring(0, 8) + '...' : '-'}
+                  {item.source_name || '-'}
                 </span>
               </td>
               <td style={cellStyle}>

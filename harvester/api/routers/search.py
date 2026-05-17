@@ -26,6 +26,7 @@ class SearchItem(BaseModel):
     item_id: str | None = None
     version_id: str | None = None
     source_id: str | None = None
+    source_name: str | None = None
     title: str
     canonical_url: str | None = None
     created_at: datetime | None = None
@@ -90,6 +91,7 @@ def search_items(
             item_id=str(row["item_id"]),
             version_id=str(row["version_id"]),
             source_id=str(row["source_id"]),
+            source_name=row.get("source_name"),
             title=row["title"],
             canonical_url=row["canonical_url"],
             created_at=row["created_at"],

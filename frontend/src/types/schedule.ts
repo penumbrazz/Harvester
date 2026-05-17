@@ -3,6 +3,7 @@ export interface Schedule {
   id: string
   schedule_key: string
   source_id: string
+  source_name: string | null
   topic_watch_id: string | null
   recipe_id: string
   status: string

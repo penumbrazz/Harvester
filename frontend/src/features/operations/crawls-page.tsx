@@ -432,15 +432,14 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
                   <td
                     style={{
                       ...cellStyle,
-                      fontFamily: 'monospace',
                       maxWidth: '120px',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                     }}
-                    title={run.source_id || ''}
+                    title={run.source_name || run.source_id || ''}
                   >
-                    {run.source_id ? run.source_id.slice(0, 8) : '--'}
+                    {run.source_name || '--'}
                   </td>
                   <td style={cellStyle}>
                     <StatusPill variant={crawlStatusVariant(run.status)}>

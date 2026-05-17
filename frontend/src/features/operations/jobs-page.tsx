@@ -368,15 +368,14 @@ export function JobsPage({ config }: JobsPageProps) {
                   <td
                     style={{
                       ...cellStyle,
-                      fontFamily: 'monospace',
                       maxWidth: '120px',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
                     }}
-                    title={job.source_id || ''}
+                    title={job.source_name || job.source_id || ''}
                   >
-                    {job.source_id ? job.source_id.slice(0, 8) : '--'}
+                    {job.source_name || '--'}
                   </td>
                   <td
                     style={{

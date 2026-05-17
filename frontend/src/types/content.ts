@@ -25,6 +25,7 @@ export interface SearchResultItem {
   item_id?: string
   version_id?: string
   source_id?: string
+  source_name?: string
   title: string
   canonical_url?: string
   created_at?: string
