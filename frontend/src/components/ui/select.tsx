@@ -1,6 +1,7 @@
 interface SelectOption {
   key: string
   label: string
+  disabled?: boolean
 }
 
 interface SelectProps {
@@ -44,7 +45,7 @@ export function Select({
       }}
     >
       {options.map((opt) => (
-        <option key={opt.key} value={opt.key}>
+        <option key={opt.key} value={opt.key} disabled={opt.disabled}>
           {opt.label}
         </option>
       ))}

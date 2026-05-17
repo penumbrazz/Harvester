@@ -87,6 +87,7 @@ export function ApprovedRecipeSelector({
     ...recipes.map((r) => ({
       key: r.id,
       label: `${r.name} (${r.executor})${r.approval_status !== 'approved' ? ` — ${r.approval_status}` : ''}`,
+      disabled: r.approval_status !== 'approved',
     })),
   ]
 

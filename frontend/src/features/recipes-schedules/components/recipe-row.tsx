@@ -296,10 +296,14 @@ export function RecipeRow({ recipe, config, onChanged }: RecipeRowProps) {
         onClose={() => setConfirmAction(null)}
         footer={
           <>
-            <Button type="default" onClick={() => setConfirmAction(null)}>
+            <Button
+              type="default"
+              onClick={() => setConfirmAction(null)}
+              data-testid="confirm-cancel"
+            >
               取消
             </Button>
-            <Button type="primary" onClick={handleConfirmOk}>
+            <Button type="primary" onClick={handleConfirmOk} data-testid="confirm-ok">
               {confirmAction ? ACTION_LABELS[confirmAction] : '确认'}
             </Button>
           </>

@@ -263,10 +263,14 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
           {`确定要${confirmAction ? ACTION_LABELS[confirmAction] : ''}信息源「${source.name}」吗？`}
         </p>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)' }}>
-          <Button type="default" onClick={() => setConfirmAction(null)}>
+          <Button
+            type="default"
+            onClick={() => setConfirmAction(null)}
+            data-testid="confirm-cancel"
+          >
             取消
           </Button>
-          <Button onClick={handleConfirmOk} disabled={loading}>
+          <Button onClick={handleConfirmOk} disabled={loading} data-testid="confirm-ok">
             {loading ? '处理中...' : confirmAction ? ACTION_LABELS[confirmAction] : '确认'}
           </Button>
         </div>
