@@ -14,9 +14,8 @@ import {
   CONTENT_STATUS_VARIANTS,
   ITEM_TYPE_OPTIONS,
 } from '../../types/content'
-import { Button } from '../../components/ui/button'
+import { Button, Input } from 'animal-island-ui'
 import { Card } from '../../components/ui/card'
-import { Input } from '../../components/ui/input'
 import { Select } from '../../components/ui/select'
 import { StatusPill } from '../../components/ui/status-pill'
 import { PaginationControls } from '../../components/common/pagination-controls'
@@ -176,7 +175,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
         </Button>
         {isSearching && (
           <Button
-            variant="secondary"
+            type="default"
             onClick={handleClearSearch}
             data-testid="search-clear"
           >
@@ -205,7 +204,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
         <p
           data-testid="search-loading"
           style={{
-            color: 'var(--color-warm-gray-500)',
+            color: 'var(--color-text-body)',
             fontSize: 'var(--font-size-sm)',
             marginBottom: 'var(--space-4)',
             flexShrink: 0,
@@ -306,12 +305,12 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                   borderRadius: 'var(--radius-sm)',
                   border:
                     viewMode === 'list'
-                      ? '1px solid var(--color-notion-blue)'
-                      : 'var(--border-whisper)',
+                      ? '1px solid var(--color-accent)'
+                      : 'var(--border-default)',
                   backgroundColor:
                     viewMode === 'list'
                       ? 'var(--color-badge-blue-bg)'
-                      : 'var(--color-white)',
+                      : 'var(--color-bg-content)',
                   cursor: 'pointer',
                   fontFamily: 'var(--font-family)',
                   fontSize: 'var(--font-size-xs)',
@@ -319,7 +318,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                   color:
                     viewMode === 'list'
                       ? 'var(--color-badge-blue-text)'
-                      : 'var(--color-warm-gray-500)',
+                      : 'var(--color-text-body)',
                 }}
               >
                 列表
@@ -332,12 +331,12 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                   borderRadius: 'var(--radius-sm)',
                   border:
                     viewMode === 'grid'
-                      ? '1px solid var(--color-notion-blue)'
-                      : 'var(--border-whisper)',
+                      ? '1px solid var(--color-accent)'
+                      : 'var(--border-default)',
                   backgroundColor:
                     viewMode === 'grid'
                       ? 'var(--color-badge-blue-bg)'
-                      : 'var(--color-white)',
+                      : 'var(--color-bg-content)',
                   cursor: 'pointer',
                   fontFamily: 'var(--font-family)',
                   fontSize: 'var(--font-size-xs)',
@@ -345,7 +344,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                   color:
                     viewMode === 'grid'
                       ? 'var(--color-badge-blue-text)'
-                      : 'var(--color-warm-gray-500)',
+                      : 'var(--color-text-body)',
                 }}
               >
                 网格
@@ -358,7 +357,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
             <p
               data-testid="content-loading"
               style={{
-                color: 'var(--color-warm-gray-500)',
+                color: 'var(--color-text-body)',
                 fontSize: 'var(--font-size-sm)',
                 flexShrink: 0,
               }}
@@ -388,7 +387,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
               style={{
                 textAlign: 'center',
                 padding: 'var(--space-8) var(--space-4)',
-                color: 'var(--color-warm-gray-300)',
+                color: 'var(--color-text-secondary)',
                 flexShrink: 0,
               }}
             >
@@ -415,7 +414,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                 overflow: 'auto',
                 flex: 1,
                 minHeight: 0,
-                border: 'var(--border-whisper)',
+                border: 'var(--border-default)',
                 borderRadius: 'var(--radius-lg)',
               }}
             >
@@ -430,8 +429,8 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                 <thead>
                   <tr
                     style={{
-                      borderBottom: 'var(--border-whisper)',
-                      backgroundColor: 'var(--color-warm-white)',
+                      borderBottom: 'var(--border-default)',
+                      backgroundColor: 'var(--color-bg-content)',
                     }}
                   >
                     {['标题', '类型', '信息源', '状态', 'URL', '更新时间'].map(
@@ -442,7 +441,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
                             padding: '10px var(--space-3)',
                             fontSize: 'var(--font-size-xs)',
                             fontWeight: 600,
-                            color: 'var(--color-warm-gray-500)',
+                            color: 'var(--color-text-body)',
                             textAlign: 'left',
                             textTransform: 'uppercase',
                             letterSpacing: '0.125px',
@@ -518,12 +517,12 @@ function ContentRow({ item, onClick }: { item: ContentItem; onClick: () => void 
   return (
     <tr
       style={{
-        borderBottom: 'var(--border-whisper)',
+        borderBottom: 'var(--border-default)',
         cursor: 'pointer',
       }}
       onClick={onClick}
       onMouseEnter={(e) => {
-        ;(e.currentTarget as HTMLElement).style.background = '#f6f5f4'
+        ;(e.currentTarget as HTMLElement).style.background = 'var(--color-bg-content)'
       }}
       onMouseLeave={(e) => {
         ;(e.currentTarget as HTMLElement).style.background = ''
@@ -556,7 +555,7 @@ function ContentRow({ item, onClick }: { item: ContentItem; onClick: () => void 
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              color: 'var(--color-notion-blue)',
+              color: 'var(--color-accent)',
               textDecoration: 'none',
               fontSize: 'var(--font-size-sm)',
             }}
@@ -573,7 +572,7 @@ function ContentRow({ item, onClick }: { item: ContentItem; onClick: () => void 
         <span
           style={{
             fontSize: 'var(--font-size-xs)',
-            color: 'var(--color-warm-gray-300)',
+            color: 'var(--color-text-secondary)',
           }}
         >
           {formatDate(item.updated_at)}
@@ -628,7 +627,7 @@ function ContentCard({ item, onClick }: { item: ContentItem; onClick: () => void
         <div
           style={{
             fontSize: 'var(--font-size-sm)',
-            color: 'var(--color-warm-gray-500)',
+            color: 'var(--color-text-body)',
           }}
         >
           {item.source_name || '未知信息源'}
@@ -639,7 +638,7 @@ function ContentCard({ item, onClick }: { item: ContentItem; onClick: () => void
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              color: 'var(--color-notion-blue)',
+              color: 'var(--color-accent)',
               textDecoration: 'none',
               fontSize: 'var(--font-size-xs)',
               overflow: 'hidden',
@@ -653,7 +652,7 @@ function ContentCard({ item, onClick }: { item: ContentItem; onClick: () => void
         <div
           style={{
             fontSize: 'var(--font-size-xs)',
-            color: 'var(--color-warm-gray-300)',
+            color: 'var(--color-text-secondary)',
             marginTop: 'auto',
           }}
         >
@@ -669,7 +668,7 @@ function KeywordResults({ items }: { items: SearchResultItem[] }) {
   if (items.length === 0) {
     return (
       <p
-        style={{ color: 'var(--color-warm-gray-500)', fontSize: 'var(--font-size-sm)' }}
+        style={{ color: 'var(--color-text-body)', fontSize: 'var(--font-size-sm)' }}
       >
         未找到结果。
       </p>
@@ -680,7 +679,7 @@ function KeywordResults({ items }: { items: SearchResultItem[] }) {
     <div
       style={{
         overflowX: 'auto',
-        border: 'var(--border-whisper)',
+        border: 'var(--border-default)',
         borderRadius: 'var(--radius-lg)',
       }}
     >
@@ -694,8 +693,8 @@ function KeywordResults({ items }: { items: SearchResultItem[] }) {
         <thead>
           <tr
             style={{
-              borderBottom: 'var(--border-whisper)',
-              backgroundColor: 'var(--color-warm-white)',
+              borderBottom: 'var(--border-default)',
+              backgroundColor: 'var(--color-bg-content)',
             }}
           >
             {['标题', '信息源', 'URL', '创建时间'].map((header) => (
@@ -705,7 +704,7 @@ function KeywordResults({ items }: { items: SearchResultItem[] }) {
                   padding: '10px var(--space-3)',
                   fontSize: 'var(--font-size-xs)',
                   fontWeight: 600,
-                  color: 'var(--color-warm-gray-500)',
+                  color: 'var(--color-text-body)',
                   textAlign: 'left',
                   textTransform: 'uppercase',
                   letterSpacing: '0.125px',
@@ -720,7 +719,7 @@ function KeywordResults({ items }: { items: SearchResultItem[] }) {
           {items.map((item, idx) => (
             <tr
               key={item.item_id || idx}
-              style={{ borderBottom: 'var(--border-whisper)' }}
+              style={{ borderBottom: 'var(--border-default)' }}
             >
               <td style={{ ...cellStyle, fontWeight: 500 }}>{item.title}</td>
               <td style={cellStyle}>
@@ -735,7 +734,7 @@ function KeywordResults({ items }: { items: SearchResultItem[] }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
-                      color: 'var(--color-notion-blue)',
+                      color: 'var(--color-accent)',
                       textDecoration: 'none',
                       fontSize: 'var(--font-size-sm)',
                     }}
@@ -752,7 +751,7 @@ function KeywordResults({ items }: { items: SearchResultItem[] }) {
                 <span
                   style={{
                     fontSize: 'var(--font-size-xs)',
-                    color: 'var(--color-warm-gray-300)',
+                    color: 'var(--color-text-secondary)',
                   }}
                 >
                   {item.created_at ? formatDate(item.created_at) : '-'}
@@ -771,7 +770,7 @@ function VectorResults({ items }: { items: SearchResultItem[] }) {
   if (items.length === 0) {
     return (
       <p
-        style={{ color: 'var(--color-warm-gray-500)', fontSize: 'var(--font-size-sm)' }}
+        style={{ color: 'var(--color-text-body)', fontSize: 'var(--font-size-sm)' }}
       >
         未找到结果。
       </p>
@@ -790,8 +789,8 @@ function VectorResults({ items }: { items: SearchResultItem[] }) {
         <div
           key={item.chunk_id || idx}
           style={{
-            backgroundColor: 'var(--color-white)',
-            border: 'var(--border-whisper)',
+            backgroundColor: 'var(--color-bg-content)',
+            border: 'var(--border-default)',
             borderRadius: 'var(--radius-lg)',
             padding: 'var(--space-4)',
             boxShadow: 'var(--shadow-card)',
@@ -819,7 +818,7 @@ function VectorResults({ items }: { items: SearchResultItem[] }) {
               <span
                 style={{
                   fontSize: 'var(--font-size-xs)',
-                  color: 'var(--color-warm-gray-500)',
+                  color: 'var(--color-text-body)',
                   fontWeight: 500,
                   marginLeft: 'var(--space-3)',
                   whiteSpace: 'nowrap',
@@ -833,7 +832,7 @@ function VectorResults({ items }: { items: SearchResultItem[] }) {
             <p
               style={{
                 fontSize: 'var(--font-size-sm)',
-                color: 'var(--color-warm-gray-500)',
+                color: 'var(--color-text-body)',
                 margin: 0,
                 lineHeight: 1.5,
               }}
@@ -847,7 +846,7 @@ function VectorResults({ items }: { items: SearchResultItem[] }) {
               gap: 'var(--space-3)',
               marginTop: 'var(--space-2)',
               fontSize: 'var(--font-size-xs)',
-              color: 'var(--color-warm-gray-300)',
+              color: 'var(--color-text-secondary)',
             }}
           >
             {item.content_item_id && (

@@ -74,7 +74,7 @@ export function ContentDetailModal({
         aria-modal="true"
         data-testid="content-detail-modal"
         style={{
-          background: '#ffffff',
+          background: 'var(--color-bg-content)',
           borderRadius: 12,
           width: '100%',
           maxWidth: 720,
@@ -130,7 +130,7 @@ export function ContentDetailModal({
                   <span
                     style={{
                       fontSize: 12,
-                      color: '#615d59',
+                      color: 'var(--color-text-body)',
                     }}
                   >
                     {detail.source_name}
@@ -171,7 +171,7 @@ export function ContentDetailModal({
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
-                  color: '#0075de',
+                  color: 'var(--color-accent)',
                   textDecoration: 'none',
                   fontSize: 13,
                   display: 'block',
@@ -207,7 +207,7 @@ export function ContentDetailModal({
             minHeight: 0,
           }}
         >
-          {loading && <div style={{ color: '#615d59', fontSize: 14 }}>加载中...</div>}
+          {loading && <div style={{ color: 'var(--color-text-body)', fontSize: 14 }}>加载中...</div>}
           {error && <div style={{ color: '#dd5b00', fontSize: 14 }}>{error}</div>}
           {!loading && !error && detail?.latest_version?.normalized_text && (
             <div
