@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import type { ApiConfig } from '../../types/api'
 import type { DashboardSummary, FailureItem } from '../../types/observability'
-import { Card } from '../../components/ui/card'
+import { Card } from 'animal-island-ui'
 import { StatusPill } from '../../components/ui/status-pill'
 import { getDashboardSummary, getRecentFailures } from '../../lib/observability-api'
 import { formatDate } from '../../lib/format'
@@ -22,11 +22,11 @@ function MetricCard({
   sublabel?: string
 }) {
   return (
-    <Card>
+    <Card type="default">
       <p
         style={{
           fontSize: 'var(--font-size-sm)',
-          color: 'var(--color-warm-gray-300)',
+          color: 'var(--color-text-secondary)',
           marginBottom: 'var(--space-2)',
         }}
       >
@@ -44,7 +44,7 @@ function MetricCard({
         <p
           style={{
             fontSize: 'var(--font-size-xs)',
-            color: 'var(--color-warm-gray-500)',
+            color: 'var(--color-text-body)',
             marginTop: 'var(--space-1)',
           }}
         >
@@ -80,7 +80,7 @@ function FailurePanel({ items, title }: { items: FailureItem[]; title: string })
       <div
         style={{
           overflowX: 'auto',
-          border: 'var(--border-whisper)',
+          border: 'var(--border-default)',
           borderRadius: 'var(--radius-lg)',
         }}
       >
@@ -95,8 +95,8 @@ function FailurePanel({ items, title }: { items: FailureItem[]; title: string })
           <thead>
             <tr
               style={{
-                borderBottom: 'var(--border-whisper)',
-                backgroundColor: 'var(--color-warm-white)',
+                borderBottom: 'var(--border-default)',
+                backgroundColor: 'var(--color-bg-content)',
               }}
             >
               {['ID', '状态', '错误', '创建时间'].map((header) => (
@@ -106,7 +106,7 @@ function FailurePanel({ items, title }: { items: FailureItem[]; title: string })
                     padding: '10px var(--space-3)',
                     fontSize: 'var(--font-size-xs)',
                     fontWeight: 600,
-                    color: 'var(--color-warm-gray-500)',
+                    color: 'var(--color-text-body)',
                     textAlign: 'left',
                     textTransform: 'uppercase',
                     letterSpacing: '0.125px',
@@ -119,7 +119,7 @@ function FailurePanel({ items, title }: { items: FailureItem[]; title: string })
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id} style={{ borderBottom: 'var(--border-whisper)' }}>
+              <tr key={item.id} style={{ borderBottom: 'var(--border-default)' }}>
                 <td
                   style={{
                     padding: '10px var(--space-3)',
@@ -150,7 +150,7 @@ function FailurePanel({ items, title }: { items: FailureItem[]; title: string })
                     padding: '10px var(--space-3)',
                     fontSize: 'var(--font-size-sm)',
                     verticalAlign: 'middle',
-                    color: 'var(--color-warm-gray-500)',
+                    color: 'var(--color-text-body)',
                     maxWidth: '300px',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -164,7 +164,7 @@ function FailurePanel({ items, title }: { items: FailureItem[]; title: string })
                     padding: '10px var(--space-3)',
                     fontSize: 'var(--font-size-sm)',
                     verticalAlign: 'middle',
-                    color: 'var(--color-warm-gray-300)',
+                    color: 'var(--color-text-secondary)',
                   }}
                 >
                   {formatDate(item.created_at)}
@@ -234,9 +234,9 @@ export function DashboardPage({ config }: DashboardPageProps) {
             fontSize: 'var(--font-size-sm)',
             fontWeight: 500,
             fontFamily: 'var(--font-family)',
-            color: 'var(--color-warm-gray-500)',
+            color: 'var(--color-text-body)',
             background: 'transparent',
-            border: 'var(--border-whisper)',
+            border: 'var(--border-default)',
             borderRadius: 'var(--radius-sm)',
             cursor: 'pointer',
           }}
@@ -249,7 +249,7 @@ export function DashboardPage({ config }: DashboardPageProps) {
         <p
           data-testid="dashboard-loading"
           style={{
-            color: 'var(--color-warm-gray-500)',
+            color: 'var(--color-text-body)',
             fontSize: 'var(--font-size-sm)',
           }}
         >
@@ -303,7 +303,7 @@ export function DashboardPage({ config }: DashboardPageProps) {
           </div>
 
           {/* Recent failures */}
-          <Card>
+          <Card type="default">
             <h3
               style={{
                 fontFamily: 'var(--font-family)',
@@ -318,7 +318,7 @@ export function DashboardPage({ config }: DashboardPageProps) {
               <p
                 data-testid="dashboard-no-failures"
                 style={{
-                  color: 'var(--color-warm-gray-300)',
+                  color: 'var(--color-text-secondary)',
                   fontSize: 'var(--font-size-sm)',
                   textAlign: 'center',
                   padding: 'var(--space-4)',
