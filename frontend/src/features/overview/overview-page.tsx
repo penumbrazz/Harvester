@@ -2,9 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import type { ApiConfig } from '../../types/api'
 import type { DashboardSummary } from '../../types/observability'
-import { Button } from '../../components/ui/button'
-import { Card } from '../../components/ui/card'
-import { Input } from '../../components/ui/input'
+import { Button, Card, Input } from 'animal-island-ui'
 import { StatusPill } from '../../components/ui/status-pill'
 import { getDashboardSummary } from '../../lib/observability-api'
 import { useHealthCheck } from '../../hooks/use-health-check'
@@ -86,7 +84,7 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
       </h2>
 
       {/* Connection Status Card */}
-      <Card style={{ marginBottom: 'var(--space-5)' }}>
+      <Card type="default" style={{ marginBottom: 'var(--space-5)' }}>
         <div
           style={{
             display: 'flex',
@@ -131,33 +129,55 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
               gap: 'var(--space-3)',
             }}
           >
-            <Input
-              id="api-base-url"
-              label="API 地址"
-              placeholder="http://localhost:8001"
-              value={editConfig.baseUrl}
-              onChange={(e) =>
-                setEditConfig((prev) => ({ ...prev, baseUrl: e.target.value }))
-              }
-              data-testid="input-api-base-url"
-            />
-            <Input
-              id="api-token"
-              label="API 令牌"
-              type="password"
-              placeholder="可选的 Bearer 令牌"
-              value={editConfig.token}
-              onChange={(e) =>
-                setEditConfig((prev) => ({ ...prev, token: e.target.value }))
-              }
-              data-testid="input-api-token"
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label
+                htmlFor="api-base-url"
+                style={{
+                  fontSize: 'var(--font-size-sm)',
+                  fontWeight: 500,
+                  color: 'var(--color-text-body)',
+                }}
+              >
+                API 地址
+              </label>
+              <Input
+                id="api-base-url"
+                placeholder="http://localhost:8001"
+                value={editConfig.baseUrl}
+                onChange={(e) =>
+                  setEditConfig((prev) => ({ ...prev, baseUrl: e.target.value }))
+                }
+                data-testid="input-api-base-url"
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label
+                htmlFor="api-token"
+                style={{
+                  fontSize: 'var(--font-size-sm)',
+                  fontWeight: 500,
+                  color: 'var(--color-text-body)',
+                }}
+              >
+                API 令牌
+              </label>
+              <Input
+                id="api-token"
+                type="password"
+                placeholder="可选的 Bearer 令牌"
+                value={editConfig.token}
+                onChange={(e) =>
+                  setEditConfig((prev) => ({ ...prev, token: e.target.value }))
+                }
+                data-testid="input-api-token"
+              />
+            </div>
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
               <Button onClick={handleSave} data-testid="save-config-button">
                 保存并连接
               </Button>
               <Button
-                variant="secondary"
+                type="default"
                 onClick={handleCancel}
                 data-testid="cancel-config-button"
               >
@@ -177,21 +197,21 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
             <span
               style={{
                 fontSize: 'var(--font-size-sm)',
-                color: 'var(--color-warm-gray-500)',
+                color: 'var(--color-text-body)',
               }}
             >
               {config.baseUrl || 'http://localhost:8001'}
             </span>
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
               <Button
-                variant="secondary"
+                type="default"
                 onClick={startEditing}
                 data-testid="edit-config-button"
               >
                 配置
               </Button>
               <Button
-                variant="secondary"
+                type="default"
                 onClick={() => void check()}
                 data-testid="retry-connection-button"
               >
@@ -211,11 +231,11 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
           gap: 'var(--space-4)',
         }}
       >
-        <Card>
+        <Card type="default">
           <p
             style={{
               fontSize: 'var(--font-size-sm)',
-              color: 'var(--color-warm-gray-300)',
+              color: 'var(--color-text-secondary)',
               marginBottom: 'var(--space-2)',
             }}
           >
@@ -230,11 +250,11 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
             {summary?.sources.total ?? '--'}
           </p>
         </Card>
-        <Card>
+        <Card type="default">
           <p
             style={{
               fontSize: 'var(--font-size-sm)',
-              color: 'var(--color-warm-gray-300)',
+              color: 'var(--color-text-secondary)',
               marginBottom: 'var(--space-2)',
             }}
           >
@@ -251,11 +271,11 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
               : '--'}
           </p>
         </Card>
-        <Card>
+        <Card type="default">
           <p
             style={{
               fontSize: 'var(--font-size-sm)',
-              color: 'var(--color-warm-gray-300)',
+              color: 'var(--color-text-secondary)',
               marginBottom: 'var(--space-2)',
             }}
           >
