@@ -14,6 +14,7 @@ export function PlaceholderPage({ title, description }: PlaceholderPageProps) {
           letterSpacing: '-0.625px',
           lineHeight: 'var(--line-height-tight)',
           marginBottom: 'var(--space-3)',
+          color: 'var(--color-text-primary)',
         }}
       >
         {title}
@@ -21,7 +22,7 @@ export function PlaceholderPage({ title, description }: PlaceholderPageProps) {
       <p
         style={{
           fontSize: 'var(--font-size-base)',
-          color: 'var(--color-warm-gray-500)',
+          color: 'var(--color-text-body)',
           lineHeight: 'var(--line-height-normal)',
         }}
       >
