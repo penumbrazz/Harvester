@@ -2,8 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import type { ApiConfig } from '../../types/api'
 import type { Job } from '../../types/observability'
-import { Card } from '../../components/ui/card'
-import { Select } from '../../components/ui/select'
+import { Card, Select } from 'animal-island-ui'
 import { StatusPill } from '../../components/ui/status-pill'
 import { PaginationControls } from '../../components/common/pagination-controls'
 import { listJobs } from '../../lib/observability-api'
@@ -16,26 +15,26 @@ interface JobsPageProps {
 
 const PAGE_SIZE = 20
 
-const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: '全部状态' },
-  { value: 'pending', label: '等待中' },
-  { value: 'running', label: '运行中' },
-  { value: 'completed', label: '已完成' },
-  { value: 'failed', label: '已失败' },
-  { value: 'dead', label: '已死亡' },
+const STATUS_FILTER_OPTIONS: { key: string; label: string }[] = [
+  { key: '', label: '全部状态' },
+  { key: 'pending', label: '等待中' },
+  { key: 'running', label: '运行中' },
+  { key: 'completed', label: '已完成' },
+  { key: 'failed', label: '已失败' },
+  { key: 'dead', label: '已死亡' },
 ]
 
-const JOB_TYPE_FILTER_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: '全部类型' },
-  { value: 'crawl', label: '抓取' },
-  { value: 'extract', label: '提取' },
-  { value: 'embed', label: '嵌入' },
+const JOB_TYPE_FILTER_OPTIONS: { key: string; label: string }[] = [
+  { key: '', label: '全部类型' },
+  { key: 'crawl', label: '抓取' },
+  { key: 'extract', label: '提取' },
+  { key: 'embed', label: '嵌入' },
 ]
 
-const LANE_FILTER_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: '全部通道' },
-  { value: 'default', label: '默认' },
-  { value: 'priority', label: '优先' },
+const LANE_FILTER_OPTIONS: { key: string; label: string }[] = [
+  { key: '', label: '全部通道' },
+  { key: 'default', label: '默认' },
+  { key: 'priority', label: '优先' },
 ]
 
 /** Map job status to StatusPill variant. */
@@ -131,9 +130,9 @@ export function JobsPage({ config }: JobsPageProps) {
             fontSize: 'var(--font-size-sm)',
             fontWeight: 500,
             fontFamily: 'var(--font-family)',
-            color: 'var(--color-warm-gray-500)',
+            color: 'var(--color-text-body)',
             background: 'transparent',
-            border: 'var(--border-whisper)',
+            border: 'var(--border-default)',
             borderRadius: 'var(--radius-sm)',
             cursor: 'pointer',
           }}
@@ -154,12 +153,12 @@ export function JobsPage({ config }: JobsPageProps) {
             flexShrink: 0,
           }}
         >
-          {STATUS_FILTER_OPTIONS.filter((opt) => opt.value).map((opt) => (
-            <Card key={opt.value}>
+          {STATUS_FILTER_OPTIONS.filter((opt) => opt.key).map((opt) => (
+            <Card key={opt.key} type="default">
               <p
                 style={{
                   fontSize: 'var(--font-size-xs)',
-                  color: 'var(--color-warm-gray-300)',
+                  color: 'var(--color-text-secondary)',
                   marginBottom: 'var(--space-1)',
                 }}
               >
@@ -171,7 +170,7 @@ export function JobsPage({ config }: JobsPageProps) {
                   fontWeight: 700,
                 }}
               >
-                {statusCounts[opt.value] || 0}
+                {statusCounts[opt.key] || 0}
               </p>
             </Card>
           ))}
@@ -191,50 +190,35 @@ export function JobsPage({ config }: JobsPageProps) {
       >
         <Select
           data-testid="select-job-type-filter"
+          options={JOB_TYPE_FILTER_OPTIONS}
           value={jobTypeFilter}
-          onChange={(e) => {
-            setJobTypeFilter(e.target.value)
+          onChange={(val: string) => {
+            setJobTypeFilter(val)
             setOffset(0)
           }}
-        >
-          {JOB_TYPE_FILTER_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </Select>
+        />
         <Select
           data-testid="select-job-status-filter"
+          options={STATUS_FILTER_OPTIONS}
           value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value)
+          onChange={(val: string) => {
+            setStatusFilter(val)
             setOffset(0)
           }}
-        >
-          {STATUS_FILTER_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </Select>
+        />
         <Select
           data-testid="select-job-lane-filter"
+          options={LANE_FILTER_OPTIONS}
           value={laneFilter}
-          onChange={(e) => {
-            setLaneFilter(e.target.value)
+          onChange={(val: string) => {
+            setLaneFilter(val)
             setOffset(0)
           }}
-        >
-          {LANE_FILTER_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </Select>
+        />
         <span
           style={{
             fontSize: 'var(--font-size-sm)',
-            color: 'var(--color-warm-gray-500)',
+            color: 'var(--color-text-body)',
           }}
         >
           {total} 个作业
@@ -246,7 +230,7 @@ export function JobsPage({ config }: JobsPageProps) {
         <p
           data-testid="jobs-loading"
           style={{
-            color: 'var(--color-warm-gray-500)',
+            color: 'var(--color-text-body)',
             fontSize: 'var(--font-size-sm)',
             flexShrink: 0,
           }}
@@ -276,7 +260,7 @@ export function JobsPage({ config }: JobsPageProps) {
           style={{
             textAlign: 'center',
             padding: 'var(--space-8) var(--space-4)',
-            color: 'var(--color-warm-gray-300)',
+            color: 'var(--color-text-secondary)',
             flexShrink: 0,
           }}
         >
@@ -303,7 +287,7 @@ export function JobsPage({ config }: JobsPageProps) {
             overflow: 'auto',
             flex: 1,
             minHeight: 0,
-            border: 'var(--border-whisper)',
+            border: 'var(--border-default)',
             borderRadius: 'var(--radius-lg)',
           }}
         >
@@ -318,8 +302,8 @@ export function JobsPage({ config }: JobsPageProps) {
             <thead>
               <tr
                 style={{
-                  borderBottom: 'var(--border-whisper)',
-                  backgroundColor: 'var(--color-warm-white)',
+                  borderBottom: 'var(--border-default)',
+                  backgroundColor: 'var(--color-bg-content)',
                 }}
               >
                 {[
@@ -338,7 +322,7 @@ export function JobsPage({ config }: JobsPageProps) {
                       padding: '10px var(--space-3)',
                       fontSize: 'var(--font-size-xs)',
                       fontWeight: 600,
-                      color: 'var(--color-warm-gray-500)',
+                      color: 'var(--color-text-body)',
                       textAlign: 'left',
                       textTransform: 'uppercase',
                       letterSpacing: '0.125px',
@@ -351,7 +335,7 @@ export function JobsPage({ config }: JobsPageProps) {
             </thead>
             <tbody>
               {jobs.map((job) => (
-                <tr key={job.id} style={{ borderBottom: 'var(--border-whisper)' }}>
+                <tr key={job.id} style={{ borderBottom: 'var(--border-default)' }}>
                   <td style={cellStyle}>
                     <StatusPill variant="default">{job.job_type}</StatusPill>
                   </td>
@@ -380,7 +364,7 @@ export function JobsPage({ config }: JobsPageProps) {
                   <td
                     style={{
                       ...cellStyle,
-                      color: 'var(--color-warm-gray-500)',
+                      color: 'var(--color-text-body)',
                       maxWidth: '250px',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -390,7 +374,7 @@ export function JobsPage({ config }: JobsPageProps) {
                   >
                     {job.last_error || '--'}
                   </td>
-                  <td style={{ ...cellStyle, color: 'var(--color-warm-gray-300)' }}>
+                  <td style={{ ...cellStyle, color: 'var(--color-text-secondary)' }}>
                     {formatDate(job.created_at)}
                   </td>
                 </tr>
