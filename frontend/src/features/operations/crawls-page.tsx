@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 
 import type { ApiConfig } from '../../types/api'
 import type { CrawlRun, TriggerCrawlResponse } from '../../types/observability'
-import { Button, Select } from 'animal-island-ui'
+import { Button } from 'animal-island-ui'
+import { Select } from '../../components/ui/select'
 import { StatusPill } from '../../components/ui/status-pill'
 import { PaginationControls } from '../../components/common/pagination-controls'
 import {
