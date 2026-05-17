@@ -17,7 +17,7 @@ Harvester 是个人 home lab 信息采集控制平面。第一版目标是公开
 ## 工作方式
 
 - 按 OpenSpec change 工作。实现前先读对应 `openspec/changes/<change>/proposal.md`、`design.md`、`specs/**/spec.md`、`tasks.md`。
-- 涉及前端视觉、布局、组件样式或交互状态时，必须先读根目录 `DESIGN.md`，并以其中的 Notion 风格设计系统为准。
+- 涉及前端视觉、布局、组件样式或交互状态时，必须先读根目录 `DESIGN.md`，并以其中的 Animal Island UI 风格设计系统为准。优先使用 `animal-island-ui` 提供的组件，参考 `AI_USAGE.md` 了解组件 API。
 - 一次只实现一个 change，除非用户明确要求跨 change 协作。
 - 任务完成后立刻把 `tasks.md` 中对应 `- [ ]` 改成 `- [x]`。
 - 采用 TDD。先写或更新测试，再实现，再运行相关测试。
@@ -129,8 +129,9 @@ npm run format && npm run lint
 
 ⚠️ **创建新组件前务必检查现有组件**
 
-1. 在 `src/components/ui/`、`src/components/common/`、`src/features/*/components/` 中搜索现有组件
-2. 如果多次实现类似的 UI 模式，提取可复用逻辑
+1. 优先检查 `animal-island-ui` 提供的组件（Button、Card、Input、Select、Modal、Switch、Tabs、Checkbox、Collapse 等）
+2. 在 `src/components/ui/`、`src/components/common/`、`src/features/*/components/` 中搜索现有组件
+3. 如果多次实现类似的 UI 模式，提取可复用逻辑
 
 ### 测试属性（data-testid）
 
