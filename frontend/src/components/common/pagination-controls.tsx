@@ -1,19 +1,10 @@
-/** Reusable pagination controls component with Previous/Next buttons and range indicator. */
+import { Button } from 'animal-island-ui'
 
 interface PaginationControlsProps {
   total: number
   offset: number
   pageSize: number
   onPageChange: (offset: number) => void
-}
-
-const buttonBase: React.CSSProperties = {
-  padding: '6px 12px',
-  borderRadius: 'var(--radius-sm)',
-  border: 'var(--border-whisper)',
-  fontFamily: 'var(--font-family)',
-  fontSize: 'var(--font-size-sm)',
-  fontWeight: 500,
 }
 
 export function PaginationControls({
@@ -37,43 +28,31 @@ export function PaginationControls({
         alignItems: 'center',
         marginTop: 'var(--space-4)',
         fontSize: 'var(--font-size-sm)',
-        color: 'var(--color-warm-gray-500)',
+        color: 'var(--color-text-body)',
       }}
     >
       <span data-testid="pagination-range">
         {offset + 1}-{rangeEnd} of {total}
       </span>
       <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-        <button
-          data-testid="pagination-prev"
+        <Button
+          type="default"
+          size="small"
           disabled={isPrevDisabled}
           onClick={() => onPageChange(Math.max(0, offset - pageSize))}
-          style={{
-            ...buttonBase,
-            backgroundColor: isPrevDisabled
-              ? 'var(--color-warm-white)'
-              : 'var(--color-white)',
-            cursor: isPrevDisabled ? 'not-allowed' : 'pointer',
-            opacity: isPrevDisabled ? 0.5 : 1,
-          }}
+          data-testid="pagination-prev"
         >
           上一页
-        </button>
-        <button
-          data-testid="pagination-next"
+        </Button>
+        <Button
+          type="default"
+          size="small"
           disabled={isNextDisabled}
           onClick={() => onPageChange(offset + pageSize)}
-          style={{
-            ...buttonBase,
-            backgroundColor: isNextDisabled
-              ? 'var(--color-warm-white)'
-              : 'var(--color-white)',
-            cursor: isNextDisabled ? 'not-allowed' : 'pointer',
-            opacity: isNextDisabled ? 0.5 : 1,
-          }}
+          data-testid="pagination-next"
         >
           下一页
-        </button>
+        </Button>
       </div>
     </div>
   )
