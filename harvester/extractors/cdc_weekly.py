@@ -26,8 +26,8 @@ _MD_LIST_RE = re.compile(
 # Markdown link pattern: `[text](url)`
 _MD_LINK_RE = re.compile(r"\[(?P<text>[^\]]*)\]\((?P<href>[^)]+)\)")
 
-# Markdown heading pattern: `# title`
-_MD_HEADING_RE = re.compile(r"^#\s+(?P<title>.+)$", re.MULTILINE)
+# Markdown heading pattern: `# title` through `###### title`
+_MD_HEADING_RE = re.compile(r"^#{1,6}\s+(?P<title>.+)$", re.MULTILINE)
 
 
 @dataclass
@@ -147,49 +147,86 @@ def _parse_list_html(payload: str) -> list[_ListEntry]:
     return parser.entries
 
 
+# Footer headings that mark end of body content on CDC detail pages
+_FOOTER_HEADINGS = {"文件附件", "相关新闻"}
+
+
 def _parse_detail_markdown(payload: str) -> tuple[str, list[str], list[str]]:
-    """Parse Markdown detail page. Returns (title, paragraphs, pdf_hrefs)."""
+    """Parse Markdown detail page. Returns (title, paragraphs, pdf_hrefs).
+
+    The detail page structure from Firecrawl Markdown output is:
+    - Breadcrumb navigation (before the main heading)
+    - Main heading: ``##### YYYY年第N周...``
+    - Metadata line: ``时间：...``
+    - Body paragraphs (fullwidth-indented text)
+    - Footer headings: ``###### 文件附件`` and ``###### 相关新闻``
+    - Page chrome (accessibility toolbar etc.)
+
+    We use the main heading to locate the body start and footer headings to
+    stop collecting, keeping only actual content paragraphs.
+    """
     title = ""
-    m = _MD_HEADING_RE.search(payload)
-    if m:
-        title = m.group("title").strip()
+    title_match = _MD_HEADING_RE.search(payload)
+    if title_match:
+        title = title_match.group("title").strip()
 
     paragraphs: list[str] = []
     pdf_hrefs: list[str] = []
 
-    # Split into lines, skip heading, collect text paragraphs
     lines = payload.split("\n")
-    in_text = False
+    # Only process lines after the main title heading
+    in_body = False
+    in_pdf_zone = False
     text_parts: list[str] = []
     for line in lines:
         stripped = line.strip()
-        if stripped.startswith("#"):
+        # Detect all headings to manage body boundaries
+        heading_m = _MD_HEADING_RE.match(stripped)
+        if heading_m:
+            heading_text = heading_m.group("title").strip()
+            if not in_body and heading_text == title:
+                in_body = True
+            elif in_body and any(fh in heading_text for fh in _FOOTER_HEADINGS):
+                in_body = False
+                in_pdf_zone = True
+                _flush_paragraph(text_parts, paragraphs)
+                text_parts = []
+            elif in_pdf_zone:
+                in_pdf_zone = False
+            continue
+        if not in_body and not in_pdf_zone:
             continue
         if not stripped:
-            if in_text and text_parts:
-                text = _clean_text(" ".join(text_parts))
-                if text:
-                    paragraphs.append(text)
-                text_parts = []
-                in_text = False
+            _flush_paragraph(text_parts, paragraphs)
+            text_parts = []
             continue
-        # Check for PDF links
+        # Check for PDF links in body and attachment zone
         for lm in _MD_LINK_RE.finditer(stripped):
             href = lm.group("href")
             if href.lower().split("?", 1)[0].endswith(".pdf"):
                 pdf_hrefs.append(href)
+        if not in_body:
+            continue
+        # Skip metadata lines (time/font-size)
+        if stripped.startswith("时间："):
+            continue
         # Collect non-link text as paragraph content
         text = _MD_LINK_RE.sub(r"\1", stripped)
         if text.strip():
             text_parts.append(text)
-            in_text = True
 
-    if in_text and text_parts:
-        text = _clean_text(" ".join(text_parts))
-        if text:
-            paragraphs.append(text)
+    _flush_paragraph(text_parts, paragraphs)
 
     return title, paragraphs, pdf_hrefs
+
+
+def _flush_paragraph(parts: list[str], out: list[str]) -> None:
+    if not parts:
+        return
+    text = _clean_text(" ".join(parts))
+    if text:
+        out.append(text)
+    parts.clear()
 
 
 def _parse_detail_html(payload: str) -> tuple[str, list[str], list[str]]:
