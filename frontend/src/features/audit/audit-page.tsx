@@ -2,9 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 
 import type { ApiConfig } from '../../types/api'
 import type { AuditEvent, AuditEventFilters } from '../../types/audit'
-import { Button } from '../../components/ui/button'
-import { Card } from '../../components/ui/card'
-import { Select } from '../../components/ui/select'
+import { Button } from 'animal-island-ui'
+import { Card } from 'animal-island-ui'
 import { StatusPill } from '../../components/ui/status-pill'
 import { formatDate } from '../../lib/format'
 import { listAuditEvents } from '../../lib/audit-api'
@@ -123,15 +122,15 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
           审计日志
         </h2>
         <Button
-          variant="ghost"
+          type="text"
           onClick={() => {
             setOffset(0)
             void fetchEvents(0)
           }}
           data-testid="refresh-audit"
           style={{
-            color: 'var(--color-warm-gray-500)',
-            border: 'var(--border-whisper)',
+            color: 'var(--color-text-body)',
+            border: 'var(--border-default)',
           }}
         >
           刷新
@@ -148,30 +147,44 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
           flexWrap: 'wrap',
         }}
       >
-        <Select
-          label="实体类型"
+        <select
           data-testid="select-entity-type-filter"
           value={entityType}
-          onChange={(e) => setEntityType((e.target as HTMLSelectElement).value)}
+          onChange={(e) => setEntityType(e.target.value)}
+          style={{
+            borderRadius: 'var(--radius-sm)',
+            border: 'var(--border-default)',
+            backgroundColor: 'var(--color-bg-content)',
+            color: 'var(--color-text-body)',
+            padding: '6px 12px',
+            fontSize: 'var(--font-size-sm)',
+          }}
         >
           {ENTITY_TYPES.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
           ))}
-        </Select>
-        <Select
-          label="操作"
+        </select>
+        <select
           data-testid="select-action-filter"
           value={actionFilter}
-          onChange={(e) => setActionFilter((e.target as HTMLSelectElement).value)}
+          onChange={(e) => setActionFilter(e.target.value)}
+          style={{
+            borderRadius: 'var(--radius-sm)',
+            border: 'var(--border-default)',
+            backgroundColor: 'var(--color-bg-content)',
+            color: 'var(--color-text-body)',
+            padding: '6px 12px',
+            fontSize: 'var(--font-size-sm)',
+          }}
         >
           {ACTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
           ))}
-        </Select>
+        </select>
       </div>
 
       {/* Loading state */}
@@ -179,7 +192,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
         <p
           data-testid="audit-loading"
           style={{
-            color: 'var(--color-warm-gray-500)',
+            color: 'var(--color-text-body)',
             fontSize: 'var(--font-size-sm)',
           }}
         >
@@ -202,7 +215,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
         <p
           data-testid="audit-empty"
           style={{
-            color: 'var(--color-warm-gray-300)',
+            color: 'var(--color-text-secondary)',
             fontSize: 'var(--font-size-sm)',
             textAlign: 'center',
             padding: 'var(--space-5)',
@@ -245,7 +258,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
                   <span
                     style={{
                       fontSize: 'var(--font-size-xs)',
-                      color: 'var(--color-warm-gray-300)',
+                      color: 'var(--color-text-secondary)',
                     }}
                   >
                     {event.actor || 'system'}
@@ -254,7 +267,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
                 <span
                   style={{
                     fontSize: 'var(--font-size-xs)',
-                    color: 'var(--color-warm-gray-300)',
+                    color: 'var(--color-text-secondary)',
                   }}
                 >
                   {formatDate(event.created_at)}
@@ -265,7 +278,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
               <div
                 style={{
                   fontSize: 'var(--font-size-sm)',
-                  color: 'var(--color-primary-text)',
+                  color: 'var(--color-text-primary)',
                   marginBottom: 'var(--space-1)',
                 }}
               >
@@ -274,7 +287,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
                   <span
                     style={{
                       fontFamily: 'monospace',
-                      color: 'var(--color-warm-gray-500)',
+                      color: 'var(--color-text-body)',
                       marginLeft: 'var(--space-2)',
                       fontSize: 'var(--font-size-xs)',
                     }}
@@ -289,7 +302,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
                 <div
                   style={{
                     fontSize: 'var(--font-size-xs)',
-                    color: 'var(--color-warm-gray-500)',
+                    color: 'var(--color-text-body)',
                     marginTop: 'var(--space-2)',
                     display: 'flex',
                     flexDirection: 'column',
@@ -306,7 +319,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
                 <div
                   style={{
                     fontSize: 'var(--font-size-xs)',
-                    color: 'var(--color-warm-gray-300)',
+                    color: 'var(--color-text-secondary)',
                     marginTop: 'var(--space-2)',
                     fontStyle: 'italic',
                   }}
@@ -321,7 +334,7 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
           {hasMore && (
             <div style={{ textAlign: 'center', marginTop: 'var(--space-3)' }}>
               <Button
-                variant="secondary"
+                type="default"
                 data-testid="audit-load-more"
                 onClick={handleLoadMore}
                 disabled={loading}
