@@ -49,6 +49,8 @@ htmlcov/
 node_modules/
 
 .claude/
+!.claude/skills/
 .codex/
 
 .harvester
+.superpowers/
