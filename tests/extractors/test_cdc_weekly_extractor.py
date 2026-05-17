@@ -3,6 +3,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from harvester.extractors.cdc_weekly import (
     CdcWeeklyDetailExtractor,
     CdcWeeklyListExtractor,
@@ -24,10 +26,15 @@ def _read_expected(name: str):
 class TestCdcWeeklyListExtractor:
     """Tests for CDC weekly list page discovery."""
 
-    def test_extracts_weekly_items_and_detail_targets(self):
+    @pytest.mark.parametrize(
+        "fixture_file",
+        ["cdc-weekly-list.html", "cdc-weekly-list.md"],
+        ids=["html", "markdown"],
+    )
+    def test_extracts_weekly_items_and_detail_targets(self, fixture_file):
         """List extractor should create item identities and detail targets."""
         # Arrange
-        payload = _read_fixture("cdc-weekly-list.html")
+        payload = _read_fixture(fixture_file)
         expected = _read_expected("cdc-weekly-list-targets.json")
 
         # Act
@@ -53,10 +60,15 @@ class TestCdcWeeklyListExtractor:
 class TestCdcWeeklyDetailExtractor:
     """Tests for CDC weekly detail page PDF asset discovery."""
 
-    def test_extracts_detail_item_and_pdf_asset_target(self):
+    @pytest.mark.parametrize(
+        "fixture_file",
+        ["cdc-weekly-detail.html", "cdc-weekly-detail.md"],
+        ids=["html", "markdown"],
+    )
+    def test_extracts_detail_item_and_pdf_asset_target(self, fixture_file):
         """Detail extractor should discover the weekly report PDF asset."""
         # Arrange
-        payload = _read_fixture("cdc-weekly-detail.html")
+        payload = _read_fixture(fixture_file)
         expected = _read_expected("cdc-weekly-detail-targets.json")[0]
 
         # Act

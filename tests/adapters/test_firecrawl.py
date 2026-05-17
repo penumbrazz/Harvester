@@ -78,7 +78,7 @@ class TestFirecrawlAdapterSuccess:
         )
         result = adapter.crawl("https://example.com")
 
-        assert result.content_type == "text/html"
+        assert result.content_type == "text/markdown"
 
 
 class TestFirecrawlAdapterErrors:

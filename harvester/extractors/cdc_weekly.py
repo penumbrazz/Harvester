@@ -1,4 +1,8 @@
-"""CDC weekly influenza report discovery extractors."""
+"""CDC weekly influenza report discovery extractors.
+
+Supports both HTML and Markdown payloads. Firecrawl returns Markdown,
+while direct fetch may return HTML.
+"""
 
 from __future__ import annotations
 
@@ -11,6 +15,19 @@ from harvester.domain.urls import compute_canonical_url_hash, normalize_url
 from harvester.extractors.base import CandidateItem, DiscoveredTarget, ExtractionOutput
 
 _WEEKLY_ID_RE = re.compile(r"(?P<year>\d{4})年第(?P<week>\d+)周.*?第(?P<issue>\d+)期")
+
+# Markdown list-item pattern: `* [title](url)` followed by optional date line
+_MD_LIST_RE = re.compile(
+    r"\*\s+\[(?P<title>[^\]]+)\]\((?P<href>[^)]+)\)"
+    r"(?:\s+(?P<date>\d{4}-\d{2}-\d{2}))?",
+    re.MULTILINE,
+)
+
+# Markdown link pattern: `[text](url)`
+_MD_LINK_RE = re.compile(r"\[(?P<text>[^\]]*)\]\((?P<href>[^)]+)\)")
+
+# Markdown heading pattern: `# title`
+_MD_HEADING_RE = re.compile(r"^#\s+(?P<title>.+)$", re.MULTILINE)
 
 
 @dataclass
@@ -111,6 +128,86 @@ class _WeeklyDetailParser(HTMLParser):
         return _clean_text(" ".join(self.title_parts))
 
 
+def _parse_list_markdown(payload: str) -> list[_ListEntry]:
+    """Parse Markdown list format for CDC weekly entries."""
+    entries: list[_ListEntry] = []
+    for m in _MD_LIST_RE.finditer(payload):
+        title = m.group("title").strip()
+        href = m.group("href").strip()
+        date = m.group("date")
+        if title and href:
+            entries.append(_ListEntry(title=title, href=href, published_date=date))
+    return entries
+
+
+def _parse_list_html(payload: str) -> list[_ListEntry]:
+    """Parse HTML list format for CDC weekly entries."""
+    parser = _WeeklyListParser()
+    parser.feed(payload)
+    return parser.entries
+
+
+def _parse_detail_markdown(payload: str) -> tuple[str, list[str], list[str]]:
+    """Parse Markdown detail page. Returns (title, paragraphs, pdf_hrefs)."""
+    title = ""
+    m = _MD_HEADING_RE.search(payload)
+    if m:
+        title = m.group("title").strip()
+
+    paragraphs: list[str] = []
+    pdf_hrefs: list[str] = []
+
+    # Split into lines, skip heading, collect text paragraphs
+    lines = payload.split("\n")
+    in_text = False
+    text_parts: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            continue
+        if not stripped:
+            if in_text and text_parts:
+                text = _clean_text(" ".join(text_parts))
+                if text:
+                    paragraphs.append(text)
+                text_parts = []
+                in_text = False
+            continue
+        # Check for PDF links
+        for lm in _MD_LINK_RE.finditer(stripped):
+            href = lm.group("href")
+            if href.lower().split("?", 1)[0].endswith(".pdf"):
+                pdf_hrefs.append(href)
+        # Collect non-link text as paragraph content
+        text = _MD_LINK_RE.sub(r"\1", stripped)
+        if text.strip():
+            text_parts.append(text)
+            in_text = True
+
+    if in_text and text_parts:
+        text = _clean_text(" ".join(text_parts))
+        if text:
+            paragraphs.append(text)
+
+    return title, paragraphs, pdf_hrefs
+
+
+def _parse_detail_html(payload: str) -> tuple[str, list[str], list[str]]:
+    """Parse HTML detail page. Returns (title, paragraphs, pdf_hrefs)."""
+    parser = _WeeklyDetailParser()
+    parser.feed(payload)
+    return parser.title, parser.paragraphs, parser.pdf_hrefs
+
+
+def _is_markdown(payload: str) -> bool:
+    """Heuristic: treat payload as Markdown if it lacks HTML structure."""
+    stripped = payload.lstrip()
+    if stripped.startswith("<!DOCTYPE") or stripped.startswith("<html"):
+        return False
+    # Look for Markdown link syntax as a strong indicator
+    return bool(_MD_LINK_RE.search(payload[:2000]))
+
+
 class CdcWeeklyListExtractor:
     """Extract CDC weekly report item identities and detail targets."""
 
@@ -121,11 +218,14 @@ class CdcWeeklyListExtractor:
     ) -> ExtractionOutput:
         payload = _decode_payload(raw_payload)
         source_url = raw_metadata.get("source_url") or ""
-        parser = _WeeklyListParser()
-        parser.feed(payload)
+
+        if _is_markdown(payload):
+            entries = _parse_list_markdown(payload)
+        else:
+            entries = _parse_list_html(payload)
 
         output = ExtractionOutput()
-        for position, entry in enumerate(parser.entries):
+        for position, entry in enumerate(entries):
             if "流感监测周报" not in entry.title:
                 continue
             detail_url = urljoin(source_url, entry.href)
@@ -171,12 +271,14 @@ class CdcWeeklyDetailExtractor:
         detail_url = (
             raw_metadata.get("target_url") or raw_metadata.get("source_url") or ""
         )
-        parser = _WeeklyDetailParser()
-        parser.feed(payload)
 
-        title = parser.title
+        if _is_markdown(payload):
+            title, paragraphs, pdf_hrefs = _parse_detail_markdown(payload)
+        else:
+            title, paragraphs, pdf_hrefs = _parse_detail_html(payload)
+
         external_item_id = _external_item_id_from_title(title, detail_url)
-        content_text = " ".join(parser.paragraphs)
+        content_text = " ".join(paragraphs)
         output = ExtractionOutput(
             items=[
                 CandidateItem(
@@ -195,7 +297,7 @@ class CdcWeeklyDetailExtractor:
             ]
         )
 
-        for href in parser.pdf_hrefs:
+        for href in pdf_hrefs:
             output.discovered_targets.append(
                 DiscoveredTarget(
                     target_url=urljoin(detail_url, href),

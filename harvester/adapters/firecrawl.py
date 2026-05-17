@@ -125,10 +125,11 @@ class FirecrawlAdapter:
         final_url = metadata.get("sourceURL", url)
         status_code = metadata.get("statusCode", response.status_code)
 
-        # Detect content type from metadata or infer from content
+        # Detect content type from metadata or infer from content.
+        # Firecrawl returns Markdown in data.content/data.markdown, not raw HTML.
         content_type = metadata.get("contentType") or metadata.get("content_type")
         if not content_type and isinstance(content, str):
-            content_type = "text/html"
+            content_type = "text/markdown"
 
         size_error = self._check_size_limit(content, url)
         if size_error:

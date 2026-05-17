@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Harvester - Start backend and frontend dev servers
-# Set HARVESTER_START_DAEMONS=1 to also start scheduler and crawl worker daemons
+# Harvester - Start all services (backend, frontend, daemons)
+# Set HARVESTER_START_DAEMONS=0 to skip daemon processes
 
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKEND_PORT="${HARVESTER_PORT:-8001}"
@@ -48,7 +48,7 @@ echo "  Backend:  http://localhost:${BACKEND_PORT}"
 echo "  Frontend: http://localhost:${FRONTEND_PORT}"
 
 # Optionally start daemon processes
-if [ "${HARVESTER_START_DAEMONS:-0}" = "1" ]; then
+if [ "${HARVESTER_START_DAEMONS:-1}" = "1" ]; then
   echo ""
   echo "Starting scheduler daemon..."
   uv run harvester scheduler daemon &
@@ -58,8 +58,18 @@ if [ "${HARVESTER_START_DAEMONS:-0}" = "1" ]; then
   uv run harvester worker run --job-type crawl &
   PIDS+=($!)
 
+  echo "Starting extract worker daemon..."
+  uv run harvester worker run --job-type extract &
+  PIDS+=($!)
+
+  echo "Starting embedding worker daemon..."
+  uv run harvester worker run --job-type embed_chunks &
+  PIDS+=($!)
+
   echo "  Scheduler daemon: active"
   echo "  Crawl worker daemon: active"
+  echo "  Extract worker daemon: active"
+  echo "  Embedding worker daemon: active"
 fi
 
 echo ""
