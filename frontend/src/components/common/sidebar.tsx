@@ -16,8 +16,8 @@ export function Sidebar({ items, activeKey, onNavigate }: SidebarProps) {
       style={{
         width: 'var(--sidebar-width)',
         minHeight: '100vh',
-        backgroundColor: 'var(--color-warm-white)',
-        borderRight: 'var(--border-whisper)',
+        backgroundColor: 'var(--color-bg-content)',
+        borderRight: 'var(--border-default)',
         padding: 'var(--space-4) 0',
         flexShrink: 0,
       }}
@@ -25,7 +25,7 @@ export function Sidebar({ items, activeKey, onNavigate }: SidebarProps) {
       <div
         style={{
           padding: '0 var(--space-4) var(--space-5)',
-          borderBottom: 'var(--border-whisper)',
+          borderBottom: 'var(--border-default)',
           marginBottom: 'var(--space-2)',
         }}
       >
@@ -34,41 +34,53 @@ export function Sidebar({ items, activeKey, onNavigate }: SidebarProps) {
             fontFamily: 'var(--font-family)',
             fontSize: 'var(--font-size-lg)',
             fontWeight: 700,
-            color: 'var(--color-primary-text)',
-            letterSpacing: '-0.125px',
+            color: 'var(--color-text-primary)',
           }}
         >
           Harvester
         </h1>
       </div>
       <nav>
-        {items.map((item) => (
-          <button
-            key={item.key}
-            data-testid={`nav-${item.key}`}
-            onClick={() => onNavigate(item.key)}
-            style={{
-              display: 'block',
-              width: '100%',
-              textAlign: 'left',
-              padding: '10px var(--space-4)',
-              border: 'none',
-              backgroundColor:
-                activeKey === item.key ? 'rgba(0,0,0,0.05)' : 'transparent',
-              color:
-                activeKey === item.key
-                  ? 'var(--color-primary-text)'
-                  : 'var(--color-warm-gray-500)',
-              fontFamily: 'var(--font-family)',
-              fontSize: 'var(--font-size-sm)',
-              fontWeight: activeKey === item.key ? 600 : 500,
-              cursor: 'pointer',
-              transition: 'background-color 0.15s ease',
-            }}
-          >
-            {item.label}
-          </button>
-        ))}
+        {items.map((item) => {
+          const isActive = activeKey === item.key
+          return (
+            <button
+              key={item.key}
+              data-testid={`nav-${item.key}`}
+              onClick={() => onNavigate(item.key)}
+              style={{
+                display: 'block',
+                width: 'calc(100% - 16px)',
+                textAlign: 'left',
+                padding: '10px var(--space-4)',
+                margin: '2px 8px',
+                border: 'none',
+                borderRadius: '12px',
+                backgroundColor: isActive ? 'var(--color-bg-active)' : 'transparent',
+                color: isActive
+                  ? 'var(--color-text-primary)'
+                  : 'var(--color-text-body)',
+                fontFamily: 'var(--font-family)',
+                fontSize: 'var(--font-size-sm)',
+                fontWeight: isActive ? 700 : 500,
+                cursor: 'pointer',
+                transition: 'background-color 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.backgroundColor = 'var(--color-bg-hover)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.backgroundColor = 'transparent'
+                }
+              }}
+            >
+              {item.label}
+            </button>
+          )
+        })}
       </nav>
     </aside>
   )
