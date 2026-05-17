@@ -1,309 +1,339 @@
-# Design System Inspired by Notion
+# Harvester 设计系统
 
-## 1. Visual Theme & Atmosphere
+> 本设计系统基于 [animal-island-ui](https://github.com/guokaigdg/animal-island-ui) 组件库，受《集合啦！动物森友会》启发。
+> 下方内容来自 animal-island-ui 的 DESIGN_PROMPT.md，定义了色板、字体、尺寸、形状、阴影和交互状态规范。
 
-Notion's website embodies the philosophy of the tool itself: a blank canvas that gets out of your way. The design system is built on warm neutrals rather than cold grays, creating a distinctly approachable minimalism that feels like quality paper rather than sterile glass. The page canvas is pure white (`#ffffff`) but the text isn't pure black -- it's a warm near-black (`rgba(0,0,0,0.95)`) that softens the reading experience imperceptibly. The warm gray scale (`#f6f5f4`, `#31302e`, `#615d59`, `#a39e98`) carries subtle yellow-brown undertones, giving the interface a tactile, almost analog warmth.
+---
 
-The custom NotionInter font (a modified Inter) is the backbone of the system. At display sizes (64px), it uses aggressive negative letter-spacing (-2.125px), creating headlines that feel compressed and precise. The weight range is broader than typical systems: 400 for body, 500 for UI elements, 600 for semi-bold labels, and 700 for display headings. OpenType features `"lnum"` (lining numerals) and `"locl"` (localized forms) are enabled on larger text, adding typographic sophistication that rewards close reading.
+# animal-island-ui 设计提示词
 
-What makes Notion's visual language distinctive is its border philosophy. Rather than heavy borders or shadows, Notion uses ultra-thin `1px solid rgba(0,0,0,0.1)` borders -- borders that exist as whispers, barely perceptible division lines that create structure without weight. The shadow system is equally restrained: multi-layer stacks with cumulative opacity never exceeding 0.05, creating depth that's felt rather than seen.
+## UI 工具提示词（适用于 v0 / Figma AI / Framer AI / Locofy）
 
-**Key Characteristics:**
-- NotionInter (modified Inter) with negative letter-spacing at display sizes (-2.125px at 64px)
-- Warm neutral palette: grays carry yellow-brown undertones (`#f6f5f4` warm white, `#31302e` warm dark)
-- Near-black text via `rgba(0,0,0,0.95)` -- not pure black, creating micro-warmth
-- Ultra-thin borders: `1px solid rgba(0,0,0,0.1)` throughout -- whisper-weight division
-- Multi-layer shadow stacks with sub-0.05 opacity for barely-there depth
-- Notion Blue (`#0075de`) as the singular accent color for CTAs and interactive elements
-- Pill badges (9999px radius) with tinted blue backgrounds for status indicators
-- 8px base spacing unit with an organic, non-rigid scale
+```
+Design a UI in the style of "animal-island-ui" — an Animal Crossing-inspired React component library.
+Reproduce every detail below as precisely as possible.
 
-## 2. Color Palette & Roles
+=== FONTS (REQUIRED — load from Google Fonts if not installed) ===
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700&family=Zen+Maru+Gothic:wght@400;500;700&display=swap');
 
-### Primary
-- **Notion Black** (`rgba(0,0,0,0.95)` / `#000000f2`): Primary text, headings, body copy. The 95% opacity softens pure black without sacrificing readability.
-- **Pure White** (`#ffffff`): Page background, card surfaces, button text on blue.
-- **Notion Blue** (`#0075de`): Primary CTA, link color, interactive accent -- the only saturated color in the core UI chrome.
+font-family: Nunito, 'Noto Sans SC', 'Zen Maru Gothic', -apple-system, 'PingFang SC', sans-serif;
 
-### Brand Secondary
-- **Deep Navy** (`#213183`): Secondary brand color, used sparingly for emphasis and dark feature sections.
-- **Active Blue** (`#005bab`): Button active/pressed state -- darker variant of Notion Blue.
+Font weights:
+- Body text:           500
+- Buttons / headings:  600–700
+- Time digits:         900
+- Placeholder:         400
+- letter-spacing:      0.01–0.02em (wider on buttons/weekday labels)
 
-### Warm Neutral Scale
-- **Warm White** (`#f6f5f4`): Background surface tint, section alternation, subtle card fill. The yellow undertone is key.
-- **Warm Dark** (`#31302e`): Dark surface background, dark section text. Warmer than standard grays.
-- **Warm Gray 500** (`#615d59`): Secondary text, descriptions, muted labels.
-- **Warm Gray 300** (`#a39e98`): Placeholder text, disabled states, caption text.
+=== COLOR PALETTE ===
+Primary background:       #f8f8f0 (warm parchment)
+Content area background:  rgb(247, 243, 223) (slightly warmer — use for cards, modals)
+Page background (homepage): #7DC395 + url(home_bg.svg)
+Page background (component page): url(content_bg_pc.jpg) center fixed
 
-### Semantic Accent Colors
-- **Teal** (`#2a9d99`): Success states, positive indicators.
-- **Green** (`#1aae39`): Confirmation, completion badges.
-- **Orange** (`#dd5b00`): Warning states, attention indicators.
-- **Pink** (`#ff64c8`): Decorative accent, feature highlights.
-- **Purple** (`#391c57`): Premium features, deep accents.
-- **Brown** (`#523410`): Earthy accent, warm feature sections.
+Text colors:
+  Primary (header/sidebar): #794f27
+  Body (inside components):  #725d42
+  Secondary:                 #9f927d
+  Muted:                     #8a7b66
+  Disabled:                  #c4b89e
+  Placeholder:               #c4b89e
 
-### Interactive
-- **Link Blue** (`#0075de`): Primary link color with underline-on-hover.
-- **Link Light Blue** (`#62aef0`): Lighter link variant for dark backgrounds.
-- **Focus Blue** (`#097fe8`): Focus ring on interactive elements.
-- **Badge Blue Bg** (`#f2f9ff`): Pill badge background, tinted blue surface.
-- **Badge Blue Text** (`#097fe8`): Pill badge text, darker blue for readability.
+Primary accent (mint teal):
+  Default: #19c8b9 | Hover: #3dd4c6 | Active: #11a89b | Light bg: #e6f9f6
 
-### Shadows & Depth
-- **Card Shadow** (`rgba(0,0,0,0.04) 0px 4px 18px, rgba(0,0,0,0.027) 0px 2.025px 7.84688px, rgba(0,0,0,0.02) 0px 0.8px 2.925px, rgba(0,0,0,0.01) 0px 0.175px 1.04062px`): Multi-layer card elevation.
-- **Deep Shadow** (`rgba(0,0,0,0.01) 0px 1px 3px, rgba(0,0,0,0.02) 0px 3px 7px, rgba(0,0,0,0.02) 0px 7px 15px, rgba(0,0,0,0.04) 0px 14px 28px, rgba(0,0,0,0.05) 0px 23px 52px`): Five-layer deep elevation for modals and featured content.
-- **Whisper Border** (`1px solid rgba(0,0,0,0.1)`): Standard division border -- cards, dividers, sections.
+Status:
+  Success: #6fba2c (active: #5a9e1e)
+  Warning: #f5c31c (active: #dba90e)
+  Error:   #e05a5a (active: #c94444)
+  Switch ON green: #86d67a (border: #6fba2c)
+  Switch OFF gray: #d4c9b4 (border: #c4b89e)
 
-## 3. Typography Rules
+Game-special:
+  Focus yellow:        #ffcc00 (darker: #e0b800) — input focus highlight, NOT blue
+  Sidebar selected bg: #B7C6E5
+  Sidebar hover bg:    #d6dff0
+  Modal confirm btn (custom footer): background #ffcc00, color #725d42
 
-### Font Family
-- **Primary**: `NotionInter`, with fallbacks: `Inter, -apple-system, system-ui, Segoe UI, Helvetica, Apple Color Emoji, Arial, Segoe UI Emoji, Segoe UI Symbol`
-- **OpenType Features**: `"lnum"` (lining numerals) and `"locl"` (localized forms) enabled on display and heading text.
+Borders:
+  Standard:       2px solid #9f927d
+  Input (normal): 2.5px solid #c4b89e | hover: #a89878 | large: 3px
+  Time component: 3px solid #d4cfc3
 
-### Hierarchy
+3D shadow colors (bottom box-shadow only — NO elevation shadow):
+  Button:       0 5px 0 0 #bdaea0 | hover: 0 6px | active: 0 1px
+  Input:        0 3px 0 0 #d4c9b4 | small: 0 2px | large: 0 4px
+  Switch OFF:   0 3px 0 0 #bdaea0
+  Switch ON:    0 3px 0 0 #5a9e1e
+  Card:         0 4px 10px rgba(107, 92, 67, 0.42)
+  Feature card hover: 0 8px 24px rgba(114, 93, 66, 0.15)
 
-| Role | Font | Size | Weight | Line Height | Letter Spacing | Notes |
-|------|------|------|--------|-------------|----------------|-------|
-| Display Hero | NotionInter | 64px (4.00rem) | 700 | 1.00 (tight) | -2.125px | Maximum compression, billboard headlines |
-| Display Secondary | NotionInter | 54px (3.38rem) | 700 | 1.04 (tight) | -1.875px | Secondary hero, feature headlines |
-| Section Heading | NotionInter | 48px (3.00rem) | 700 | 1.00 (tight) | -1.5px | Feature section titles, with `"lnum"` |
-| Sub-heading Large | NotionInter | 40px (2.50rem) | 700 | 1.50 | normal | Card headings, feature sub-sections |
-| Sub-heading | NotionInter | 26px (1.63rem) | 700 | 1.23 (tight) | -0.625px | Section sub-titles, content headers |
-| Card Title | NotionInter | 22px (1.38rem) | 700 | 1.27 (tight) | -0.25px | Feature cards, list titles |
-| Body Large | NotionInter | 20px (1.25rem) | 600 | 1.40 | -0.125px | Introductions, feature descriptions |
-| Body | NotionInter | 16px (1.00rem) | 400 | 1.50 | normal | Standard reading text |
-| Body Medium | NotionInter | 16px (1.00rem) | 500 | 1.50 | normal | Navigation, emphasized UI text |
-| Body Semibold | NotionInter | 16px (1.00rem) | 600 | 1.50 | normal | Strong labels, active states |
-| Body Bold | NotionInter | 16px (1.00rem) | 700 | 1.50 | normal | Headlines at body size |
-| Nav / Button | NotionInter | 15px (0.94rem) | 600 | 1.33 | normal | Navigation links, button text |
-| Caption | NotionInter | 14px (0.88rem) | 500 | 1.43 | normal | Metadata, secondary labels |
-| Caption Light | NotionInter | 14px (0.88rem) | 400 | 1.43 | normal | Body captions, descriptions |
-| Badge | NotionInter | 12px (0.75rem) | 600 | 1.33 | 0.125px | Pill badges, tags, status labels |
-| Micro Label | NotionInter | 12px (0.75rem) | 400 | 1.33 | 0.125px | Small metadata, timestamps |
+=== SHAPE & RADIUS ===
+Buttons and inputs:        border-radius: 50px  (full pill/capsule — most important)
+Default cards:             border-radius: 20px
+Title cards (organic):     border-radius: 40px 35px 45px 38px / 38px 45px 35px 40px
+Modals:                    SVG blob clip-path (see path below)
+Sidebar menu items:        border-radius: 12px
+Collapse panel outer:      border-radius: 18px
+Version badge:             border-radius: 10px
+Code block:                border-radius: 20px  (dark #2b2118, border #3d3028)
+Checkbox box:              border-radius: 8px   (22px square, middle size)
+Minimum anywhere:          12px — NO sharp right-angle interactive elements
 
-### Principles
-- **Compression at scale**: NotionInter at display sizes uses -2.125px letter-spacing at 64px, progressively relaxing to -0.625px at 26px and normal at 16px. The compression creates density at headlines while maintaining readability at body sizes.
-- **Four-weight system**: 400 (body/reading), 500 (UI/interactive), 600 (emphasis/navigation), 700 (headings/display). The broader weight range compared to most systems allows nuanced hierarchy.
-- **Warm scaling**: Line height tightens as size increases -- 1.50 at body (16px), 1.23-1.27 at sub-headings, 1.00-1.04 at display. This creates denser, more impactful headlines.
-- **Badge micro-tracking**: The 12px badge text uses positive letter-spacing (0.125px) -- the only positive tracking in the system, creating wider, more legible small text.
+=== MODAL SVG BLOB CLIP-PATH (exact path) ===
+<svg style="position:absolute;width:0;height:0" aria-hidden>
+  <defs>
+    <clipPath id="animal-modal-clip" clipPathUnits="objectBoundingBox">
+      <path d="M0.501,0.005 L0.501,0.005 L0.523,0.005 L0.549,0.006
+        C0.704,0.01,0.796,0.017,0.825,0.027 L0.827,0.028
+        C0.872,0.045,0.939,0.044,0.978,0.17
+        C1,0.254,1,0.365,0.99,0.505 L0.988,0.513
+        C0.979,0.558,0.971,0.598,0.965,0.633
+        C0.956,0.689,0.979,0.77,0.964,0.865
+        C0.953,0.928,0.921,0.966,0.869,0.979
+        C0.821,0.986,0.773,0.992,0.726,0.995
+        L0.712,0.996 L0.694,0.997
+        C0.648,1,0.586,1,0.507,1 L0.501,1 L0.464,1
+        C0.385,1,0.325,0.998,0.283,0.995
+        C0.234,0.992,0.184,0.987,0.133,0.979
+        C0.081,0.966,0.05,0.928,0.039,0.865
+        C0.023,0.77,0.047,0.689,0.037,0.633
+        C0.031,0.595,0.023,0.552,0.013,0.505
+        C-0.006,0.365,-0.002,0.254,0.024,0.17
+        C0.064,0.045,0.13,0.045,0.174,0.028 L0.175,0.028
+        C0.204,0.017,0.303,0.009,0.474,0.005 L0.501,0.005"/>
+    </clipPath>
+  </defs>
+</svg>
+Modal content: clip-path: url(#animal-modal-clip); padding: 48px 48px 32px 48px;
 
-## 4. Component Stylings
+=== DEPTH & INTERACTION (Nintendo button press — most defining feature) ===
+ALL clickable elements get a bottom box-shadow that simulates a game button:
+  Default: box-shadow: 0 5px 0 0 #bdaea0; transform: none;
+  Hover:   box-shadow: 0 6px 0 0 #bdaea0; transform: translateY(-1px);
+  Active:  box-shadow: 0 1px 0 0 #bdaea0; transform: translateY(2px);
+Cards hover: transform: translateY(-4px) — gentle float, no button press
+Switch handle: always has transform: translateY(-2px) — floats above track
+transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1)
 
-### Buttons
+=== FOCUS STATES ===
+Input focus:    border-color: #ffcc00; box-shadow: 0 3px 0 0 #e0b800, 0 0 0 3px rgba(255,204,0,0.15)
+Button focus:   outline: 2px solid #19c8b9; outline-offset: 2px
+Switch focus:   outline: 2px solid #ffcc00; outline-offset: 2px
 
-**Primary Blue**
-- Background: `#0075de` (Notion Blue)
-- Text: `#ffffff`
-- Padding: 8px 16px
-- Radius: 4px (subtle)
-- Border: `1px solid transparent`
-- Hover: background darkens to `#005bab`
-- Active: scale(0.9) transform
-- Focus: `2px solid` focus outline, `var(--shadow-level-200)` shadow
-- Use: Primary CTA ("Get Notion free", "Try it")
+=== BUTTON SIZES (exact) ===
+small:  height 32px, padding 0 16px, font-size 12px, border-radius 12px
+middle: height 45px, padding 0 20px, font-size 14px, border-radius 50px
+large:  height 48px, padding 0 32px, font-size 16px, border-radius 24px
+font-weight: 600, letter-spacing: 0.02em, line-height: 1
 
-**Secondary / Tertiary**
-- Background: `rgba(0,0,0,0.05)` (translucent warm gray)
-- Text: `#000000` (near-black)
-- Padding: 8px 16px
-- Radius: 4px
-- Hover: text color shifts, scale(1.05)
-- Active: scale(0.9) transform
-- Use: Secondary actions, form submissions
+=== INPUT SIZES (exact) ===
+small:  height 32px, padding 0 14px, font-size 12px, radius 40px,  border 2.5px, shadow: 0 2px 0 0 #d4c9b4
+middle: height 40px, padding 0 18px, font-size 14px, radius 50px,  border 2.5px, shadow: 0 3px 0 0 #d4c9b4
+large:  height 48px, padding 0 22px, font-size 16px, radius 50px,  border 3px,   shadow: 0 4px 0 0 #d4c9b4
+Input text: color #725d42, font-weight 500, letter-spacing 0.01em
 
-**Ghost / Link Button**
-- Background: transparent
-- Text: `rgba(0,0,0,0.95)`
-- Decoration: underline on hover
-- Use: Tertiary actions, inline links
+=== SWITCH SIZES (exact) ===
+default: min-width 52px, height 28px, border 2.5px
+  handle: 21×21px, top 2px, left 2px; ON position: left calc(100%-24px)
+  box-shadow handle: 0 3px 0 0 #bdaea0 (OFF) / 0 3px 0 0 #5a9e1e (ON)
+small:   min-width 38px, height 20px, border 2px
+  handle: 14×14px, top 1px, left 1px; ON position: left calc(100%-16px)
+Inner text: font-size 11px, font-weight 700, color #fff, letter-spacing 0.02em
+  OFF padding: 0 8px 0 28px | ON padding: 0 28px 0 8px
 
-**Pill Badge Button**
-- Background: `#f2f9ff` (tinted blue)
-- Text: `#097fe8`
-- Padding: 4px 8px
-- Radius: 9999px (full pill)
-- Font: 12px weight 600
-- Use: Status badges, feature labels, "New" tags
+=== LOADING ANIMATION (Button) ===
+background-image: repeating-linear-gradient(-45deg, #0ec4b6, #0ec4b6 10px, #01b0a7 10px, #01b0a7 20px);
+background-size: 28.28px 28.28px;
+animation: animal-btn-loading 1s linear infinite;
+@keyframes animal-btn-loading { 0% { background-position: 0 0; } 100% { background-position: -28.28px 0; } }
 
-### Cards & Containers
-- Background: `#ffffff`
-- Border: `1px solid rgba(0,0,0,0.1)` (whisper border)
-- Radius: 12px (standard cards), 16px (featured/hero cards)
-- Shadow: `rgba(0,0,0,0.04) 0px 4px 18px, rgba(0,0,0,0.027) 0px 2.025px 7.84688px, rgba(0,0,0,0.02) 0px 0.8px 2.925px, rgba(0,0,0,0.01) 0px 0.175px 1.04062px`
-- Hover: subtle shadow intensification
-- Image cards: 12px top radius, image fills top half
+=== ACCORDION (Collapse) — no JS ===
+display: grid; grid-template-rows: 0fr;
+transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+expanded: grid-template-rows: 1fr;
+inner wrapper: overflow: hidden;
 
-### Inputs & Forms
-- Background: `#ffffff`
-- Text: `rgba(0,0,0,0.9)`
-- Border: `1px solid #dddddd`
-- Padding: 6px
-- Radius: 4px
-- Focus: blue outline ring
-- Placeholder: warm gray `#a39e98`
+=== TIME DISPLAY ===
+Container: padding 16px 36px, gap 24px, background linear-gradient(180deg, #fff 0%, #f8f8f0 100%),
+           border 3px solid #d4cfc3, border-radius 18px
+Date section right border: 3px solid rgba(159, 146, 125, 0.35), padding-right 24px
+Weekday: color #6fba2c, font-weight 900, font-size 14px, letter-spacing 1.5px, UPPERCASE
+Month/day: color #8b7355, font-weight 800, font-size 22px
+Time digits: color #8b7355, font-weight 900, font-size 48px, letter-spacing 2px
+Colon blink: animation blink 1s step-end infinite; @keyframes blink { 50% { opacity: 0; } }
 
-### Navigation
-- Clean horizontal nav on white, not sticky
-- Brand logo left-aligned (33x34px icon + wordmark)
-- Links: NotionInter 15px weight 500-600, near-black text
-- Hover: color shift to `var(--color-link-primary-text-hover)`
-- CTA: blue pill button ("Get Notion free") right-aligned
-- Mobile: hamburger menu collapse
-- Product dropdowns with multi-level categorized menus
+=== SIDEBAR LAYOUT ===
+Width: 220px, background: url(menu_bg.svg) center/cover no-repeat
+Header: padding 20px 16px 12px, font-size 15px, font-weight 700, color #725d42
+Category labels: font-size 11px, color #a0936e, font-weight 600, letter-spacing 0.5px, uppercase
+Menu items: height 40px, padding-left 26px, font-size 14px, font-weight 600
+  inactive: color #8a7b66 | hover: background #d6dff0 | active: background #B7C6E5, color #fff
+  border-radius: 12px, margin: 1px 5px, transition: all 0.15s
 
-### Image Treatment
-- Product screenshots with `1px solid rgba(0,0,0,0.1)` border
-- Top-rounded images: `12px 12px 0px 0px` radius
-- Dashboard/workspace preview screenshots dominate feature sections
-- Warm gradient backgrounds behind hero illustrations (decorative character illustrations)
+=== NOOKPHONE CARD PALETTE (13 colors, incl. default) ===
+default rgb(247,243,223) (#725d42 text) /
+app-pink #f8a6b2 / purple #b77dee / app-blue #889df0 / app-yellow #f7cd67 (#725d42 text) /
+app-orange #e59266 / app-teal #82d5bb / app-green #8ac68a / app-red #fc736d /
+lime-green #d1da49 (#3d5a1a text) / yellow-green #ecdf52 (#725d42 text) /
+brown #9a835a / warm-peach-pink #e18c6f
 
-### Distinctive Components
+=== DECORATIVE ELEMENTS ===
+- Collapse: teal circle icon (28px, #19c8b9 bg) with +/− that rotates 180° on expand
+- Collapse: leaf SVG decoration, opacity 0.5→1, rotates 45° on expand
+- Footer sea: SVG ocean wave illustration, height 80px, object-fit: contain
+- Footer tree: webp forest image, height 60px, background-position: bottom center
+- Dividers: illustrated lines (brown/teal/white/yellow/wave) — 12px height PNG/SVG
+- Cursor: custom game-style finger pointer PNG
+- Backgrounds: nature illustrations (leaf texture sidebar, island scene homepage)
 
-**Feature Cards with Illustrations**
-- Large illustrative headers (The Great Wave, product UI screenshots)
-- 12px radius card with whisper border
-- Title at 22px weight 700, description at 16px weight 400
-- Warm white (`#f6f5f4`) background variant for alternating sections
+=== NOOKPHONE DEVICE (decorative widget) ===
+Phone shell:   width 527px, height 788px, background #F8F4E8,
+               border-radius 136px (almost capsule), overflow hidden
+Home screen:   padding-top 40px, background #F8F4E8,
+               background-size 100% 200%, animation grasswave 8s ease-in-out infinite
+               (@keyframes grasswave { 0%,100% { background-position: 0% 0%; } 50% { background-position: 0% 100%; } })
+Top bar:       wifi icon (79×29) ← time 32px/800/letter-spacing 2px color #DDDBCC → location icon (36×36)
+Colon blink:   animation blink 1s steps(1) infinite (0–50% opacity 1, 51–100% opacity 0)
+Welcome text:  48px / 800 / color #725C4E / letter-spacing 2px / margin-top 20px
+Apps grid:     grid-template-columns: repeat(3, 1fr); gap 32px; padding 8px
+App tile:      123×123px, border-radius 45px, flex center
+App icon:      background-size 70% auto (iconApp only: 100% auto)
+Hover bounce:  @keyframes iconBounce (0% scale 1 rotate 0, 50% scale 1.2 rotate -5deg, 100% scale 1.1 rotate -4deg), 0.3s ease-in-out forwards
+Badge dot:     28×28 circle, top 0 left 0, background #FF544A, border 5px solid #F8F4E8
+Page indicator: page svg 65×32, margin-top 74px
+App palette:   camera #B77DEE, app #889DF0 (with offset), critterpedia #F7CD67, diy #E59266,
+               shopping #F8A6B2, variant #82D5BB, design #8AC68A, map #FC736D, chat #D1DA49
 
-**Trust Bar / Logo Grid**
-- Company logos (trusted teams section) in their brand colors
-- Horizontal scroll or grid layout with team counts
-- Metric display: large number + description pattern
+=== FOOTER DECORATION ===
+<Footer type="sea" />   width 100%, height 80px, background url(footer-sea.svg) center/contain no-repeat
+                        (SVG viewBox 0 0 1440 186, coral #EC7175 / ocean #327A93 / #98D2E3 / #008077)
+<Footer type="tree" />  (default) width 100%, height 60px, background url(footer-tree.webp) bottom center/cover
 
-**Metric Cards**
-- Large number display (e.g., "$4,200 ROI")
-- NotionInter 40px+ weight 700 for the metric
-- Description below in warm gray body text
-- Whisper-bordered card container
+=== DIVIDER DECORATION ===
+5 types — all width 100%, height 12px, background center/contain no-repeat:
+  line-brown  (default, SVG viewBox 0 0 297 14, fill #D8D0C3)
+  line-teal   (SVG)
+  line-white  (PNG)
+  line-yellow (SVG)
+  wave-yellow (SVG)
 
-## 5. Layout Principles
+=== CURSOR WRAPPER ===
+<Cursor>{children}</Cursor> — applies ".animal-cursor, .animal-cursor * { cursor: url(cursor-icon.png) 4 0, auto !important; }"
+Hotspot coordinates: (4, 0). Uses !important to override all child cursors.
 
-### Spacing System
-- Base unit: 8px
-- Scale: 2px, 3px, 4px, 5px, 6px, 7px, 8px, 11px, 12px, 14px, 16px, 24px, 32px
-- Non-rigid organic scale with fractional values (5.6px, 6.4px) for micro-adjustments
+=== TYPEWRITER (no markup wrapper) ===
+Props: children (ReactNode), speed=90ms, trigger (any unknown; change to restart),
+       autoPlay=true, onDone?: () => void
+Behavior: recursively truncates ReactNode tree by character count while preserving
+          element structure, className, and inline styles. Returns a plain fragment
+          (NO extra wrapping div/span) so it has ZERO layout impact.
 
-### Grid & Container
-- Max content width: approximately 1200px
-- Hero: centered single-column with generous top padding (80-120px)
-- Feature sections: 2-3 column grids for cards
-- Full-width warm white (`#f6f5f4`) section backgrounds for alternation
-- Code/dashboard screenshots as contained with whisper border
+=== COMPONENT INVENTORY (17 exports from src/index.ts) ===
+Interactive: Button, Input, Switch, Modal, Collapse, Select, Tabs, Checkbox
+Containers:  Card (13 NookPhone colors)
+Decorative:  Time, Phone, Footer, Divider, Cursor, Typewriter, Icon, CodeBlock
 
-### Whitespace Philosophy
-- **Generous vertical rhythm**: 64-120px between major sections. Notion lets content breathe with vast vertical padding.
-- **Warm alternation**: White sections alternate with warm white (`#f6f5f4`) sections, creating gentle visual rhythm without harsh color breaks.
-- **Content-first density**: Body text blocks are compact (line-height 1.50) but surrounded by ample margin, creating islands of readable content in a sea of white space.
+=== CHECKBOX (sizes small 18 / middle 22 / large 28 px) ===
+Unchecked box:  background rgb(247,243,223); border 2.5px solid #c4b89e; border-radius 8px
+Hover box:      border-color #19c8b9; transform translateY(-1px)
+Checked box:    background #19c8b9; border-color #11a89b
+Checkmark ✓:    color #fff, font-weight 700, pop animation 0.15s
+Label:          color #725d42 (hover #794f27), font-weight 500, letter-spacing 0.01em
+Focus ring:     outline 2px solid #ffcc00; outline-offset 2px
+Disabled:       opacity 0.55, box bg #f0ece2, border #d4c9b4, label #c4b89e, cursor not-allowed
+Group layout:   horizontal flex gap 12px / vertical flex-direction column gap 8px
+Per-option label font-size by size: small 12px / middle 14px / large 16px
 
-### Border Radius Scale
-- Micro (4px): Buttons, inputs, functional interactive elements
-- Subtle (5px): Links, list items, menu items
-- Standard (8px): Small cards, containers, inline elements
-- Comfortable (12px): Standard cards, feature containers, image tops
-- Large (16px): Hero cards, featured content, promotional blocks
-- Full Pill (9999px): Badges, pills, status indicators
-- Circle (100%): Tab indicators, avatars
+=== CODE BLOCK (dark theme, JSX/TS only) ===
+Container: padding 20px 24px; background #2b2118; border 1px solid #3d3028;
+           border-radius 20px; font-size 14px; line-height 1.7; tab-size 4;
+           font-family 'SF Mono','Fira Code','Cascadia Code',Consolas,monospace; font-weight 600;
+           white-space pre; overflow auto; color (default) #e8d5bc
+Token colors:
+  comment   #6b5e50 (/* */, //)
+  string    #a8d4a0 (quoted strings, numeric literals)
+  keyword   #d4a0e0 (import/export/const/return/true/false/null/async/await/type/interface...)
+  react     #e06c75 (React, useState, useEffect, FC, ReactNode, CSSProperties...)
+  component #80c0e0 (PascalCase identifiers — JSX tags / type names)
+  func      #61afef (lowercase identifier followed by `(`)
+  prop      #e8c87a (identifier followed by `=`)
+  jsx       #f0a870 (`<Tag`, `</Tag`, `/>`)
+  operator  #d4b896 (`{}[]();,` and arithmetic / comparison / logical operators)
 
-## 6. Depth & Elevation
+=== FORBIDDEN PATTERNS ===
+✗ Sharp right-angle (0px radius) on any interactive element
+✗ Pure black #000 or #111 text — always use warm brown tones
+✗ Cold blue focus rings (#0066ff etc.) — use #ffcc00 or #19c8b9
+✗ Cold gray backgrounds — always warm parchment
+✗ Flat design without bottom box-shadow on interactive elements
+✗ font-weight below 400 anywhere in the UI
+✗ System monospace fonts for UI text (code blocks excluded)
+```
 
-| Level | Treatment | Use |
-|-------|-----------|-----|
-| Flat (Level 0) | No shadow, no border | Page background, text blocks |
-| Whisper (Level 1) | `1px solid rgba(0,0,0,0.1)` | Standard borders, card outlines, dividers |
-| Soft Card (Level 2) | 4-layer shadow stack (max opacity 0.04) | Content cards, feature blocks |
-| Deep Card (Level 3) | 5-layer shadow stack (max opacity 0.05, 52px blur) | Modals, featured panels, hero elements |
-| Focus (Accessibility) | `2px solid var(--focus-color)` outline | Keyboard focus on all interactive elements |
+---
 
-**Shadow Philosophy**: Notion's shadow system uses multiple layers with extremely low individual opacity (0.01 to 0.05) that accumulate into soft, natural-looking elevation. The 4-layer card shadow spans from 1.04px to 18px blur, creating a gradient of depth rather than a single hard shadow. The 5-layer deep shadow extends to 52px blur at 0.05 opacity, producing ambient occlusion that feels like natural light rather than computer-generated depth. This layered approach makes elements feel embedded in the page rather than floating above it.
+## 图片生成提示词（适用于 Midjourney / DALL-E / Stable Diffusion）
 
-### Decorative Depth
-- Hero section: decorative character illustrations (playful, hand-drawn style)
-- Section alternation: white to warm white (`#f6f5f4`) background shifts
-- No hard section borders -- separation comes from background color changes and spacing
+```
+Pixel-perfect UI screenshot of "animal-island-ui" React component library website,
+Animal Crossing Nintendo Switch life-sim game aesthetic,
 
-## 7. Responsive Behavior
+Interface details:
+- Warm parchment background rgb(247,243,223), NEVER pure white
+- Pill-shaped buttons (border-radius 50px) with 3D bottom shadow in warm taupe #bdaea0,
+  buttons press down on click like Nintendo game buttons
+- Organic blob-shaped modal dialog with irregular soft SVG silhouette
+- Pastel NookPhone app icon color cards: pink #f8a6b2, lavender #b77dee, sky blue #889df0,
+  sunshine yellow #f7cd67, coral #e59266, seafoam #82d5bb, sage green #8ac68a
+- Mint teal accent #19c8b9, warm brown text #725d42
+- Sidebar 220px wide with leaf texture background, menu items highlight in light blue #B7C6E5
+- Nunito rounded font family (Google Fonts), weight 600-700, friendly chubby letterforms
+- Yellow focus highlight #ffcc00 on focused inputs (NOT blue)
+- Switch toggle with floating 3D handle, green #86d67a when ON
+- Collapse accordion with teal circle icon, leaf SVG decoration
+- Time widget showing weekday in green #6fba2c, large 48px clock digits
+- Nature decorations: leaf SVG icons, illustrated ocean wave footer, forest tree silhouette
+- Diagonal stripe loading animation on active buttons
+- Custom game-style finger cursor icon
+- Soft warm diffuse lighting, cozy pastoral atmosphere, flat illustration style
+- 4K resolution, UI design mockup
+```
 
-### Breakpoints
-| Name | Width | Key Changes |
-|------|-------|-------------|
-| Mobile Small | <400px | Tight single column, minimal padding |
-| Mobile | 400-600px | Standard mobile, stacked layout |
-| Tablet Small | 600-768px | 2-column grids begin |
-| Tablet | 768-1080px | Full card grids, expanded padding |
-| Desktop Small | 1080-1200px | Standard desktop layout |
-| Desktop | 1200-1440px | Full layout, maximum content width |
-| Large Desktop | >1440px | Centered, generous margins |
+---
 
-### Touch Targets
-- Buttons use comfortable padding (8px-16px vertical)
-- Navigation links at 15px with adequate spacing
-- Pill badges have 8px horizontal padding for tap targets
-- Mobile menu toggle uses standard hamburger button
+## 关键数值速查表
 
-### Collapsing Strategy
-- Hero: 64px display -> scales to 40px -> 26px on mobile, maintains proportional letter-spacing
-- Navigation: horizontal links + blue CTA -> hamburger menu
-- Feature cards: 3-column -> 2-column -> single column stacked
-- Product screenshots: maintain aspect ratio with responsive images
-- Trust bar logos: grid -> horizontal scroll on mobile
-- Footer: multi-column -> stacked single column
-- Section spacing: 80px+ -> 48px on mobile
-
-### Image Behavior
-- Workspace screenshots maintain whisper border at all sizes
-- Hero illustrations scale proportionally
-- Product screenshots use responsive images with consistent border radius
-- Full-width warm white sections maintain edge-to-edge treatment
-
-## 8. Accessibility & States
-
-### Focus System
-- All interactive elements receive visible focus indicators
-- Focus outline: `2px solid` with focus color + shadow level 200
-- Tab navigation supported throughout all interactive components
-- High contrast text: near-black on white exceeds WCAG AAA (>14:1 ratio)
-
-### Interactive States
-- **Default**: Standard appearance with whisper borders
-- **Hover**: Color shift on text, scale(1.05) on buttons, underline on links
-- **Active/Pressed**: scale(0.9) transform, darker background variant
-- **Focus**: Blue outline ring with shadow reinforcement
-- **Disabled**: Warm gray (`#a39e98`) text, reduced opacity
-
-### Color Contrast
-- Primary text (rgba(0,0,0,0.95)) on white: ~18:1 ratio
-- Secondary text (#615d59) on white: ~5.5:1 ratio (WCAG AA)
-- Blue CTA (#0075de) on white: ~4.6:1 ratio (WCAG AA for large text)
-- Badge text (#097fe8) on badge bg (#f2f9ff): ~4.5:1 ratio (WCAG AA for large text)
-
-## 9. Agent Prompt Guide
-
-### Quick Color Reference
-- Primary CTA: Notion Blue (`#0075de`)
-- Background: Pure White (`#ffffff`)
-- Alt Background: Warm White (`#f6f5f4`)
-- Heading text: Near-Black (`rgba(0,0,0,0.95)`)
-- Body text: Near-Black (`rgba(0,0,0,0.95)`)
-- Secondary text: Warm Gray 500 (`#615d59`)
-- Muted text: Warm Gray 300 (`#a39e98`)
-- Border: `1px solid rgba(0,0,0,0.1)`
-- Link: Notion Blue (`#0075de`)
-- Focus ring: Focus Blue (`#097fe8`)
-
-### Example Component Prompts
-- "Create a hero section on white background. Headline at 64px NotionInter weight 700, line-height 1.00, letter-spacing -2.125px, color rgba(0,0,0,0.95). Subtitle at 20px weight 600, line-height 1.40, color #615d59. Blue CTA button (#0075de, 4px radius, 8px 16px padding, white text) and ghost button (transparent bg, near-black text, underline on hover)."
-- "Design a card: white background, 1px solid rgba(0,0,0,0.1) border, 12px radius. Use shadow stack: rgba(0,0,0,0.04) 0px 4px 18px, rgba(0,0,0,0.027) 0px 2.025px 7.85px, rgba(0,0,0,0.02) 0px 0.8px 2.93px, rgba(0,0,0,0.01) 0px 0.175px 1.04px. Title at 22px NotionInter weight 700, letter-spacing -0.25px. Body at 16px weight 400, color #615d59."
-- "Build a pill badge: #f2f9ff background, #097fe8 text, 9999px radius, 4px 8px padding, 12px NotionInter weight 600, letter-spacing 0.125px."
-- "Create navigation: white header. NotionInter 15px weight 600 for links, near-black text. Blue pill CTA 'Get Notion free' right-aligned (#0075de bg, white text, 4px radius)."
-- "Design an alternating section layout: white sections alternate with warm white (#f6f5f4) sections. Each section has 64-80px vertical padding, max-width 1200px centered. Section heading at 48px weight 700, line-height 1.00, letter-spacing -1.5px."
-
-### Iteration Guide
-1. Always use warm neutrals -- Notion's grays have yellow-brown undertones (#f6f5f4, #31302e, #615d59, #a39e98), never blue-gray
-2. Letter-spacing scales with font size: -2.125px at 64px, -1.875px at 54px, -0.625px at 26px, normal at 16px
-3. Four weights: 400 (read), 500 (interact), 600 (emphasize), 700 (announce)
-4. Borders are whispers: 1px solid rgba(0,0,0,0.1) -- never heavier
-5. Shadows use 4-5 layers with individual opacity never exceeding 0.05
-6. The warm white (#f6f5f4) section background is essential for visual rhythm
-7. Pill badges (9999px) for status/tags, 4px radius for buttons and inputs
-8. Notion Blue (#0075de) is the only saturated color in core UI -- use it sparingly for CTAs and links
+| Token | 精确值 | 用途 |
+|---|---|---|
+| 内容区背景 | `rgb(247, 243, 223)` | Modal、Card 内容区 |
+| 主背景 | `#f8f8f0` | 按钮、通用背景 |
+| 正文文字 | `#725d42` | 组件内正文 |
+| Header 文字 | `#794f27` | 侧边栏、标题 |
+| 主色调 | `#19c8b9` | 焦点环、Collapse 图标 |
+| Switch ON 绿 | `#86d67a` | Switch 开启背景 |
+| 成功绿 | `#6fba2c` | 星期文字、成功状态 |
+| 按钮 3D 阴影 | `#bdaea0` | `0 5px 0 0 #bdaea0` |
+| 输入框 3D 阴影 | `#d4c9b4` | `0 3px 0 0 #d4c9b4` |
+| 焦点黄 | `#ffcc00` | 输入框 focus |
+| Modal 确认按钮 | bg `#ffcc00`, color `#725d42` | 游戏黄主操作 |
+| 侧边栏选中 | `#B7C6E5` | 菜单 active |
+| 侧边栏 hover | `#d6dff0` | 菜单 hover |
+| 按钮高度（中） | `45px` | middle size |
+| pill 圆角 | `50px` | 按钮、输入框 |
+| 有机圆角 | `40px 35px 45px 38px / 38px 45px 35px 40px` | title Card |
+| 字体 | `Nunito, 'Noto Sans SC', 'Zen Maru Gothic'` | Google Fonts 加载 |
+| 按钮字重 | `600` | 按钮文字 |
+| 时间数字字重 | `900` | Time 组件 |
+| 过渡 | `0.25s cubic-bezier(0.4,0,0.2,1)` | 通用动画 |
+| Loading stripe | `28.28px` step, `-45deg`, `#0ec4b6/#01b0a7` | 按钮 loading |
+| 侧边栏宽度 | `220px` | Desktop sidebar |
+| Phone 外壳 | `527 × 788px`，`border-radius: 136px` | NookPhone 容器 |
+| Phone app tile | `123 × 123px`，`border-radius: 45px` | 3×3 网格 |
+| Phone 新消息点 | 28px 红圆 `#FF544A` + 5px 奶油描边 `#F8F4E8` | badge |
+| Footer sea | `height: 80px`，SVG `contain` | 海浪底部 |
+| Footer tree | `height: 60px`，webp `cover bottom` | 森林底部 |
+| Divider | `height: 12px`，5 种背景图 | 装饰分割线 |
+| Cursor | `cursor: url(...) 4 0, auto !important` | 游戏手指光标 |
+| Typewriter 默认速度 | `90ms/字` | 按字符打印，无包裹元素 |
+| Google Fonts URL | `fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Zen+Maru+Gothic:wght@400;500;700&display=swap` | 在线加载 |
