@@ -81,9 +81,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
   }, [config, statusFilter, offset])
 
   useEffect(() => {
-    if (config.baseUrl) {
-      void fetchRuns()
-    }
+    void fetchRuns()
   }, [config.baseUrl, fetchRuns])
 
   const handleTriggerCrawl = useCallback(async () => {

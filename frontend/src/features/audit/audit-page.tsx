@@ -89,10 +89,8 @@ export function AuditPage({ config, initialFilters }: AuditPageProps) {
 
   // Refetch when filters change
   useEffect(() => {
-    if (config.baseUrl) {
-      setOffset(0)
-      void fetchEvents(0)
-    }
+    setOffset(0)
+    void fetchEvents(0)
   }, [config.baseUrl, entityType, actionFilter, fetchEvents])
 
   const handleLoadMore = () => {

@@ -55,9 +55,7 @@ export function SchedulesPage({ config }: SchedulesPageProps) {
   }, [config, statusFilter, offset])
 
   useEffect(() => {
-    if (config.baseUrl) {
-      void fetchSchedules()
-    }
+    void fetchSchedules()
   }, [config.baseUrl, fetchSchedules])
 
   const handleSourceChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {

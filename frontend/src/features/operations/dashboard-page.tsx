@@ -202,9 +202,7 @@ export function DashboardPage({ config }: DashboardPageProps) {
   }, [config])
 
   useEffect(() => {
-    if (config.baseUrl) {
-      void fetchData()
-    }
+    void fetchData()
   }, [config.baseUrl, fetchData])
 
   return (

@@ -69,9 +69,7 @@ export function RecipesPage({ config }: RecipesPageProps) {
   }, [config, approvalFilter, executorFilter, offset])
 
   useEffect(() => {
-    if (config.baseUrl) {
-      void fetchRecipes()
-    }
+    void fetchRecipes()
   }, [config.baseUrl, fetchRecipes])
 
   // Client-side search filtering

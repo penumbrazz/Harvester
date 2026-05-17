@@ -61,9 +61,7 @@ export function SourcesPage({ config }: SourcesPageProps) {
   }, [config, statusFilter, kindFilter, offset])
 
   useEffect(() => {
-    if (config.baseUrl) {
-      void fetchSources()
-    }
+    void fetchSources()
   }, [config.baseUrl, fetchSources])
 
   // Client-side search filtering

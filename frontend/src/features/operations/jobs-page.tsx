@@ -89,9 +89,7 @@ export function JobsPage({ config }: JobsPageProps) {
   }, [config, statusFilter, jobTypeFilter, laneFilter, offset])
 
   useEffect(() => {
-    if (config.baseUrl) {
-      void fetchJobs()
-    }
+    void fetchJobs()
   }, [config.baseUrl, fetchJobs])
 
   // Compute summary stats from current jobs

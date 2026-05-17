@@ -81,13 +81,10 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
   }, [config, statusFilter, typeFilter, sourceFilter, offset])
 
   useEffect(() => {
-    if (config.baseUrl) {
-      void fetchContent()
-    }
+    void fetchContent()
   }, [config.baseUrl, fetchContent])
 
   useEffect(() => {
-    if (!config.baseUrl) return
     listSources(config, { limit: 100 })
       .then((data) => setSources(data.items))
       .catch(() => setSources([]))
