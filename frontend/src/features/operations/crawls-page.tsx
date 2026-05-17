@@ -2,8 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import type { ApiConfig } from '../../types/api'
 import type { CrawlRun, TriggerCrawlResponse } from '../../types/observability'
-import { Button } from '../../components/ui/button'
-import { Select } from '../../components/ui/select'
+import { Button, Select } from 'animal-island-ui'
 import { StatusPill } from '../../components/ui/status-pill'
 import { PaginationControls } from '../../components/common/pagination-controls'
 import {
@@ -20,12 +19,12 @@ interface CrawlsPageProps {
 
 const PAGE_SIZE = 20
 
-const STATUS_FILTER_OPTIONS: { value: string; label: string }[] = [
-  { value: '', label: '全部状态' },
-  { value: 'pending', label: '等待中' },
-  { value: 'running', label: '运行中' },
-  { value: 'completed', label: '已完成' },
-  { value: 'failed', label: '已失败' },
+const STATUS_FILTER_OPTIONS: { key: string; label: string }[] = [
+  { key: '', label: '全部状态' },
+  { key: 'pending', label: '等待中' },
+  { key: 'running', label: '运行中' },
+  { key: 'completed', label: '已完成' },
+  { key: 'failed', label: '已失败' },
 ]
 
 /** Map crawl run status to StatusPill variant. */
@@ -149,8 +148,8 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
             padding: 'var(--space-3)',
             marginBottom: 'var(--space-4)',
             borderRadius: 'var(--radius-sm)',
-            border: 'var(--border-whisper)',
-            backgroundColor: 'var(--color-warm-white)',
+            border: 'var(--border-default)',
+            backgroundColor: 'var(--color-bg-content)',
             fontSize: 'var(--font-size-sm)',
             flexShrink: 0,
           }}
@@ -176,9 +175,9 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
           style={{
             marginBottom: 'var(--space-4)',
             padding: 'var(--space-4)',
-            backgroundColor: 'var(--color-warm-white)',
+            backgroundColor: 'var(--color-bg-content)',
             borderRadius: 'var(--radius-lg)',
-            border: 'var(--border-whisper)',
+            border: 'var(--border-default)',
             flexShrink: 0,
           }}
         >
@@ -207,7 +206,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
                   display: 'block',
                   fontSize: 'var(--font-size-xs)',
                   fontWeight: 600,
-                  color: 'var(--color-warm-gray-500)',
+                  color: 'var(--color-text-body)',
                   marginBottom: 'var(--space-1)',
                 }}
               >
@@ -228,7 +227,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
                   display: 'block',
                   fontSize: 'var(--font-size-xs)',
                   fontWeight: 600,
-                  color: 'var(--color-warm-gray-500)',
+                  color: 'var(--color-text-body)',
                   marginBottom: 'var(--space-1)',
                 }}
               >
@@ -251,7 +250,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
                 {formSubmitting ? '运行中...' : '开始'}
               </Button>
               <Button
-                variant="secondary"
+                type="default"
                 onClick={() => {
                   setShowForm(false)
                   setFormError('')
@@ -292,22 +291,17 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
       >
         <Select
           data-testid="select-crawl-status-filter"
+          options={STATUS_FILTER_OPTIONS}
           value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value)
+          onChange={(val: string) => {
+            setStatusFilter(val)
             setOffset(0)
           }}
-        >
-          {STATUS_FILTER_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </Select>
+        />
         <span
           style={{
             fontSize: 'var(--font-size-sm)',
-            color: 'var(--color-warm-gray-500)',
+            color: 'var(--color-text-body)',
           }}
         >
           {total} 条记录
@@ -319,7 +313,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
         <p
           data-testid="crawls-loading"
           style={{
-            color: 'var(--color-warm-gray-500)',
+            color: 'var(--color-text-body)',
             fontSize: 'var(--font-size-sm)',
             flexShrink: 0,
           }}
@@ -349,7 +343,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
           style={{
             textAlign: 'center',
             padding: 'var(--space-8) var(--space-4)',
-            color: 'var(--color-warm-gray-300)',
+            color: 'var(--color-text-secondary)',
             flexShrink: 0,
           }}
         >
@@ -374,7 +368,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
             overflow: 'auto',
             flex: 1,
             minHeight: 0,
-            border: 'var(--border-whisper)',
+            border: 'var(--border-default)',
             borderRadius: 'var(--radius-lg)',
           }}
         >
@@ -389,8 +383,8 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
             <thead>
               <tr
                 style={{
-                  borderBottom: 'var(--border-whisper)',
-                  backgroundColor: 'var(--color-warm-white)',
+                  borderBottom: 'var(--border-default)',
+                  backgroundColor: 'var(--color-bg-content)',
                 }}
               >
                 {['ID', '信息源', '状态', 'HTTP', '错误', '开始时间', '完成时间'].map(
@@ -401,7 +395,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
                         padding: '10px var(--space-3)',
                         fontSize: 'var(--font-size-xs)',
                         fontWeight: 600,
-                        color: 'var(--color-warm-gray-500)',
+                        color: 'var(--color-text-body)',
                         textAlign: 'left',
                         textTransform: 'uppercase',
                         letterSpacing: '0.125px',
@@ -415,7 +409,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
             </thead>
             <tbody>
               {runs.map((run) => (
-                <tr key={run.id} style={{ borderBottom: 'var(--border-whisper)' }}>
+                <tr key={run.id} style={{ borderBottom: 'var(--border-default)' }}>
                   <td
                     style={{
                       ...cellStyle,
@@ -450,7 +444,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
                   <td
                     style={{
                       ...cellStyle,
-                      color: 'var(--color-warm-gray-500)',
+                      color: 'var(--color-text-body)',
                       maxWidth: '250px',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -460,10 +454,10 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
                   >
                     {run.error_message || '--'}
                   </td>
-                  <td style={{ ...cellStyle, color: 'var(--color-warm-gray-300)' }}>
+                  <td style={{ ...cellStyle, color: 'var(--color-text-secondary)' }}>
                     {run.started_at ? formatDate(run.started_at) : '--'}
                   </td>
-                  <td style={{ ...cellStyle, color: 'var(--color-warm-gray-300)' }}>
+                  <td style={{ ...cellStyle, color: 'var(--color-text-secondary)' }}>
                     {run.completed_at ? formatDate(run.completed_at) : '--'}
                   </td>
                 </tr>
