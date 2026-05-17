@@ -3,7 +3,7 @@ import type { ApiConfig } from '../types/api'
 const API_CONFIG_KEY = 'harvester-api-config'
 
 const DEFAULT_CONFIG: ApiConfig = {
-  baseUrl: '',
+  baseUrl: 'http://localhost:8001',
   token: 'change-me-in-production',
 }
 

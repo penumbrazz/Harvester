@@ -49,13 +49,21 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
   }, [config, status])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: fetch summary updates state
     void fetchSummary()
   }, [fetchSummary])
 
   const handleSave = useCallback(() => {
     onConfigChange(editConfig)
     setEditing(false)
-  }, [editConfig, onConfigChange])
+    // Trigger health check after save; check() uses a ref so it picks up the latest config
+    void check()
+  }, [editConfig, onConfigChange, check])
+
+  const startEditing = useCallback(() => {
+    setEditConfig(config)
+    setEditing(true)
+  }, [config])
 
   const handleCancel = useCallback(() => {
     setEditConfig(config)
@@ -172,12 +180,12 @@ export function OverviewPage({ config, onConfigChange }: OverviewPageProps) {
                 color: 'var(--color-warm-gray-500)',
               }}
             >
-              {config.baseUrl || '未配置地址'}
+              {config.baseUrl || 'http://localhost:8001'}
             </span>
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
               <Button
                 variant="secondary"
-                onClick={() => setEditing(true)}
+                onClick={startEditing}
                 data-testid="edit-config-button"
               >
                 配置

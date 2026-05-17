@@ -16,6 +16,12 @@ export function useHealthCheck(config: ApiConfig): UseHealthCheckReturn {
   const [status, setStatus] = useState<ConnectionStatus>('unknown')
   const [errorMessage, setErrorMessage] = useState('')
   const mountedRef = useRef(true)
+  const configRef = useRef(config)
+
+  // Keep configRef in sync so check() always uses the latest config
+  useEffect(() => {
+    configRef.current = config
+  }, [config])
 
   // Track mounted state to avoid setState on unmounted component
   useEffect(() => {
@@ -38,7 +44,7 @@ export function useHealthCheck(config: ApiConfig): UseHealthCheckReturn {
     safeSetErrorMessage('')
 
     try {
-      const result = await apiRequest<HealthResponse>(config, '/health')
+      const result = await apiRequest<HealthResponse>(configRef.current, '/health')
       if (result.status === 'ok') {
         safeSetStatus('connected')
       } else {
@@ -49,14 +55,14 @@ export function useHealthCheck(config: ApiConfig): UseHealthCheckReturn {
       safeSetStatus('error')
       safeSetErrorMessage(err instanceof Error ? err.message : '连接 API 失败')
     }
-  }, [config, safeSetStatus, safeSetErrorMessage])
+  }, [safeSetStatus, safeSetErrorMessage])
 
   // Run check on mount and when config changes
   const configStr = JSON.stringify(config)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: health check updates status
     void check()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [configStr])
+  }, [configStr, check])
 
   return { status, errorMessage, check }
 }
