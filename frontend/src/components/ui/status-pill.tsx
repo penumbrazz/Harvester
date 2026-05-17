@@ -5,17 +5,15 @@ interface StatusPillProps {
   children: React.ReactNode
 }
 
-const variantColors: Record<PillVariant, { bg: string; text: string }> = {
-  success: { bg: '#e6f9ed', text: '#1aae39' },
-  error: { bg: '#fff0eb', text: '#dd5b00' },
-  warning: { bg: '#fff7e6', text: '#dd5b00' },
-  info: {
-    bg: 'var(--color-badge-blue-bg)',
-    text: 'var(--color-badge-blue-text)',
-  },
+const variantColors: Record<PillVariant, { bg: string; text: string; border?: string }> = {
+  success: { bg: 'var(--color-pill-success-bg)', text: 'var(--color-pill-success-text)' },
+  error: { bg: 'var(--color-pill-error-bg)', text: 'var(--color-pill-error-text)' },
+  warning: { bg: 'var(--color-pill-warning-bg)', text: 'var(--color-pill-warning-text)' },
+  info: { bg: 'var(--color-pill-info-bg)', text: 'var(--color-pill-info-text)' },
   default: {
-    bg: 'var(--color-warm-white)',
-    text: 'var(--color-warm-gray-500)',
+    bg: 'var(--color-pill-default-bg)',
+    text: 'var(--color-pill-default-text)',
+    border: '2px solid var(--color-pill-default-border)',
   },
 }
 
@@ -27,7 +25,7 @@ export function StatusPill({ variant = 'default', children }: StatusPillProps) {
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        padding: '4px 8px',
+        padding: '4px 12px',
         borderRadius: 'var(--radius-pill)',
         backgroundColor: colors.bg,
         color: colors.text,
@@ -36,6 +34,7 @@ export function StatusPill({ variant = 'default', children }: StatusPillProps) {
         fontWeight: 600,
         letterSpacing: '0.125px',
         lineHeight: 1.33,
+        ...(colors.border ? { border: colors.border } : {}),
       }}
     >
       {children}
