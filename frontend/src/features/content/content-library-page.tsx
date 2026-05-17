@@ -14,8 +14,7 @@ import {
   CONTENT_STATUS_VARIANTS,
   ITEM_TYPE_OPTIONS,
 } from '../../types/content'
-import { Button, Input } from 'animal-island-ui'
-import { Card } from '../../components/ui/card'
+import { Button, Card, Input } from 'animal-island-ui'
 import { Select } from '../../components/ui/select'
 import { StatusPill } from '../../components/ui/status-pill'
 import { PaginationControls } from '../../components/common/pagination-controls'
@@ -165,11 +164,12 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
         <Select
           data-testid="search-mode-select"
           value={searchMode}
-          onChange={(e) => setSearchMode(e.target.value as SearchMode)}
-        >
-          <option value="keyword">关键词</option>
-          <option value="vector">向量</option>
-        </Select>
+          onChange={(v) => setSearchMode(v as SearchMode)}
+          options={[
+            { key: 'keyword', label: '关键词' },
+            { key: 'vector', label: '向量' },
+          ]}
+        />
         <Button onClick={() => void handleSearch()} data-testid="search-button">
           搜索
         </Button>
@@ -255,46 +255,42 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
             <Select
               data-testid="select-type-filter"
               value={typeFilter}
-              onChange={(e) => {
-                setTypeFilter(e.target.value)
+              onChange={(v) => {
+                setTypeFilter(v)
                 setOffset(0)
               }}
-            >
-              {ITEM_TYPE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </Select>
+              options={ITEM_TYPE_OPTIONS.map((opt) => ({
+                key: opt.value,
+                label: opt.label,
+              }))}
+            />
             <Select
               data-testid="select-status-filter"
               value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value)
+              onChange={(v) => {
+                setStatusFilter(v)
                 setOffset(0)
               }}
-            >
-              {CONTENT_STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </Select>
+              options={CONTENT_STATUS_OPTIONS.map((opt) => ({
+                key: opt.value,
+                label: opt.label,
+              }))}
+            />
             <Select
               data-testid="select-source-filter"
               value={sourceFilter}
-              onChange={(e) => {
-                setSourceFilter(e.target.value)
+              onChange={(v) => {
+                setSourceFilter(v)
                 setOffset(0)
               }}
-            >
-              <option value="">全部来源</option>
-              {sources.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </Select>
+              options={[
+                { key: '', label: '全部来源' },
+                ...sources.map((s) => ({
+                  key: s.id,
+                  label: s.name,
+                })),
+              ]}
+            />
             {/* View toggle */}
             <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
               <button

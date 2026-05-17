@@ -3,8 +3,7 @@ import { useCallback, useState } from 'react'
 import type { ApiConfig } from '../../../types/api'
 import type { Source, SourceStatus, UpdateSourceRequest } from '../../../types/source'
 import { SOURCE_ACTIONS, STATUS_LABELS, STATUS_VARIANTS } from '../../../types/source'
-import { Button, Input } from 'animal-island-ui'
-import { ConfirmDialog } from '../../../components/ui/confirm-dialog'
+import { Button, Input, Modal } from 'animal-island-ui'
 import { StatusPill } from '../../../components/ui/status-pill'
 import {
   archiveSource,
@@ -253,15 +252,25 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
           </div>
         </td>
       </tr>
-      <ConfirmDialog
+      <Modal
         open={confirmAction !== null}
         title="确认操作"
-        message={`确定要${confirmAction ? ACTION_LABELS[confirmAction] : ''}信息源「${source.name}」吗？`}
-        confirmLabel={confirmAction ? ACTION_LABELS[confirmAction] : '确认'}
-        loading={loading}
-        onConfirm={handleConfirmOk}
-        onCancel={() => setConfirmAction(null)}
-      />
+        onClose={() => setConfirmAction(null)}
+        onOk={handleConfirmOk}
+        footer={null}
+      >
+        <p style={{ margin: '0 0 var(--space-4)', color: 'var(--color-text-body)' }}>
+          {`确定要${confirmAction ? ACTION_LABELS[confirmAction] : ''}信息源「${source.name}」吗？`}
+        </p>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)' }}>
+          <Button type="default" onClick={() => setConfirmAction(null)}>
+            取消
+          </Button>
+          <Button onClick={handleConfirmOk} disabled={loading}>
+            {loading ? '处理中...' : confirmAction ? ACTION_LABELS[confirmAction] : '确认'}
+          </Button>
+        </div>
+      </Modal>
     </>
   )
 }

@@ -216,7 +216,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
               <SourceSelector
                 config={config}
                 value={formSourceId}
-                onChange={(e) => setFormSourceId(e.target.value)}
+                onChange={(v) => setFormSourceId(v)}
                 id="source-id"
                 data-testid="select-source"
               />
@@ -237,7 +237,7 @@ export function CrawlsPage({ config }: CrawlsPageProps) {
               <ApprovedRecipeSelector
                 config={config}
                 value={formRecipeId}
-                onChange={(e) => setFormRecipeId(e.target.value)}
+                onChange={(v) => setFormRecipeId(v)}
                 id="recipe-id"
                 data-testid="select-approved-recipe"
               />
