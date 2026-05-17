@@ -5,7 +5,7 @@
   --color-bg: #f8f8f0;
   --color-bg-content: rgb(247, 243, 223);
   --color-bg-hover: #d6dff0;
-  --color-bg-active: #B7C6E5;
+  --color-bg-active: #b7c6e5;
 
   /* Text */
   --color-text-primary: #794f27;
@@ -42,9 +42,7 @@
 
   /* Shadows */
   --shadow-card: 0 4px 10px rgba(107, 92, 67, 0.42);
-  --shadow-deep:
-    0 4px 14px rgba(107, 92, 67, 0.35),
-    0 8px 28px rgba(107, 92, 67, 0.2);
+  --shadow-deep: 0 4px 14px rgba(107, 92, 67, 0.35), 0 8px 28px rgba(107, 92, 67, 0.2);
   --shadow-focus: 0 0 0 3px var(--color-focus);
   --shadow-button-3d: 0 5px 0 0 #bdaea0;
   --shadow-input-3d: 0 3px 0 0 #d4c9b4;

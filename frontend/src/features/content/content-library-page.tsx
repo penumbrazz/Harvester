@@ -174,11 +174,7 @@ export function ContentLibraryPage({ config }: ContentLibraryPageProps) {
           搜索
         </Button>
         {isSearching && (
-          <Button
-            type="default"
-            onClick={handleClearSearch}
-            data-testid="search-clear"
-          >
+          <Button type="default" onClick={handleClearSearch} data-testid="search-clear">
             清除
           </Button>
         )}
@@ -663,9 +659,7 @@ function ContentCard({ item, onClick }: { item: ContentItem; onClick: () => void
 function KeywordResults({ items }: { items: SearchResultItem[] }) {
   if (items.length === 0) {
     return (
-      <p
-        style={{ color: 'var(--color-text-body)', fontSize: 'var(--font-size-sm)' }}
-      >
+      <p style={{ color: 'var(--color-text-body)', fontSize: 'var(--font-size-sm)' }}>
         未找到结果。
       </p>
     )
@@ -765,9 +759,7 @@ function KeywordResults({ items }: { items: SearchResultItem[] }) {
 function VectorResults({ items }: { items: SearchResultItem[] }) {
   if (items.length === 0) {
     return (
-      <p
-        style={{ color: 'var(--color-text-body)', fontSize: 'var(--font-size-sm)' }}
-      >
+      <p style={{ color: 'var(--color-text-body)', fontSize: 'var(--font-size-sm)' }}>
         未找到结果。
       </p>
     )

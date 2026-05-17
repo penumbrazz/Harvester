@@ -207,7 +207,11 @@ export function ContentDetailModal({
             minHeight: 0,
           }}
         >
-          {loading && <div style={{ color: 'var(--color-text-body)', fontSize: 14 }}>加载中...</div>}
+          {loading && (
+            <div style={{ color: 'var(--color-text-body)', fontSize: 14 }}>
+              加载中...
+            </div>
+          )}
           {error && <div style={{ color: '#dd5b00', fontSize: 14 }}>{error}</div>}
           {!loading && !error && detail?.latest_version?.normalized_text && (
             <div

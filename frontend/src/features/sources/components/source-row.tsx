@@ -124,7 +124,16 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
               }}
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label htmlFor="edit-source-name" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--color-text-body)' }}>名称</label>
+                <label
+                  htmlFor="edit-source-name"
+                  style={{
+                    fontSize: 'var(--font-size-sm)',
+                    fontWeight: 500,
+                    color: 'var(--color-text-body)',
+                  }}
+                >
+                  名称
+                </label>
                 <Input
                   id="edit-source-name"
                   value={editName}
@@ -133,7 +142,16 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                <label htmlFor="edit-source-url" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--color-text-body)' }}>URL</label>
+                <label
+                  htmlFor="edit-source-url"
+                  style={{
+                    fontSize: 'var(--font-size-sm)',
+                    fontWeight: 500,
+                    color: 'var(--color-text-body)',
+                  }}
+                >
+                  URL
+                </label>
                 <Input
                   id="edit-source-url"
                   value={editUrl}
@@ -262,7 +280,9 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
         <p style={{ margin: '0 0 var(--space-4)', color: 'var(--color-text-body)' }}>
           {`确定要${confirmAction ? ACTION_LABELS[confirmAction] : ''}信息源「${source.name}」吗？`}
         </p>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)' }}>
+        <div
+          style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)' }}
+        >
           <Button
             type="default"
             onClick={() => setConfirmAction(null)}
@@ -271,7 +291,11 @@ export function SourceRow({ source, config, onStatusChanged }: SourceRowProps) {
             取消
           </Button>
           <Button onClick={handleConfirmOk} disabled={loading} data-testid="confirm-ok">
-            {loading ? '处理中...' : confirmAction ? ACTION_LABELS[confirmAction] : '确认'}
+            {loading
+              ? '处理中...'
+              : confirmAction
+                ? ACTION_LABELS[confirmAction]
+                : '确认'}
           </Button>
         </div>
       </Modal>

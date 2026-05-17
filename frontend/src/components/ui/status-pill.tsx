@@ -5,10 +5,19 @@ interface StatusPillProps {
   children: React.ReactNode
 }
 
-const variantColors: Record<PillVariant, { bg: string; text: string; border?: string }> = {
-  success: { bg: 'var(--color-pill-success-bg)', text: 'var(--color-pill-success-text)' },
+const variantColors: Record<
+  PillVariant,
+  { bg: string; text: string; border?: string }
+> = {
+  success: {
+    bg: 'var(--color-pill-success-bg)',
+    text: 'var(--color-pill-success-text)',
+  },
   error: { bg: 'var(--color-pill-error-bg)', text: 'var(--color-pill-error-text)' },
-  warning: { bg: 'var(--color-pill-warning-bg)', text: 'var(--color-pill-warning-text)' },
+  warning: {
+    bg: 'var(--color-pill-warning-bg)',
+    text: 'var(--color-pill-warning-text)',
+  },
   info: { bg: 'var(--color-pill-info-bg)', text: 'var(--color-pill-info-text)' },
   default: {
     bg: 'var(--color-pill-default-bg)',

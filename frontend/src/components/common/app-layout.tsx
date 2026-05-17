@@ -19,7 +19,12 @@ export function AppLayout({
   return (
     <div
       data-testid="app-layout"
-      style={{ display: 'flex', height: '100vh', overflow: 'hidden', backgroundColor: 'var(--color-bg)' }}
+      style={{
+        display: 'flex',
+        height: '100vh',
+        overflow: 'hidden',
+        backgroundColor: 'var(--color-bg)',
+      }}
     >
       <Sidebar items={navItems} activeKey={activeKey} onNavigate={onNavigate} />
       <main

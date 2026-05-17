@@ -142,7 +142,10 @@ export function SourcesPage({ config }: SourcesPageProps) {
         </div>
         <Select
           data-testid="select-status-filter"
-          options={STATUS_FILTER_OPTIONS.map((opt) => ({ key: opt.value, label: opt.label }))}
+          options={STATUS_FILTER_OPTIONS.map((opt) => ({
+            key: opt.value,
+            label: opt.label,
+          }))}
           value={statusFilter}
           onChange={(val) => {
             setStatusFilter(val)
@@ -151,7 +154,10 @@ export function SourcesPage({ config }: SourcesPageProps) {
         />
         <Select
           data-testid="select-kind-filter"
-          options={KIND_FILTER_OPTIONS.map((opt) => ({ key: opt.value, label: opt.label }))}
+          options={KIND_FILTER_OPTIONS.map((opt) => ({
+            key: opt.value,
+            label: opt.label,
+          }))}
           value={kindFilter}
           onChange={(val) => {
             setKindFilter(val)

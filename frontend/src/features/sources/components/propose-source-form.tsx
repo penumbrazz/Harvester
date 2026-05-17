@@ -82,7 +82,16 @@ export function ProposeSourceForm({
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <label htmlFor="source-name" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--color-text-body)' }}>名称</label>
+        <label
+          htmlFor="source-name"
+          style={{
+            fontSize: 'var(--font-size-sm)',
+            fontWeight: 500,
+            color: 'var(--color-text-body)',
+          }}
+        >
+          名称
+        </label>
         <Input
           id="source-name"
           placeholder="例如 TechNews"
@@ -93,7 +102,16 @@ export function ProposeSourceForm({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <label htmlFor="source-kind" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--color-text-body)' }}>类型</label>
+        <label
+          htmlFor="source-kind"
+          style={{
+            fontSize: 'var(--font-size-sm)',
+            fontWeight: 500,
+            color: 'var(--color-text-body)',
+          }}
+        >
+          类型
+        </label>
         <Select
           id="source-kind"
           data-testid="select-source-kind"
@@ -104,7 +122,16 @@ export function ProposeSourceForm({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <label htmlFor="source-url" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--color-text-body)' }}>URL</label>
+        <label
+          htmlFor="source-url"
+          style={{
+            fontSize: 'var(--font-size-sm)',
+            fontWeight: 500,
+            color: 'var(--color-text-body)',
+          }}
+        >
+          URL
+        </label>
         <Input
           id="source-url"
           placeholder="https://example.com"
@@ -115,11 +142,23 @@ export function ProposeSourceForm({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <label htmlFor="source-trust" style={{ fontSize: 'var(--font-size-sm)', fontWeight: 500, color: 'var(--color-text-body)' }}>信任级别</label>
+        <label
+          htmlFor="source-trust"
+          style={{
+            fontSize: 'var(--font-size-sm)',
+            fontWeight: 500,
+            color: 'var(--color-text-body)',
+          }}
+        >
+          信任级别
+        </label>
         <Select
           id="source-trust"
           data-testid="select-source-trust"
-          options={TRUST_OPTIONS.map((level) => ({ key: level, label: TRUST_LABELS[level] }))}
+          options={TRUST_OPTIONS.map((level) => ({
+            key: level,
+            label: TRUST_LABELS[level],
+          }))}
           value={trustLevel}
           onChange={setTrustLevel}
         />
@@ -139,7 +178,12 @@ export function ProposeSourceForm({
       )}
 
       <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-        <Button htmlType="submit" type="primary" disabled={submitting} data-testid="submit-propose-source">
+        <Button
+          htmlType="submit"
+          type="primary"
+          disabled={submitting}
+          data-testid="submit-propose-source"
+        >
           {submitting ? '创建中...' : '创建信息源'}
         </Button>
         <Button
