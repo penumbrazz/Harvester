@@ -87,7 +87,7 @@ def create_embedding_adapter(
     if settings.adapter == "stub":
         from harvester.adapters.stub_model import StubModelAdapter
 
-        return StubModelAdapter(), settings.model
+        return StubModelAdapter(dimension=settings.dimension), settings.model
 
     raise EmbeddingAdapterError(
         f"Unknown HARVESTER_EMBEDDING_ADAPTER '{settings.adapter}'. "

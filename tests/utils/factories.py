@@ -149,8 +149,10 @@ def insert_chunk(
 
 
 def dummy_embedding(seed: int = 0) -> list[float]:
-    """Produce a deterministic unit-normalized 1536-d embedding."""
-    dim = 1536
+    """Produce a deterministic unit-normalized embedding matching the configured dimension."""
+    from harvester.db.models import EMBEDDING_DIMENSION
+
+    dim = EMBEDDING_DIMENSION
     vals = [0.0] * dim
     vals[seed % dim] = 1.0
     vals[(seed + 1) % dim] = 0.5

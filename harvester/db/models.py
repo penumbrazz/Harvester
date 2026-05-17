@@ -9,7 +9,10 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
+from harvester.adapters.embedding_settings import EmbeddingSettings
 from harvester.db.base import Base
+
+EMBEDDING_DIMENSION = EmbeddingSettings().dimension
 
 
 def _utcnow() -> datetime.datetime:
@@ -458,7 +461,9 @@ class Chunk(Base):
     embedding_status: Mapped[str] = mapped_column(
         String(32), nullable=False, default="pending"
     )
-    embedding: Mapped[list | None] = mapped_column(Vector(1536), nullable=True)
+    embedding: Mapped[list | None] = mapped_column(
+        Vector(EMBEDDING_DIMENSION), nullable=True
+    )
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utcnow
     )

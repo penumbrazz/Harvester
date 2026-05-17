@@ -7,12 +7,13 @@ import uuid
 
 from sqlalchemy.orm import Session
 
+from harvester.adapters.embedding_settings import EmbeddingSettings
 from harvester.db.models import Chunk, Job
 from harvester.jobs.repository import complete_job, fail_job
 
 logger = logging.getLogger(__name__)
 
-_EMBEDDING_DIMENSION = 1536
+_EMBEDDING_DIMENSION = EmbeddingSettings().dimension
 
 
 def _dead_letter_job(session: Session, job: Job, error_message: str) -> None:

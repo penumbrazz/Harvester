@@ -8,10 +8,9 @@ and embedding dimension validation.
 import uuid
 from datetime import UTC, datetime
 
-import pytest
 from sqlalchemy.orm import Session
 
-from harvester.db.models import Chunk, Job
+from harvester.db.models import EMBEDDING_DIMENSION, Chunk, Job
 from tests.workers.conftest import make_chunk, make_full_chain
 
 
@@ -44,7 +43,7 @@ class TestProcessEmbedChunksJob:
     """Tests for process_embed_chunks_job."""
 
     def test_success_writes_embedding_and_status(self, db_session):
-        """Valid embed_chunks job reads chunk text, writes 1536-dim embedding,
+        """Valid embed_chunks job reads chunk text, writes embedding,
         embedding_model, and embedding_status='ready'."""
         from harvester.adapters.stub_model import StubModelAdapter
         from harvester.workers.embedding import process_embed_chunks_job
@@ -70,7 +69,7 @@ class TestProcessEmbedChunksJob:
         assert updated.embedding_status == "ready"
         assert updated.embedding_model == "stub-embedding-1536"
         assert updated.embedding is not None
-        assert len(updated.embedding) == 1536
+        assert len(updated.embedding) == EMBEDDING_DIMENSION
 
         job_check = db_session.get(Job, job.id)
         assert job_check.status == "completed"

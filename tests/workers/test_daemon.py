@@ -8,9 +8,7 @@ and crawl job processing via run_crawl_once.
 import uuid
 from unittest.mock import MagicMock, patch
 
-import sqlalchemy as sa
-
-from harvester.db.models import Job
+from harvester.db.models import EMBEDDING_DIMENSION, Job
 from harvester.jobs.repository import create_job
 from tests.workers.conftest import make_chunk, make_full_chain
 
@@ -43,7 +41,7 @@ class TestRunOnce:
         db_session.commit()
 
         adapter = MagicMock()
-        adapter.embed.return_value = [0.1] * 1536
+        adapter.embed.return_value = [0.1] * EMBEDDING_DIMENSION
 
         stats = run_once(db_session, adapter, "stub-embedding-1536", limit=10)
 
@@ -87,7 +85,7 @@ class TestRunOnce:
             db_session.commit()
 
         adapter = MagicMock()
-        adapter.embed.return_value = [0.1] * 1536
+        adapter.embed.return_value = [0.1] * EMBEDDING_DIMENSION
 
         stats = run_once(db_session, adapter, "stub-embedding-1536", limit=2)
 
@@ -178,7 +176,7 @@ class TestRunLoop:
         from harvester.workers.daemon import run_loop
 
         adapter = MagicMock()
-        adapter.embed.return_value = [0.1] * 1536
+        adapter.embed.return_value = [0.1] * EMBEDDING_DIMENSION
 
         call_count = 0
 

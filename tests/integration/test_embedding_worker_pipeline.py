@@ -5,6 +5,7 @@ processes jobs and makes chunks searchable via vector search.
 """
 
 from harvester.adapters.stub_model import StubModelAdapter
+from harvester.db.models import EMBEDDING_DIMENSION
 from harvester.jobs.repository import create_job
 from harvester.workers.daemon import run_once
 from tests.workers.conftest import make_chunk, make_full_chain
@@ -15,7 +16,7 @@ class TestEmbeddingWorkerPipeline:
 
     def test_worker_processes_job_and_chunk_becomes_ready(self, db_session):
         """Worker processes embed_chunks job: job completed, chunk ready, embedding non-empty."""
-        from harvester.db.models import Chunk, Job
+        from harvester.db.models import Chunk
 
         _, _, iv = make_full_chain(db_session, "Pipeline Integration")
         chunk = make_chunk(db_session, iv.id, 0, "integration test chunk text")
@@ -42,7 +43,7 @@ class TestEmbeddingWorkerPipeline:
         updated_chunk = db_session.get(Chunk, chunk.id)
         assert updated_chunk.embedding_status == "ready"
         assert updated_chunk.embedding is not None
-        assert len(updated_chunk.embedding) == 1536
+        assert len(updated_chunk.embedding) == EMBEDDING_DIMENSION
 
     def test_embedded_chunk_findable_via_vector_search(self, db_session):
         """After worker embeds a chunk, vector_search can find it."""

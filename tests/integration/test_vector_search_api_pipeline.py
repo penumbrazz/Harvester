@@ -257,7 +257,7 @@ class TestLiveQwenSmoke:
 
     @pytest.mark.asyncio
     async def test_live_qwen_adapter_embed(self):
-        """QwenEmbeddingAdapter returns a valid 1536-dim vector from live service."""
+        """QwenEmbeddingAdapter returns a valid vector from live service."""
         from harvester.adapters.embedding_settings import (
             EmbeddingSettings,
             create_embedding_adapter,
@@ -269,7 +269,7 @@ class TestLiveQwenSmoke:
         )
         adapter, model_name = create_embedding_adapter(settings)
         result = adapter.embed("Hello, world!")
-        assert len(result) == 1536
+        assert len(result) == settings.dimension
         assert all(isinstance(v, float) for v in result)
 
     @pytest.mark.asyncio
