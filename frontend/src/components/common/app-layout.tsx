@@ -31,7 +31,6 @@ export function AppLayout({
         style={{
           flex: 1,
           padding: 'var(--space-6)',
-          maxWidth: 'var(--content-max-width)',
           overflowY: 'auto',
           display: 'flex',
           flexDirection: 'column',
