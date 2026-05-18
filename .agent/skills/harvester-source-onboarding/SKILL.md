@@ -1,35 +1,35 @@
 ---
 name: harvester-source-onboarding
-description: Use when adding or changing Harvester crawler sources, recipes, schedules, extractors, discovery rules, fixtures, or source-specific crawl behavior. Guides agents through reuse-first implementation, preview reporting, and user-approved activation.
+description: 添加或修改 Harvester 抓取源、recipe、调度、extractor、发现规则、fixture 或特定来源抓取行为时使用。指导 agent 采用复用优先实现、预览报告和用户批准后启用流程。
 ---
 
-# Harvester Source Onboarding
+# Harvester 来源接入
 
-## Purpose
+## 目的
 
-Use this workflow whenever a user asks to add a new crawl source, add a new URL to harvest, modify a source-specific extractor, change recipe configuration, or create a schedule for a source.
+当用户要求添加新的抓取来源、添加新的采集 URL、修改来源专用 extractor、变更 recipe 配置，或为某个来源创建调度时，使用此工作流。
 
-This is a development workflow for agents with full repository access. It is not a runtime approval system and it is not a low-code crawler builder.
+这是面向拥有完整仓库访问权限的 agent 的开发工作流。它不是运行时审批系统，也不是低代码 crawler 构建器。
 
-## Required Context
+## 必读上下文
 
-Before making changes, read these files or the relevant sections:
+修改前，阅读以下文件或相关章节：
 
 - `AGENTS.md`
 - `README.md`
 - `docs/superpowers/specs/2026-05-18-harvester-source-onboarding-design.md`
 - `harvester/api/routers/recipes.py`
 - `harvester/extractors/registry.py`
-- Existing examples in `harvester/extractors/`
-- Existing tests in `tests/extractors/`, `tests/jobs/`, and `tests/integration/`
+- `harvester/extractors/` 中的现有示例
+- `tests/extractors/`、`tests/jobs/` 和 `tests/integration/` 中的现有测试
 
-If frontend UI is involved, also read `DESIGN.md` and `AI_USAGE.md`.
+如果涉及前端 UI，还必须阅读 `DESIGN.md` 和 `AI_USAGE.md`。
 
-## Reuse-First Rule
+## 复用优先规则
 
-Reuse is mandatory unless there is a clear mismatch.
+除非存在明确不匹配，否则必须复用现有能力。
 
-Search existing code before adding new source-specific code:
+添加新的来源专用代码前，先搜索现有代码：
 
 - `harvester/extractors/`
 - `harvester/jobs/`
@@ -37,35 +37,35 @@ Search existing code before adding new source-specific code:
 - `tests/extractors/`
 - `tests/jobs/`
 - `tests/integration/`
-- README examples for CDC, Sina, and PDF discovery
+- README 中 CDC、Sina 和 PDF discovery 的示例
 
-Choose the smallest fitting change in this order:
+按以下顺序选择最小且匹配的变更：
 
-1. Add or adjust `recipe.config`.
-2. Reuse an existing executor: `firecrawl`, `http_fetch`, `rss_parse`, or `static`.
-3. Reuse an existing extractor or registry pattern.
-4. Extend configuration for selectors, URL patterns, discovery options, or content type handling.
-5. Add a new extractor only when the source semantics do not fit the existing extractors.
+1. 添加或调整 `recipe.config`。
+2. 复用现有 executor：`firecrawl`、`http_fetch`、`rss_parse` 或 `static`。
+3. 复用现有 extractor 或 registry 模式。
+4. 扩展 selector、URL pattern、discovery option 或 content type handling 的配置。
+5. 只有当来源语义无法适配现有 extractor 时，才新增 extractor。
 
-When adding a new extractor, still reuse the existing registry, pipeline, chunking, deduplication, and fixture test patterns.
+新增 extractor 时，仍然必须复用现有 registry、pipeline、chunking、deduplication 和 fixture 测试模式。
 
-## Workflow
+## 工作流
 
-Follow these steps in order:
+按顺序执行以下步骤：
 
-1. Identify the source: entry URL, content type, desired content item granularity, and whether it is a list page, detail page, PDF, API, RSS feed, or mixed source.
-2. Perform the reuse-first search and record the result.
-3. Pick the integration approach: config-only, existing extractor extension, or new extractor.
-4. Add or update tests before implementation when code behavior changes.
-5. Implement the smallest change that makes the tests pass.
-6. Run a preview or dry-run crawl/extraction flow before proposing activation.
-7. Produce the preview report.
-8. Propose source, recipe, and schedule activation as a draft.
-9. Wait for the user to explicitly approve activation before promoting sources, approving recipes, creating active schedules, or running formal long-lived crawls.
+1. 识别来源：入口 URL、内容类型、期望的 content item 粒度，以及它是列表页、详情页、PDF、API、RSS feed 还是混合来源。
+2. 执行复用优先搜索，并记录结果。
+3. 选择接入方式：仅配置、扩展现有 extractor，或新增 extractor。
+4. 当代码行为发生变化时，先添加或更新测试，再实现。
+5. 实现能让测试通过的最小变更。
+6. 提议启用前，运行 preview 或 dry-run 抓取/抽取流程。
+7. 生成预览报告。
+8. 以草案形式提出 source、recipe 和 schedule 启用方案。
+9. 在用户明确批准启用前，不得 promote source、approve recipe、创建 active schedule，或运行正式长期抓取。
 
-## Preview Report
+## 预览报告
 
-Every onboarding task must produce a concise report in this format:
+每个来源接入任务都必须按以下格式生成简明报告：
 
 ```text
 来源：
@@ -87,34 +87,34 @@ Every onboarding task must produce a concise report in this format:
 启用草案：
 ```
 
-The report must let the user judge whether the extracted content is correct. Prefer sample titles, canonical URLs, and item counts over low-level logs.
+报告必须让用户能够判断抽取内容是否正确。优先提供样例标题、canonical URL 和 item 数量，而不是底层日志。
 
-## Activation Boundary
+## 启用边界
 
-Before explicit user approval, agents may:
+在用户明确批准前，agent 可以：
 
-- Change code.
-- Add or update fixtures.
-- Add or update tests.
-- Run preview or dry-run commands.
-- Report activation drafts.
+- 修改代码。
+- 添加或更新 fixture。
+- 添加或更新测试。
+- 运行 preview 或 dry-run 命令。
+- 报告启用草案。
 
-Before explicit user approval, agents must not:
+在用户明确批准前，agent 不得：
 
-- Promote a source to `watched`.
-- Approve a recipe.
-- Create an active long-running schedule.
-- Trigger formal long-lived crawling.
+- 将 source promote 为 `watched`。
+- approve recipe。
+- 创建 active long-running schedule。
+- 触发正式长期抓取。
 
-If the user explicitly says to approve or enable the source, use Harvester API or CLI for state changes. Do not write production database state directly.
+如果用户明确要求 approve 或 enable 某个来源，必须通过 Harvester API 或 CLI 执行状态变更。不要直接写生产数据库状态。
 
-## Testing Expectations
+## 测试期望
 
-Prefer focused verification:
+优先进行聚焦验证：
 
-- For extractor changes, run the relevant `uv run pytest tests/extractors/... -q` command.
-- For discovery or job behavior, run the relevant `uv run pytest tests/jobs/... -q` command.
-- For CLI or API workflow changes, run the narrow test covering that path.
-- Live smoke tests must require an explicit environment variable and should not become default CI requirements.
+- extractor 变更：运行对应的 `uv run pytest tests/extractors/... -q` 命令。
+- discovery 或 job 行为变更：运行对应的 `uv run pytest tests/jobs/... -q` 命令。
+- CLI 或 API 工作流变更：运行覆盖该路径的窄范围测试。
+- live smoke test 必须要求显式环境变量，不能成为默认 CI 要求。
 
-Report exactly which commands passed or failed.
+准确报告哪些命令通过或失败。
