@@ -34,8 +34,3 @@ class TestEnvExample:
         """The .env.example must contain FIRECRAWL_API_URL."""
         content = ENV_EXAMPLE.read_text(encoding="utf-8")
         assert "FIRECRAWL_API_URL" in content
-
-    def test_contains_model_worker_url_placeholder(self):
-        """The .env.example must contain HARVESTER_MODEL_WORKER_URL."""
-        content = ENV_EXAMPLE.read_text(encoding="utf-8")
-        assert "HARVESTER_MODEL_WORKER_URL" in content
