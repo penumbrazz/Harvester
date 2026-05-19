@@ -42,6 +42,9 @@ htmlcov/
 .mypy_cache/
 .pytype/
 
+# Linting
+.ruff_cache/
+
 # Jupyter
 .ipynb_checkpoints/
 
@@ -55,3 +58,4 @@ node_modules/
 .harvester
 .superpowers/
 openspec/
+docs/
