@@ -16,15 +16,17 @@ Harvester 是个人 home lab 信息采集控制平面。第一版目标是公开
 
 ## 工作方式
 
-- 按 OpenSpec change 工作。实现前先读对应 `openspec/changes/<change>/proposal.md`、`design.md`、`specs/**/spec.md`、`tasks.md`。
+- 默认采用 Superpowers 工作流：涉及需求澄清、设计或行为变更时先使用 `superpowers:brainstorming`；实现前写清计划；调试问题时使用 `superpowers:systematic-debugging`；功能和 bugfix 采用 TDD；完成前使用 `superpowers:verification-before-completion` 做验证。
+- 历史 `openspec/` 目录仅作为归档参考，不作为新开发的强制流程。不要再创建、安装或依赖项目本地 OpenSpec skill。
 - 涉及前端视觉、布局、组件样式或交互状态时，必须先读根目录 `DESIGN.md`，并以其中的 Animal Island UI 风格设计系统为准。优先使用 `animal-island-ui` 提供的组件，参考 `AI_USAGE.md` 了解组件 API。
 - 新增或修改抓取来源、extractor、recipe、schedule 时，必须先阅读并遵循 `.agent/skills/harvester-source-onboarding/SKILL.md`；优先复用现有 recipe、executor、extractor、pipeline 和测试结构，能复用就复用。
-- 一次只实现一个 change，除非用户明确要求跨 change 协作。
-- 任务完成后立刻把 `tasks.md` 中对应 `- [ ]` 改成 `- [x]`。
+- 一次只实现一个明确目标，除非用户明确要求跨目标协作。
+- 如果当前工作有 Superpowers spec、plan 或任务列表，任务完成后立刻更新对应状态。
 - 采用 TDD。先写或更新测试，再实现，再运行相关测试。
 - 不要绕过 Harvester API 直接写生产数据库。迁移和测试 fixture 例外。
 - CLI 的状态变更必须通过 HTTP API，不直接创建数据库 session。
-- 保持最小 diff，不做未在当前 OpenSpec change 中定义的顺手重构。
+- 保持最小 diff，不做未纳入当前目标的顺手重构。
+- 完成编码任务后，主动检查 `git status`。如果有未提交的更改，主动提议提交。提交后，主动提议使用 `code-reviewer` 和 `security-reviewer` 子代理进行代码审查。
 
 ## 核心架构约束
 
