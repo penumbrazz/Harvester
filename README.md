@@ -1,477 +1,441 @@
 # Harvester
 
-Harvester 是个人 home lab 信息采集控制平面。第一版目标是打通公开网页抓取、raw evidence 保存、content item 抽取、去重、chunk/index、搜索、审计和可部署基座。
+Harvester 是个人 home lab 信息采集控制平面。它提供公开网页抓取、raw evidence 保存、content item 抽取、去重、chunk 索引、关键词/向量搜索、审计和可部署基座。
 
-核心边界：
+## 技术栈
 
-```text
-raw_object 只回答：这次抓取看到了什么。
-content_item / item_version / chunk 才是资料库和搜索层。
-```
+| 层         | 技术                                                  |
+|-----------|-------------------------------------------------------|
+| 后端 API   | Python 3.12+、FastAPI、SQLAlchemy 2、Alembic、Typer CLI |
+| 前端控制台  | React + TypeScript + Vite（Animal Island UI 设计系统）  |
+| 数据库     | PostgreSQL + pgvector                                  |
+| 抓取适配器  | Firecrawl（自部署）、HTTP 直连                          |
+| Embedding | Qwen（OpenAI-compatible）或 Stub（离线开发/CI）          |
+| 依赖管理   | [uv](https://docs.astral.sh/uv/)（Python）、npm（前端） |
+| 部署       | Docker Compose 或 `./start.sh` 本地启动                |
 
-## 当前状态
+## 端口约定
 
-已完成：
+| 服务            | 端口   |
+|----------------|--------|
+| Harvester API  | `8001` |
+| 前端 Vite Dev  | `5173` |
 
-- Python 项目骨架、FastAPI API、Typer CLI、SQLAlchemy/Alembic。
-- Source、Topic、Recipe、CrawlRun、RawObject、ContentItem、ItemVersion、Chunk、Job、AuditEvent 等核心 schema。
-- API token、source/topic/recipe 状态机、失败查询。
-- Postgres job/frontier、抽取 pipeline、去重、raw payload retention metadata。
-- CDC/Sina fixture extractor、deterministic fixture soak。
-- Discovered crawl targets（list → detail → PDF 三级发现）、crawl target API、PDF binary fetch、PDF text extraction、target traceability。
-- keyword search、pgvector-ready chunk/vector search、Docker Compose smoke 基座。
-- 真实公开网页抓取：Firecrawl adapter、fetch policy（DNS/IP 分类、redirect 复检）、raw payload archive、crawl API/CLI、CDC smoke。
-- Watch scheduler：watch_schedules 表、schedule API/CLI、one-shot scheduler、crawl job handler、crawl worker、队列状态查看。
+---
 
-后续：
+## 快速部署
 
-- LightRAG batch index、轻量 KG、可选 MCP adapter。
-- 登录态、高风险 recipe、browser profile、sandbox。
+### 前置条件
 
-## 架构图
+- Python ≥ 3.12
+- [uv](https://docs.astral.sh/uv/) 包管理器
+- Node.js ≥ 18、npm
+- PostgreSQL（本地或 Docker）+ pgvector 扩展
+- Firecrawl 服务（可选，自部署 `http://localhost:3002`）
 
-```mermaid
-flowchart TB
-    subgraph Operators["操作入口"]
-        Human["用户"]
-        Agent["OpenClaw / Codex / 其他 agent"]
-        CLI["harvester CLI"]
-    end
-
-    subgraph API["Harvester API"]
-        Auth["API token auth"]
-        SourceAPI["Source / Topic / Recipe API"]
-        CrawlAPI["Crawl Run API"]
-        FailureAPI["Failure / Audit API"]
-        SearchAPI["Search API"]
-    end
-
-    subgraph Control["控制平面"]
-        State["状态机"]
-        Policy["Fetch Policy"]
-        Jobs["Job / Frontier"]
-        Audit["Audit Events"]
-    end
-
-    subgraph Execution["执行层"]
-        Firecrawl["Firecrawl Adapter"]
-        Extractors["Extractors"]
-        Dedup["Dedup / Upsert"]
-        Chunking["Chunking / Embedding Jobs"]
-    end
-
-    subgraph Storage["存储层"]
-        Postgres["Postgres + pgvector"]
-        Archive["Raw Payload Archive"]
-        NAS["NAS / Backup"]
-    end
-
-    subgraph Derived["派生索引"]
-        Keyword["Keyword Search"]
-        Vector["Vector Search"]
-        LightRAG["LightRAG / KG（后续）"]
-    end
-
-    Human --> CLI
-    Agent --> CLI
-    CLI --> API
-    Agent --> API
-    Auth --> SourceAPI
-    Auth --> CrawlAPI
-    Auth --> FailureAPI
-    Auth --> SearchAPI
-    SourceAPI --> State
-    CrawlAPI --> Policy
-    CrawlAPI --> Jobs
-    Jobs --> Firecrawl
-    Firecrawl --> Archive
-    Firecrawl --> Postgres
-    Archive --> NAS
-    Postgres --> Extractors
-    Extractors --> Dedup
-    Dedup --> Chunking
-    Chunking --> Postgres
-    Postgres --> Keyword
-    Postgres --> Vector
-    Postgres --> LightRAG
-    State --> Audit
-    Policy --> Audit
-    Jobs --> Audit
-    FailureAPI --> Audit
-```
-
-## 抓取到搜索流程
-
-```mermaid
-sequenceDiagram
-    participant Agent as Agent / CLI
-    participant API as Harvester API
-    participant Policy as Fetch Policy
-    participant Adapter as Firecrawl Adapter
-    participant Archive as Raw Archive
-    participant DB as Postgres
-    participant Extractor as Extractor
-    participant Search as Search
-
-    Agent->>API: propose source / create recipe
-    API->>DB: 保存 candidate source / pending recipe
-    Agent->>API: promote / approve
-    API->>DB: 状态机更新 + audit
-    Agent->>API: POST /crawl/run
-    API->>DB: 创建 crawl_run=pending
-    API->>Policy: 校验 original URL
-    Policy-->>API: allow / deny(reason)
-    API->>Adapter: 抓取公开网页
-    Adapter-->>API: final URL / status / payload / metadata
-    API->>Policy: 复检 final URL / redirect target
-    API->>Archive: 写 raw payload
-    Archive-->>API: storage_uri / byte_size / hash
-    API->>DB: 创建 raw_object，crawl_run=completed
-    API->>Extractor: 抽取 content candidates
-    Extractor->>DB: upsert content_item + observation
-    Extractor->>DB: create item_version if changed
-    Extractor->>DB: create chunk / embedding jobs
-    Agent->>Search: keyword / vector search
-    Search->>DB: 查询 item_version / chunk
-    Search-->>Agent: 返回可追溯结果
-```
-
-## 数据分层
-
-```mermaid
-flowchart LR
-    CrawlRun["crawl_run<br/>一次抓取执行"] --> RawObject["raw_object<br/>这次抓取看到的 evidence"]
-    RawObject --> ExtractionRun["extraction_run<br/>一次抽取执行"]
-    ExtractionRun --> ContentItem["content_item<br/>资料库最小内容单元"]
-    RawObject --> Observation["item_observation<br/>某 raw object 观察到某 item"]
-    ContentItem --> Observation
-    ContentItem --> ItemVersion["item_version<br/>内容版本"]
-    ItemVersion --> Chunk["chunk<br/>搜索和 embedding 输入"]
-    Chunk --> SearchIndex["keyword / vector search"]
-
-    RawObject -.短保留.-> Archive["raw payload archive"]
-    ItemVersion -.长期保留.-> Knowledge["资料库 / RAG / KG"]
-```
-
-## 安全边界
-
-真实抓取必须默认防守：
-
-- 只允许公开 `http` / `https` URL。
-- DNS 解析后拒绝 localhost、private IP、link-local、multicast、reserved、unspecified。
-- redirect 后必须重新校验 final URL。
-- 设置 timeout、最大响应大小、最大 redirect 次数。
-- 拒绝原因写入 `audit_events` 和 `crawl_runs.error_message`。
-- CLI 的状态变更必须通过 HTTP API，不直接写数据库。
-
-## 本地开发
-
-安装依赖：
+### 1. 配置环境变量
 
 ```bash
+cp .env.example .env
+# 编辑 .env，至少填写以下关键配置：
+```
+
+| 环境变量                         | 说明                                       | 默认值                                     |
+|--------------------------------|--------------------------------------------|--------------------------------------------|
+| `HARVESTER_DATABASE_URL`       | PostgreSQL 连接字符串                       | `postgresql+psycopg://postgres:postgres@localhost:5432/harvester` |
+| `HARVESTER_API_TOKEN`          | API 鉴权 Bearer Token                     | `change-me-in-production`                  |
+| `HARVESTER_ARCHIVE_PATH`       | Raw payload 归档目录                       | `/data/harvester/archive`                  |
+| `FIRECRAWL_API_URL`            | Firecrawl 服务地址                         | `http://localhost:3002`                    |
+| `HARVESTER_EMBEDDING_ADAPTER`  | Embedding 适配器（`stub` 或 `qwen`）       | `stub`                                     |
+| `HARVESTER_START_DAEMONS`      | `./start.sh` 是否同时启动 daemon 进程       | `0`（不启动）                               |
+
+完整配置项参见 [.env.example](.env.example)。
+
+### 2. 安装依赖
+
+```bash
+# 后端（Python）
 uv sync --all-extras
+
+# 前端
+cd frontend && npm install && cd ..
 ```
 
-运行测试：
+### 3. 初始化数据库
 
 ```bash
-uv run pytest -q
+uv run alembic upgrade head
 ```
 
-启动 API：
+### 4. 启动服务
+
+#### 方式 A：一键启动（推荐）
 
 ```bash
-uv run uvicorn harvester.api.app:create_app --factory --reload
-```
-
-检查 API：
-
-```bash
-uv run harvester --base-url http://localhost:8001
-```
-
-Docker Compose smoke：
-
-```bash
-docker compose config
-./scripts/smoke.sh
-```
-
-执行公开网页抓取：
-
-```bash
-# 配置 Firecrawl（在 .env 中设置）
-FIRECRAWL_API_URL=http://localhost:3002
-
-# 通过 CLI 触发抓取
-uv run harvester crawl run --source-id <source-id> --recipe-id <recipe-id>
-
-# 通过 API 触发抓取
-curl -X POST http://localhost:8001/crawl/run \
-  -H "Authorization: Bearer $HARVESTER_API_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"source_id": "...", "recipe_id": "..."}'
-
-# 启用 live smoke（真实网络测试）
-HARVESTER_ENABLE_LIVE_CRAWL=1 uv run pytest tests/integration/test_cdc_public_crawl_smoke.py -q
-```
-
-## Watch Scheduler 与 Crawl Worker
-
-Harvester 支持为 Source 或 Topic Watch 创建定时调度（watch schedule），由 scheduler 按间隔自动创建 crawl job，crawl worker 消费 job 执行抓取。
-
-### 创建 Schedule
-
-```bash
-# 为 source 创建定时调度（每 3600 秒抓取一次）
-uv run harvester schedule create \
-  --source-id <source-id> \
-  --recipe-id <recipe-id> \
-  --interval 3600
-
-# 为 topic watch 的 source 创建调度
-uv run harvester schedule create \
-  --source-id <source-id> \
-  --topic-watch-id <topic-id> \
-  --recipe-id <recipe-id> \
-  --interval 1800
-```
-
-### Scheduler 运行模式
-
-#### One-shot（手动触发）
-
-Scheduler 的 one-shot 命令每次调用扫描到期 schedule 并创建 crawl job。可配合 cron/systemd 定期执行。
-
-```bash
-# 执行一次 scheduler
-uv run harvester scheduler run
-# 输出: scanned=N enqueued=N skipped=N duplicates=N
-```
-
-#### Scheduler Daemon（长期运行）
-
-Scheduler daemon 按配置的轮询间隔持续扫描到期 schedule，自动创建 crawl job。**注意：scheduler 只创建 `crawl` job，不直接执行网络抓取。**
-
-```bash
-# 启动 scheduler daemon（默认每 30 秒轮询一次）
-uv run harvester scheduler daemon
-# 自定义轮询间隔和每轮处理数量
-uv run harvester scheduler daemon --poll-interval 10 --limit 50
-```
-
-### Crawl Worker 运行模式
-
-#### One-shot（手动触发）
-
-```bash
-# 处理 pending 的 crawl job
-uv run harvester worker once --job-type crawl --limit 10
-```
-
-#### Crawl Worker Daemon（长期运行）
-
-Crawl worker daemon 持续消费 `crawl` job。**不会初始化 embedding adapter，不会认领 `embed_chunks` 或 `extract` job。**
-
-```bash
-# 启动 crawl worker daemon
-uv run harvester worker run --job-type crawl --poll-interval 5 --limit 10
-```
-
-默认 `worker run`（不带 `--job-type`）仍只启动 embedding worker，不会改变已有行为。
-
-### 本地开发启动
-
-`./start.sh` 默认只启动后端 API（端口 `8001`）和前端 dev server（端口 `5173`）。
-
-```bash
-# 默认启动（不含 daemon）
+# 只启动 API + 前端
 ./start.sh
 
-# 启动后端 + 前端 + scheduler daemon + crawl worker daemon
+# 启动 API + 前端 + 所有 daemon（scheduler、crawl worker、extract worker、embedding worker）
 HARVESTER_START_DAEMONS=1 ./start.sh
 ```
 
-### Docker Compose 部署
+启动后：
+- 后端 API：`http://localhost:8001`
+- 前端控制台：`http://localhost:5173`
+- `Ctrl+C` 停止所有进程
 
-`docker-compose.yml` 默认启动所有服务：
-- `server`：Harvester API（端口 `8001`）
-- `worker`：Embedding worker daemon
-- `scheduler`：Scheduler daemon
-- `crawl-worker`：Crawl worker daemon
-
-每个服务有独立的 command、healthcheck 和环境变量配置，便于单独重启和观察。
+#### 方式 B：Docker Compose
 
 ```bash
 docker compose up -d
 ```
 
-### 查看队列状态
+Docker Compose 包含以下服务：
+
+| 服务           | 说明                    |
+|---------------|-------------------------|
+| `server`      | Harvester API（:8001）  |
+| `worker`      | Embedding Worker Daemon |
+| `scheduler`   | Scheduler Daemon        |
+| `crawl-worker`| Crawl Worker Daemon     |
+
+#### 方式 C：手动分别启动
 
 ```bash
-# 通过 CLI
+# 后端 API
+uv run uvicorn harvester.api.app:create_app --factory --host 0.0.0.0 --port 8001 --reload
+
+# 前端
+cd frontend && npm run dev
+
+# Scheduler Daemon（按间隔扫描到期 schedule，创建 crawl job）
+uv run harvester scheduler daemon
+
+# Crawl Worker Daemon（消费 crawl job，执行网页抓取）
+uv run harvester worker run --job-type crawl
+
+# Extract Worker Daemon（消费 extract job，执行内容抽取）
+uv run harvester worker run --job-type extract
+
+# Embedding Worker Daemon（消费 embed_chunks job）
+uv run harvester worker run --job-type embed_chunks
+```
+
+---
+
+## 使用指南
+
+### 核心概念
+
+```
+Source → Recipe → Schedule → CrawlRun → RawObject → Extraction → ContentItem → ItemVersion → Chunk → Search
+```
+
+| 概念           | 说明                                                  |
+|---------------|-------------------------------------------------------|
+| **Source**     | 抓取来源（一个网站或入口 URL），有状态机管理               |
+| **Recipe**     | 抓取配方（如何抓取、抽取什么、发现规则），绑定到 Source     |
+| **Schedule**   | 定时调度，按间隔自动触发抓取                             |
+| **CrawlRun**   | 一次具体的抓取执行记录                                   |
+| **RawObject**  | 抓取的原始 evidence（短保留，~7 天）                      |
+| **ContentItem**| 从 raw data 抽取的最小内容单元（长期保留）                |
+| **ItemVersion**| 内容版本（变更追踪）                                     |
+| **Chunk**      | 搜索和 embedding 的输入单元                              |
+
+### CLI 常用命令
+
+所有 CLI 操作通过 `uv run harvester` 执行，状态变更通过 HTTP API 完成：
+
+```bash
+# ---- Source 管理 ----
+uv run harvester source create --name "CDC 周报" --url "https://www.chinacdc.cn/jksj/jksj04_14249/"
+uv run harvester source list
+uv run harvester source promote --source-id <id>      # candidate → watched
+
+# ---- Recipe 管理 ----
+uv run harvester recipe create --source-id <id> --name "CDC 默认" --config '{...}'
+uv run harvester recipe approve --recipe-id <id>       # pending → approved
+
+# ---- 手动触发抓取 ----
+uv run harvester crawl run --source-id <id> --recipe-id <id>
+
+# ---- Schedule 管理 ----
+uv run harvester schedule create --source-id <id> --recipe-id <id> --interval 3600
+uv run harvester schedule list
+
+# ---- 一次性运行 scheduler / worker ----
+uv run harvester scheduler run                         # one-shot：扫描到期 schedule
+uv run harvester worker once --job-type crawl --limit 10  # 处理 N 个 pending job
+
+# ---- 队列状态 ----
 uv run harvester queue status
 
-# 通过 API
-curl -H "Authorization: Bearer $HARVESTER_API_TOKEN" \
-  http://localhost:8001/queue/status
+# ---- 搜索 ----
+uv run harvester search keyword --query "流感"
 ```
 
-### 架构约束
+### API 使用
 
-- **Scheduler 只创建 `crawl` job**，不直接调用网络抓取 adapter。
-- **Embedding 只能从 `item_version -> chunk` 开始**，不能对 raw HTML/API payload 做 embedding。
-- 默认 embedding worker 不会认领 `crawl` 或 `extract` job，各 job type 完全隔离。
-
-## Discovered Targets 与 PDF 资产
-
-Harvester 支持 Source 页面发现的子目标抓取，典型场景为列表页 → 详情页 → PDF 资产的三级流水线。
-
-### 数据模型
-
-- **CrawlTarget**：从固定 Source 发现的子 URL，有 `target_role`（list/detail/asset）、`media_type`（html/pdf）、`status`（pending/running/completed/failed/skipped）和 `parent_target_id` 构成树状关系。
-- Target 通过 recipe 的 `discovery` 配置约束允许的 host、path prefix、content type、depth 和最大数量。
-
-### CDC 周报配置示例
-
-```json
-{
-  "discovery": {
-    "enabled": true,
-    "max_depth": 2,
-    "max_targets_per_run": 20,
-    "allowed_hosts": ["www.chinacdc.cn"],
-    "allowed_path_prefixes": ["/jksj/jksj04_14249/"],
-    "allowed_content_types": ["text/html", "application/pdf"]
-  }
-}
-```
-
-Pipeline 自动识别 CDC 周报列表页（`/jksj/jksj04_14249/`）和详情页 URL pattern，发现 PDF 资产后绕过 Firecrawl 直接 HTTP 下载。
-
-### Target API
+所有 API 需要 Bearer Token：
 
 ```bash
-# 查看所有 target
-curl -H "Authorization: Bearer $HARVESTER_API_TOKEN" \
-  http://localhost:8001/crawl/targets
+export TOKEN="your-token"
 
-# 按 source 过滤
-curl -H "Authorization: Bearer $HARVESTER_API_TOKEN" \
-  "http://localhost:8001/crawl/targets?source_id=<source-id>"
+# 健康检查
+curl http://localhost:8001/health
 
-# 按角色和状态过滤
-curl -H "Authorization: Bearer $HARVESTER_API_TOKEN" \
-  "http://localhost:8001/crawl/targets?target_role=asset&status=failed"
+# 查看 Source 列表
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8001/sources
 
-# 查看失败 target
-curl -H "Authorization: Bearer $HARVESTER_API_TOKEN" \
-  http://localhost:8001/failures/recent
+# 手动触发抓取
+curl -X POST http://localhost:8001/crawl/run \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"source_id": "...", "recipe_id": "..."}'
+
+# 队列状态
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8001/queue/status
+
+# 关键词搜索
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:8001/search/keyword?query=流感"
+
+# 查看失败记录
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8001/failures/recent
+
+# 审计日志
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8001/audit/events
 ```
 
-Target API 只返回摘要信息（URL、角色、状态、错误），不暴露 raw payload 或存储路径。
+### 前端控制台
 
-### CDC Live Smoke
+前端运行在 `http://localhost:5173`，提供可视化的 Source、Recipe、Schedule、CrawlRun、Queue 管理和搜索界面。
 
-```bash
-HARVESTER_CDC_LIVE_SMOKE=1 uv run pytest tests/jobs/test_cdc_live_smoke.py -v
+首次使用在 Overview 页面配置：
+- **API Base URL**：`http://localhost:8001`
+- **API Token**：对应环境变量 `HARVESTER_API_TOKEN` 的值
+
+配置保存在浏览器 localStorage 中。
+
+---
+
+## 如何指挥 Code Agent 添加新抓取源
+
+Harvester 项目内置了 agent 工作流，你可以用自然语言指挥 AI Code Agent（如 Gemini、Claude、Codex）添加新的抓取来源。Agent 会自动遵循项目规范完成接入。
+
+### 工作原理
+
+项目在 `.agent/skills/harvester-source-onboarding/SKILL.md` 中定义了完整的来源接入工作流。当你要求 agent 添加新来源时，agent 会：
+
+1. **识别来源**：分析入口 URL、内容类型、content item 粒度
+2. **复用优先搜索**：检查已有的 executor（`firecrawl`、`http_fetch`）和 extractor（CDC、Sina、PDF 等），优先复用
+3. **选择接入方式**：仅配置 → 扩展现有 extractor → 新增 extractor
+4. **TDD 实现**：先写测试，再写代码
+5. **预览报告**：运行 dry-run 并展示抽取样例
+6. **用户审批**：在你确认前，agent 不会 promote source 或创建正式 schedule
+
+### 示例对话
+
+以下是你可以直接发给 agent 的指令模板：
+
+#### 示例 1：添加一个新闻列表页来源
+
+```
+帮我添加一个新的抓取来源：人民网国际新闻列表页
+- 入口 URL：http://world.people.com.cn/
+- 期望抽取每篇新闻的标题、链接、摘要
+- 每 4 小时自动抓取一次
 ```
 
-- **Scheduler 只创建 `crawl` job**，不直接调用网络抓取 adapter。
-- **Embedding 只能从 `item_version -> chunk` 开始**，不能对 raw HTML/API payload 做 embedding。
-- 默认 embedding worker 不会认领 `crawl` 或 `extract` job，各 job type 完全隔离。
+#### 示例 2：添加一个 RSS 源
+
+```
+添加一个 RSS 抓取来源：
+- URL: https://example.com/feed.xml
+- 抽取每篇文章的标题、正文、发布时间
+- 每天抓取一次
+```
+
+#### 示例 3：添加一个有 PDF 资产的来源
+
+```
+我想抓取某机构的公开报告页面：
+- 列表页 URL: https://example.org/reports/
+- 列表页有详情链接，详情页有 PDF 下载
+- 需要下载 PDF 并提取文本
+- 参考已有的 CDC 周报 pipeline
+```
+
+#### 示例 4：只调整现有来源的配置
+
+```
+把 CDC 周报的抓取间隔从 1 小时改为 30 分钟，
+同时把 discovery 的 max_targets_per_run 从 20 调到 50
+```
+
+### Agent 会执行的步骤
+
+1. 阅读 `SKILL.md`、`AGENTS.md`、`README.md` 了解项目规范
+2. 搜索 `harvester/extractors/` 和 `harvester/adapters/` 中的现有代码
+3. 按复用优先规则选择最小变更方案
+4. 编写/更新 fixture 测试（`tests/extractors/`、`tests/jobs/`）
+5. 实现必要的代码变更
+6. 运行测试确认通过
+7. 提交预览报告，格式如下：
+
+```
+来源：XXX
+入口 URL：https://...
+接入方式：复用 firecrawl executor + 新增 xxx_extractor
+复用判断：
+- 复用 executor：是（firecrawl adapter 已支持 HTML 抓取）
+- 复用 extractor：否（该站点 HTML 结构不同于现有 extractor）
+- 新增代码范围：extractors/xxx.py + tests/extractors/test_xxx.py
+抓取结果：成功获取 15 条新闻
+抽取 content items：15
+样例标题：《...》《...》
+启用草案：
+- source promote: 待确认
+- recipe approve: 待确认
+- schedule: 每 4 小时，待确认
+```
+
+8. **等你确认后**，agent 才会通过 CLI/API 执行 promote、approve 和创建 schedule
+
+### 现有抓取能力一览
+
+可直接复用的能力，无需新增代码：
+
+| 能力               | 说明                                                  |
+|-------------------|-------------------------------------------------------|
+| Firecrawl Adapter | 通用公开网页抓取（HTML → Markdown 转换）                |
+| HTTP 直连下载      | 直接 HTTP GET 下载二进制文件（如 PDF）                   |
+| CDC 周报 Extractor | 中国 CDC 周报列表页 + 详情页解析                        |
+| Sina 7x24 Extractor| 新浪财经 7x24 快讯流解析                                |
+| PDF 文本 Extractor | PDF 文件文本提取                                       |
+| Discovery Pipeline | 列表页 → 详情页 → PDF 资产的三级发现                    |
+| Fetch Policy       | URL 安全校验（禁止内网、redirect 复检）                  |
+
+### 添加新 Extractor 时的关键文件
+
+```
+harvester/extractors/
+├── base.py              # Extractor Protocol 接口定义（CandidateItem、ExtractionOutput）
+├── registry.py          # URL pattern → Extractor 映射注册
+├── cdc_weekly.py        # 示例：CDC 周报 extractor
+├── sina_7x24.py         # 示例：Sina 7x24 extractor
+├── pdf_text.py          # 示例：PDF 文本 extractor
+└── ...
+
+tests/extractors/        # Extractor 单元测试
+tests/jobs/              # Job handler / pipeline 测试
+tests/integration/       # 集成测试
+tests/fixtures/          # 测试 fixture 数据
+```
+
+新 extractor 只需实现 `Extractor` Protocol 的 `extract()` 方法，然后在 `registry.py` 中注册 URL pattern 即可。
+
+---
+
+## 运维参考
 
 ### 审计日志保留
 
-审计事件（`audit_events`）是控制平面的近期解释层，**不是** raw evidence、content item 或 job 历史的长期存储。
+- 默认保留 **7 天**（`HARVESTER_AUDIT_RETENTION_DAYS`）
+- Scheduler daemon 自动按 24 小时间隔清理过期 audit events
+- 清理不影响 source、recipe、job、content item 等业务数据
 
-- **默认保留 7 天**，可通过 `HARVESTER_AUDIT_RETENTION_DAYS` 环境变量覆盖。
-- Scheduler daemon 自动按 24 小时间隔执行清理（可通过 `HARVESTER_AUDIT_CLEANUP_INTERVAL_HOURS` 调整）。
-- 清理**只删除过期 audit events**，不会删除 source、recipe、schedule、crawl run、job、raw object、content item、item version 或 chunk。
-- 归档、废弃和停用等管理动作产生的 audit events 同样遵循保留策略，但业务记录和历史引用不受影响。
+### Raw Payload 保留
 
-## Embedding 适配器
+- `raw_object` 是短保留 evidence cache，默认 ~7 天
+- 提取成功后可压缩或删除 payload
+- 长期保留的是 `content_item`、`item_version`、`chunk`
 
-Harvester 的 embedding 只对 `item_version -> chunk` 做 embedding，**不对 raw HTML/API payload 做 embedding**。`raw_object` 是短保留 evidence cache，不是长期语料库。默认 raw HTML/API payload 可按约 7 天保留；提取成功后可压缩或删除 payload。长期保留的是 metadata、hash、audit、`content_item`、`item_observation`、`item_version`、`chunk`。Worker 和 vector search API 共用同一个适配器工厂，确保 chunk embedding 和 query embedding 使用一致的模型和维度。
-
-### 默认：Stub 适配器
-
-默认使用 deterministic stub 适配器，不需要外部模型服务，适合离线开发和 CI。
+### Embedding 切换
 
 ```bash
-# 默认行为，无需额外配置
-uv run harvester worker once --limit 10
-```
+# 默认：Stub（离线/CI，deterministic）
+HARVESTER_EMBEDDING_ADAPTER=stub
 
-### 切换到 Qwen 适配器
-
-在 `.env` 中设置以下环境变量即可切换到本地 Qwen embedding 服务（OpenAI-compatible API）：
-
-```bash
+# 切换到 Qwen（需要 OpenAI-compatible embedding 服务）
 HARVESTER_EMBEDDING_ADAPTER=qwen
 HARVESTER_EMBEDDING_MODEL=text-embedding-v3
 HARVESTER_EMBEDDING_DIMENSION=1536
 HARVESTER_QWEN_EMBEDDING_BASE_URL=http://localhost:8080
-HARVESTER_QWEN_EMBEDDING_TIMEOUT_SECONDS=30
 ```
 
-切换后 worker 和 vector search API 都会使用 Qwen 适配器。回滚时删除或注释 `HARVESTER_EMBEDDING_ADAPTER=qwen` 即可回到 stub。
+### Fetch Policy
+
+- 只允许公开 `http`/`https` URL
+- DNS 解析后拒绝 localhost、private IP、link-local 等
+- Redirect 后复检 final URL
+- 设有 timeout、最大响应大小、最大 redirect 次数
+- 代理/VPN 环境可设置 `HARVESTER_FETCH_POLICY_SKIP_DNS=1` 跳过 DNS IP 检查
+
+---
+
+## 开发
+
+### 运行测试
+
+```bash
+# 后端全量测试
+uv run pytest -q
+
+# 前端测试
+cd frontend && npm test -- --run
+
+# E2E 测试（需先启动 API + 前端）
+cd frontend && npm run test:e2e
+```
+
+### 代码格式化
+
+```bash
+# Python
+uv run ruff format . && uv run ruff check --fix .
+
+# 前端
+cd frontend && npm run format && npm run lint
+```
 
 ### Live Smoke 测试
 
-当本地 Qwen 服务可用时，可以运行 live smoke 测试：
-
 ```bash
-HARVESTER_EMBEDDING_ADAPTER=qwen \
-HARVESTER_EMBEDDING_MODEL=text-embedding-v3 \
-HARVESTER_QWEN_EMBEDDING_BASE_URL=http://localhost:8080 \
-HARVESTER_LIVE_QWEN_EMBEDDING=1 \
-uv run pytest tests/integration/test_vector_search_api_pipeline.py -q
+# 真实网络抓取
+HARVESTER_ENABLE_LIVE_CRAWL=1 uv run pytest tests/integration/test_cdc_public_crawl_smoke.py -q
+
+# CDC 专用
+HARVESTER_CDC_LIVE_SMOKE=1 uv run pytest tests/jobs/test_cdc_live_smoke.py -v
+
+# Qwen Embedding
+HARVESTER_LIVE_QWEN_EMBEDDING=1 uv run pytest tests/integration/test_vector_search_api_pipeline.py -q
 ```
 
-## 前端管理控制台
+---
 
-Harvester 提供基于 React + TypeScript + Vite 的管理控制台，用于可视化操作和监控。
+## 项目结构
 
-### 启动前端开发服务器
-
-```bash
-cd frontend
-npm install
-npm run dev
 ```
-
-前端默认运行在 `http://localhost:5173`，会代理 `/api` 请求到后端 `http://localhost:8001`。
-
-### 配置 API 连接
-
-在控制台的 Overview 页面配置：
-- **API Base URL**: 后端地址，如 `http://localhost:8001`
-- **API Token**: 可选的 Bearer token（对应环境变量 `HARVESTER_API_TOKEN`）
-
-配置保存在浏览器 localStorage 中。
-
-### 前端开发命令
-
-```bash
-cd frontend
-npm run format          # Prettier 格式化
-npm run lint            # ESLint 检查
-npm run typecheck       # TypeScript 类型检查
-npm run test            # 运行单元测试（Vitest）
-npm run test:e2e        # 运行 E2E 测试（Playwright，需先启动 API 和 dev server）
-npm run build           # 构建生产版本
+Harvester/
+├── harvester/              # 后端 Python 包
+│   ├── api/                # FastAPI 路由、鉴权、依赖注入
+│   │   └── routers/        # 各资源 API router
+│   ├── cli/                # Typer CLI
+│   ├── db/                 # SQLAlchemy models、session 管理
+│   ├── domain/             # 领域逻辑（状态机、Fetch Policy、审计、URL 工具）
+│   ├── extractors/         # 内容抽取器（Protocol + 注册表）
+│   ├── adapters/           # 外部服务适配器（Firecrawl、Embedding）
+│   ├── jobs/               # Job handler（crawl、extract、embed）
+│   ├── workers/            # Worker daemon 实现
+│   └── search/             # 关键词/向量搜索
+├── frontend/               # React + TypeScript + Vite 前端
+├── alembic/                # 数据库迁移
+├── tests/                  # 测试（按模块分目录）
+├── scripts/                # 运维脚本
+├── .agent/skills/          # Agent 工作流技能定义
+├── start.sh                # 一键启动脚本
+├── docker-compose.yml      # Docker 部署配置
+├── pyproject.toml          # Python 项目配置
+└── .env.example            # 环境变量模板
 ```
-
-### 启动后端 API
-
-前端需要后端 API 运行：
-
-```bash
-uv run uvicorn harvester.api.app:create_app --factory --host 0.0.0.0 --port 8001
-```
-
-## 设计文档
-
-- [Harvester 个人信息采集控制平面](docs/designs/office-hours-harvester-20260508-201322.md)
-- [设计文档索引](docs/designs/README.md)
