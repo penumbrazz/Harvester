@@ -50,8 +50,6 @@ node_modules/
 
 .claude/
 !.claude/skills/
-.claude/skills/openspec-*/
-.claude/commands/opsx/
 .codex/
 
 .harvester
