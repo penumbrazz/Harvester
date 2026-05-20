@@ -134,6 +134,63 @@ class TestArchiveWritePayload:
         assert relative_path.suffix == ".pdf"
         assert (archive_dir / relative_path).read_bytes() == b"%PDF-1.7 test"
 
+    def test_category_override_adds_subdirectory(
+        self, writer: ArchiveWriter, archive_dir: Path
+    ):
+        """Category override should add a subdirectory under the type directory."""
+        source_id = uuid.uuid4()
+        result = writer.write(
+            payload=b"%PDF-1.7 test",
+            source_id=source_id,
+            crawl_run_id=uuid.uuid4(),
+            content_type="application/pdf",
+            original_url="https://example.org/files/report.pdf",
+            category_override="职业健康",
+        )
+
+        relative_path = Path(result.relative_path)
+        # path: assets/pdf/职业健康/DATE/SOURCE/report.pdf
+        assert relative_path.parts[0:2] == ("assets", "pdf")
+        assert relative_path.parts[2] == "职业健康"
+        assert relative_path.name == "report.pdf"
+        assert (archive_dir / relative_path).read_bytes() == b"%PDF-1.7 test"
+
+    def test_category_override_sanitized(
+        self, writer: ArchiveWriter, archive_dir: Path
+    ):
+        """Category with special characters should be sanitized."""
+        source_id = uuid.uuid4()
+        result = writer.write(
+            payload=b"test",
+            source_id=source_id,
+            crawl_run_id=uuid.uuid4(),
+            content_type="application/pdf",
+            category_override="test/category:name",
+        )
+
+        relative_path = Path(result.relative_path)
+        assert relative_path.parts[2] == "test_category_name"
+
+    def test_no_category_override_uses_default_path(
+        self, writer: ArchiveWriter, archive_dir: Path
+    ):
+        """Without category override, path should be the default structure."""
+        source_id = uuid.uuid4()
+        result = writer.write(
+            payload=b"%PDF-1.7 test",
+            source_id=source_id,
+            crawl_run_id=uuid.uuid4(),
+            content_type="application/pdf",
+            original_url="https://example.org/files/test.pdf",
+        )
+
+        relative_path = Path(result.relative_path)
+        assert relative_path.parts[0:2] == ("assets", "pdf")
+        # Third part should be date, not a category name
+        import re
+
+        assert re.match(r"\d{4}-\d{2}-\d{2}", relative_path.parts[2])
+
     def test_filename_conflict_adds_short_suffix(
         self, writer: ArchiveWriter, archive_dir: Path
     ):

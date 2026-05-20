@@ -72,6 +72,24 @@ class TestNhcWsbzListExtractor:
             assert target.target_url.startswith("https://www.nhc.gov.cn/wjw/")
             assert ".shtml" in target.target_url
 
+    def test_discovered_targets_have_category(self):
+        html = _read_fixture("nhc-wsbz-list.html")
+        extractor = NhcWsbzListExtractor()
+        result = extractor.extract(
+            raw_metadata={"source_url": "https://www.nhc.gov.cn/wjw/wsbzxx/wsbz.shtml"},
+            raw_payload=html,
+        )
+
+        # At least some targets should have a category derived from URL section
+        categorized = [t for t in result.discovered_targets if t.category]
+        assert len(categorized) > 0, "Should extract categories from detail page URLs"
+        # Known sections in the fixture
+        categories = {t.category for t in categorized}
+        assert any(
+            c in categories
+            for c in ("医疗服务", "老年健康", "职业健康", "卫生健康信息", "临床检验")
+        )
+
     def test_std_num_in_external_id(self):
         html = _read_fixture("nhc-wsbz-list.html")
         extractor = NhcWsbzListExtractor()
@@ -145,6 +163,20 @@ class TestNhcWsbzDetailExtractor:
         assert pdf_target.content_type == "application/pdf"
         assert pdf_target.depth == 2
         assert ".pdf" in pdf_target.target_url
+
+    def test_pdf_target_has_category(self):
+        html = _read_fixture("nhc-wsbz-detail.html")
+        extractor = NhcWsbzDetailExtractor()
+        result = extractor.extract(
+            raw_metadata={
+                "target_url": "https://www.nhc.gov.cn/wjw/c100309/202509/7a598b25a04b4f7f901c104d5835cd82.shtml"
+            },
+            raw_payload=html,
+        )
+
+        assert len(result.discovered_targets) >= 1
+        pdf_target = result.discovered_targets[0]
+        assert pdf_target.category == "医疗服务"
 
     def test_std_num_extracted(self):
         html = _read_fixture("nhc-wsbz-detail.html")

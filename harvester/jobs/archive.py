@@ -70,6 +70,7 @@ class ArchiveWriter:
         content_type: str,
         original_url: str | None = None,
         suggested_filename: str | None = None,
+        category_override: str | None = None,
     ) -> ArchiveWriteResult:
         """Write a raw payload to archive storage.
 
@@ -85,6 +86,8 @@ class ArchiveWriter:
         now = datetime.now(UTC)
         date_str = now.strftime("%Y-%m-%d")
         category, extension = _archive_category(content_type)
+        if category_override:
+            category = os.path.join(category, _sanitize_dirname(category_override))
         filename = _archive_filename(
             crawl_run_id=crawl_run_id,
             content_type=content_type,
@@ -209,6 +212,13 @@ def _avoid_conflict(path: Path, crawl_run_id: UUID) -> Path:
 
 def _media_type(content_type: str) -> str:
     return content_type.split(";", 1)[0].strip().lower()
+
+
+def _sanitize_dirname(name: str) -> str:
+    """Sanitize a directory name, preserving CJK and common unicode."""
+    cleaned = re.sub(r"[\x00-\x1f<>:\"/\\|?*]+", "_", name)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(". ")
+    return cleaned[:80].rstrip() or "uncategorized"
 
 
 def _extension_for_media_type(media_type: str) -> str:

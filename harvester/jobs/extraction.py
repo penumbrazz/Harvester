@@ -300,6 +300,7 @@ def _process_discovered_targets(
             parent_target_id=_parse_optional_uuid(discovered.parent_target_id),
             discovered_from_raw_object_id=raw_object.id,
             external_item_id=discovered.external_item_id,
+            category=discovered.category,
             depth=discovered.depth,
             priority=discovered.priority,
         )

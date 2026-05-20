@@ -25,6 +25,51 @@ _STD_NUM_RE = re.compile(
     r"(WS\s*/?\s*T?\s*[\d.]+[\s—-]*\d+|GBZ\s*/?\s*T?\s*[\d.]+[\s—-]*\d+)"
 )
 
+# Section code from NHC URL path: /wjw/{section}/...
+_SECTION_RE = re.compile(r"/wjw/(\w+)/\d{6}/")
+
+# NHC section code -> Chinese category name
+_NHC_SECTION_CATEGORIES: dict[str, str] = {
+    "pyl": "职业健康",
+    "fsgc": "放射卫生",
+    "s9497": "卫生健康信息",
+    "s9493": "临床检验",
+    "s9496": "环境健康",
+    "s9494": "学校卫生",
+    "s9495": "传染病",
+    "s9498": "消毒",
+    "s9499": "寄生虫病",
+    "s9500": "地方病",
+    "s9501": "食品卫生",
+    "s9502": "营养",
+    "s9503": "精神卫生",
+    "c100309": "医疗服务",
+    "c100310": "老年健康",
+    "c100311": "基层卫生",
+    "c100312": "妇幼健康",
+    "c100313": "药政管理",
+    "c100314": "综合监督",
+    "c100315": "疾病控制",
+    "c100316": "卫生应急",
+    "c100317": "政策法规",
+    "c100318": "人事管理",
+    "c100319": "规划信息",
+    "c100320": "财务管理",
+    "c100321": "国际合作",
+    "c100322": "宣传",
+    "c100323": "机关党建",
+    "c100324": "科技教育",
+}
+
+
+def _category_for_url(url: str) -> str | None:
+    """Extract Chinese category name from NHC URL path."""
+    match = _SECTION_RE.search(url)
+    if match:
+        section = match.group(1)
+        return _NHC_SECTION_CATEGORIES.get(section)
+    return None
+
 
 class _ListRowParser(HTMLParser):
     """Parse the standards table from NHC list page HTML."""
@@ -270,6 +315,7 @@ class NhcWsbzListExtractor:
                     external_item_id=external_item_id,
                     depth=1,
                     priority=0,
+                    category=_category_for_url(detail_url),
                 )
             )
         return output
@@ -331,6 +377,7 @@ class NhcWsbzDetailExtractor:
                     external_item_id=external_item_id,
                     depth=2,
                     priority=0,
+                    category=_category_for_url(detail_url),
                 )
             )
         return output

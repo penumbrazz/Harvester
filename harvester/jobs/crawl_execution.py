@@ -69,6 +69,7 @@ def write_archive(
     crawl_run_id: uuid.UUID,
     content_type: str,
     original_url: str | None = None,
+    category: str | None = None,
 ) -> ArchiveWriteResult:
     """Write payload to archive storage.
 
@@ -83,6 +84,7 @@ def write_archive(
         crawl_run_id=crawl_run_id,
         content_type=content_type,
         original_url=original_url,
+        category_override=category,
     )
 
 
@@ -285,8 +287,8 @@ def execute_crawl(
                 crawl_run_id=run_id,
                 content_type=pdf_content_type,
                 original_url=crawl_url,
+                category=target.category if target else None,
             )
-            final_url = binary_result.final_url
             content_type = pdf_content_type
             status_code = binary_result.status_code
         else:
@@ -341,6 +343,7 @@ def execute_crawl(
                 crawl_run_id=run_id,
                 content_type=crawl_result.content_type or "text/html",
                 original_url=crawl_url,
+                category=target.category if target else None,
             )
             final_url = crawl_result.final_url
             content_type = crawl_result.content_type or "text/html"
