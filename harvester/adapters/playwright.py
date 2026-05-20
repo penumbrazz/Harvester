@@ -10,6 +10,7 @@ from async contexts (e.g. FastAPI).
 from __future__ import annotations
 
 import logging
+import math
 import os
 import time
 from dataclasses import dataclass
@@ -74,10 +75,13 @@ class PlaywrightAdapter:
     def __init__(self, config: PlaywrightConfig | None = None) -> None:
         self._config = config or PlaywrightConfig()
 
-    def crawl(self, url: str) -> CrawlResult:
+    def crawl(self, url: str, config: dict | None = None) -> CrawlResult:
         """Crawl a URL using Playwright headless browser.
 
         Returns a CrawlResult with HTML content, regardless of success or failure.
+
+        If config contains ``pagination.type == "nhc_ajax"``, fetches all AJAX
+        pagination pages after the initial load and injects rows into the HTML.
         """
         try:
             with sync_playwright() as p:
@@ -124,6 +128,13 @@ class PlaywrightAdapter:
                     content = self._safe_get_content(page)
                     final_url = page.url
 
+                    # Apply AJAX pagination if configured
+                    if (
+                        config
+                        and config.get("pagination", {}).get("type") == "nhc_ajax"
+                    ):
+                        content = self._apply_nhc_pagination(page, content, config)
+
                     return CrawlResult(
                         original_url=url,
                         final_url=final_url,
@@ -167,6 +178,115 @@ class PlaywrightAdapter:
                 else:
                     raise
 
+    def _apply_nhc_pagination(self, page: Page, html: str, config: dict) -> str:
+        """Fetch NHC AJAX pagination pages and inject rows into HTML."""
+        pagination = config.get("pagination", {})
+        max_pages = pagination.get("max_pages", 200)
+
+        channel_id = page.evaluate(
+            "() => typeof channelId !== 'undefined' ? channelId : null"
+        )
+        if not channel_id:
+            logger.warning("nhc_pagination.no_channelId")
+            return html
+
+        logger.info(
+            "nhc_pagination.start channel=%s max_pages=%d", channel_id, max_pages
+        )
+        all_results = _fetch_nhc_ajax_pages(page, channel_id, max_pages)
+        logger.info("nhc_pagination.fetched total_items=%d", len(all_results))
+
+        if not all_results:
+            return html
+
+        rows_html = _nhc_json_to_table_rows(all_results)
+        return _inject_rows_into_html(html, rows_html)
+
     @classmethod
     def from_env(cls) -> PlaywrightAdapter:
         return cls(config=PlaywrightConfig.from_env())
+
+
+def _nhc_meta_value(result: dict, name: str) -> str:
+    """Extract a named value from NHC AJAX result's domainMetaList."""
+    for meta in result.get("domainMetaList", []):
+        for item in meta.get("resultList", []):
+            if item.get("name") == name:
+                return item.get("value", "")
+    return ""
+
+
+def _nhc_json_to_table_rows(results: list[dict]) -> str:
+    """Convert NHC AJAX JSON results to HTML table rows.
+
+    Each result becomes a ``<tr class="xx">`` row matching the format
+    expected by :class:`NhcWsbzListExtractor`.
+    """
+    if not results:
+        return ""
+
+    rows: list[str] = []
+    for result in results:
+        title = result.get("title", "")
+        url = result.get("url", "")
+        std_num = _nhc_meta_value(result, "标准号")
+        publish_date = _nhc_meta_value(result, "发布时间")
+        impl_date = _nhc_meta_value(result, "实施时间")
+
+        rows.append(
+            f'<tr bgcolor="#ffffff" class="xx">'
+            f'<td align="center" height="25">·</td>'
+            f'<td align="left" style="padding-left:5px;">{std_num}</td>'
+            f'<td align="left" style="padding-left:5px;">'
+            f'<a href="{url}" target="_blank" title="{title}">{title}</a></td>'
+            f'<td align="center">{publish_date}</td>'
+            f'<td align="center">{impl_date}</td>'
+            f"</tr>"
+        )
+    return "\n".join(rows)
+
+
+def _inject_rows_into_html(html: str, rows: str) -> str:
+    """Inject AJAX-generated table rows before the closing </tbody>."""
+    if not rows:
+        return html
+    return html.replace("</tbody>", rows + "\n</tbody>", 1)
+
+
+def _fetch_nhc_ajax_pages(
+    page: Page, channel_id: str, max_pages: int = 200, page_size: int = 20
+) -> list[dict]:
+    """Fetch all NHC AJAX pagination pages via in-page fetch().
+
+    Returns combined results from all pages.
+    """
+    all_results: list[dict] = []
+
+    for page_num in range(1, max_pages + 1):
+        ajax_url = (
+            f"/search/{channel_id}"
+            f"?_isAgg=true&_isJson=true"
+            f"&_pageSize={page_size}&_template=index"
+            f"&_rangeTimeGte=&_channelName=&page={page_num}"
+        )
+        js_expr = f"() => fetch('{ajax_url}').then(r => r.json())"
+
+        try:
+            data = page.evaluate(js_expr)
+        except Exception as exc:
+            logger.warning("nhc_ajax.fetch_failed page=%d error=%s", page_num, exc)
+            break
+
+        results = data.get("data", {}).get("results", [])
+        total = data.get("data", {}).get("total", 0)
+        all_results.extend(results)
+
+        logger.debug(
+            "nhc_ajax.page page=%d items=%d total=%d", page_num, len(results), total
+        )
+
+        total_pages = math.ceil(total / page_size) if total > 0 else 1
+        if page_num >= total_pages:
+            break
+
+    return all_results

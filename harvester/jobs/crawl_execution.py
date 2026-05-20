@@ -45,7 +45,12 @@ class CrawlExecutionResult:
     error_message: str | None = None
 
 
-def execute_adapter_crawl(url: str, *, executor: str = "firecrawl") -> CrawlResult:
+def execute_adapter_crawl(
+    url: str,
+    *,
+    executor: str = "firecrawl",
+    config: dict | None = None,
+) -> CrawlResult:
     """Execute an adapter crawl for the given URL.
 
     Routes to the appropriate adapter based on the executor type.
@@ -55,7 +60,7 @@ def execute_adapter_crawl(url: str, *, executor: str = "firecrawl") -> CrawlResu
         from harvester.adapters.playwright import PlaywrightAdapter
 
         adapter = PlaywrightAdapter.from_env()
-        return adapter.crawl(url)
+        return adapter.crawl(url, config=config)
 
     from harvester.adapters.firecrawl import FirecrawlAdapter
 
@@ -292,7 +297,9 @@ def execute_crawl(
             content_type = pdf_content_type
             status_code = binary_result.status_code
         else:
-            crawl_result = execute_adapter_crawl(crawl_url, executor=recipe.executor)
+            crawl_result = execute_adapter_crawl(
+                crawl_url, executor=recipe.executor, config=recipe.config
+            )
 
             if crawl_result.error:
                 logger.error(
