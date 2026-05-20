@@ -21,7 +21,7 @@ router = APIRouter(prefix="/recipes", tags=["recipes"])
 _Token = Depends(require_api_token)
 _Session = Depends(get_db_session)
 
-APPROVED_EXECUTORS = {"firecrawl", "http_fetch", "rss_parse", "static"}
+APPROVED_EXECUTORS = {"firecrawl", "http_fetch", "rss_parse", "static", "playwright"}
 
 
 class RecipeCreateRequest(BaseModel):

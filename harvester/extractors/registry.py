@@ -10,6 +10,10 @@ from harvester.extractors.cdc_weekly import (
     CdcWeeklyDetailExtractor,
     CdcWeeklyListExtractor,
 )
+from harvester.extractors.nhc_wsbz import (
+    NhcWsbzDetailExtractor,
+    NhcWsbzListExtractor,
+)
 from harvester.extractors.pdf_text import PdfTextExtractor
 from harvester.extractors.sina_7x24 import Sina7x24Extractor
 
@@ -27,6 +31,16 @@ _REGISTRY: list[tuple[re.Pattern[str], ExtractorClass]] = [
     (
         re.compile(r"chinacdc\.cn/jksj/jksj04_14249/?$"),
         CdcWeeklyListExtractor,
+    ),
+    # NHC health standards — detail page (must precede list pattern)
+    (
+        re.compile(r"nhc\.gov\.cn/wjw/\w+/\d{6}/[a-f0-9]+\.shtml"),
+        NhcWsbzDetailExtractor,
+    ),
+    # NHC health standards — list page
+    (
+        re.compile(r"nhc\.gov\.cn/wjw/wsbzxx/wsbz\.shtml"),
+        NhcWsbzListExtractor,
     ),
     (re.compile(r"sina\.com\.cn/7x24"), Sina7x24Extractor),
 ]

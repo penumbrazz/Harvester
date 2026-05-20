@@ -45,12 +45,18 @@ class CrawlExecutionResult:
     error_message: str | None = None
 
 
-def execute_adapter_crawl(url: str) -> CrawlResult:
+def execute_adapter_crawl(url: str, *, executor: str = "firecrawl") -> CrawlResult:
     """Execute an adapter crawl for the given URL.
 
-    This function creates a Firecrawl adapter from environment config
-    and performs the crawl. Separated for testability.
+    Routes to the appropriate adapter based on the executor type.
+    Falls back to FirecrawlAdapter for unknown executors.
     """
+    if executor == "playwright":
+        from harvester.adapters.playwright import PlaywrightAdapter
+
+        adapter = PlaywrightAdapter.from_env()
+        return adapter.crawl(url)
+
     from harvester.adapters.firecrawl import FirecrawlAdapter
 
     adapter = FirecrawlAdapter.from_env()
@@ -62,6 +68,7 @@ def write_archive(
     source_id: uuid.UUID,
     crawl_run_id: uuid.UUID,
     content_type: str,
+    original_url: str | None = None,
 ) -> ArchiveWriteResult:
     """Write payload to archive storage.
 
@@ -75,6 +82,7 @@ def write_archive(
         source_id=source_id,
         crawl_run_id=crawl_run_id,
         content_type=content_type,
+        original_url=original_url,
     )
 
 
@@ -276,12 +284,13 @@ def execute_crawl(
                 source_id=source_id,
                 crawl_run_id=run_id,
                 content_type=pdf_content_type,
+                original_url=crawl_url,
             )
             final_url = binary_result.final_url
             content_type = pdf_content_type
             status_code = binary_result.status_code
         else:
-            crawl_result = execute_adapter_crawl(crawl_url)
+            crawl_result = execute_adapter_crawl(crawl_url, executor=recipe.executor)
 
             if crawl_result.error:
                 logger.error(
@@ -331,6 +340,7 @@ def execute_crawl(
                 source_id=source_id,
                 crawl_run_id=run_id,
                 content_type=crawl_result.content_type or "text/html",
+                original_url=crawl_url,
             )
             final_url = crawl_result.final_url
             content_type = crawl_result.content_type or "text/html"

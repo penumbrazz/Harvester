@@ -115,6 +115,54 @@ class TestArchiveWritePayload:
         parts = Path(result.relative_path).parts
         assert len(parts) >= 2
 
+    def test_pdf_keeps_original_filename_and_extension(
+        self, writer: ArchiveWriter, archive_dir: Path
+    ):
+        """PDF assets should be readable on disk and keep the source filename."""
+        source_id = uuid.uuid4()
+        result = writer.write(
+            payload=b"%PDF-1.7 test",
+            source_id=source_id,
+            crawl_run_id=uuid.uuid4(),
+            content_type="application/pdf",
+            original_url="https://example.org/files/WST%20875-2026.pdf",
+        )
+
+        relative_path = Path(result.relative_path)
+        assert relative_path.parts[0:2] == ("assets", "pdf")
+        assert relative_path.name == "WST 875-2026.pdf"
+        assert relative_path.suffix == ".pdf"
+        assert (archive_dir / relative_path).read_bytes() == b"%PDF-1.7 test"
+
+    def test_filename_conflict_adds_short_suffix(
+        self, writer: ArchiveWriter, archive_dir: Path
+    ):
+        """Conflicting asset names should keep the readable stem."""
+        source_id = uuid.uuid4()
+        original_url = "https://example.org/files/report.pdf"
+
+        first = writer.write(
+            payload=b"first",
+            source_id=source_id,
+            crawl_run_id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+            content_type="application/pdf",
+            original_url=original_url,
+        )
+        second = writer.write(
+            payload=b"second",
+            source_id=source_id,
+            crawl_run_id=uuid.UUID("00000000-0000-0000-0000-000000000002"),
+            content_type="application/pdf",
+            original_url=original_url,
+        )
+
+        first_path = Path(first.relative_path)
+        second_path = Path(second.relative_path)
+        assert first_path.name == "report.pdf"
+        assert second_path.name == "report-00000000.pdf"
+        assert (archive_dir / first_path).read_bytes() == b"first"
+        assert (archive_dir / second_path).read_bytes() == b"second"
+
 
 class TestArchiveOversizedRejection:
     """Oversized payloads MUST be rejected."""

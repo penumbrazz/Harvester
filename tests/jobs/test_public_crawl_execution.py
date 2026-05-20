@@ -209,7 +209,7 @@ class TestApprovedSourceSuccess:
             )
 
         assert result.status == "completed"
-        mock_adapter.assert_called_once_with(target.target_url)
+        mock_adapter.assert_called_once_with(target.target_url, executor="firecrawl")
         assert mock_policy.call_args_list[0].args[0] == target.target_url
         updated = db_session.get(CrawlTarget, target.id)
         assert updated.status == "completed"

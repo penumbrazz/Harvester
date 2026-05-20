@@ -16,6 +16,7 @@ dependencies = [
     "httpx>=0.26.0",
     "pydantic-settings>=2.0.0",
     "pypdf>=4.0.0",
+    "drissionpage>=4.1.1.2",
 ]
 
 [project.optional-dependencies]
@@ -44,3 +45,7 @@ ignore = ["E501"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+default = true
