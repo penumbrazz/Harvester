@@ -67,13 +67,13 @@ class TestRegistryPdfFallback:
         )
         assert isinstance(extractor, PdfTextExtractor)
 
-    def test_url_match_takes_priority_over_content_type(self):
-        """URL pattern match should take priority over content type."""
+    def test_pdf_content_type_takes_priority_over_url_match(self):
+        """Binary content types (PDF) should use dedicated extractors regardless of URL."""
         extractor = get_extractor(
             "https://www.chinacdc.cn/jksj/jksj04_14249/",
             content_type="application/pdf",
         )
-        assert isinstance(extractor, CdcWeeklyListExtractor)
+        assert isinstance(extractor, PdfTextExtractor)
 
     def test_no_match_without_content_type(self):
         """Unknown URL without content type should return None."""

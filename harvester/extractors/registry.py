@@ -61,13 +61,15 @@ def get_extractor_for_url(url: str) -> Extractor | None:
 
 def get_extractor(url: str, content_type: str | None = None) -> Extractor | None:
     """Return an extractor matching URL pattern or content type fallback."""
-    extractor = get_extractor_for_url(url)
-    if extractor is not None:
-        return extractor
+    # Binary content types (PDF, images) must use their dedicated extractors
+    # regardless of URL pattern, since URL-based extractors expect text/HTML.
     if content_type and content_type in _CONTENT_TYPE_EXTRACTORS:
         cls = _CONTENT_TYPE_EXTRACTORS[content_type]
         logger.debug(
             "Matched extractor %s for content_type %s", cls.__name__, content_type
         )
         return cls()
+    extractor = get_extractor_for_url(url)
+    if extractor is not None:
+        return extractor
     return None
