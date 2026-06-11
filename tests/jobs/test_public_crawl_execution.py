@@ -15,7 +15,7 @@ from unittest.mock import patch
 import pytest
 import sqlalchemy as sa
 
-from harvester.adapters.firecrawl import CrawlResult
+from harvester.adapters.types import CrawlResult
 from harvester.db.models import CrawlTarget
 from harvester.domain.fetch_policy import REASON_PRIVATE_IP, FetchPolicyResult
 from harvester.jobs.archive import ArchiveWriteResult

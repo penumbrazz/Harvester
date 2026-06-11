@@ -27,7 +27,7 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import create_engine, text
 
 from alembic import command
-from harvester.adapters.firecrawl import CrawlResult
+from harvester.adapters.types import CrawlResult
 from harvester.domain.fetch_policy import FetchPolicyResult
 from harvester.jobs.archive import ArchiveWriteResult
 

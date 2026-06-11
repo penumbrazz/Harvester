@@ -12,11 +12,8 @@ from unittest.mock import patch
 import httpx
 import pytest
 
-from harvester.adapters.firecrawl import (
-    CrawlResult,
-    FirecrawlAdapter,
-    FirecrawlConfigError,
-)
+from harvester.adapters.firecrawl import FirecrawlAdapter, FirecrawlConfigError
+from harvester.adapters.types import CrawlResult
 
 
 def _make_success_response(

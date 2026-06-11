@@ -13,22 +13,11 @@ from typing import Any
 
 import httpx
 
+from harvester.adapters.types import CrawlResult
+
 
 class FirecrawlConfigError(Exception):
     """Raised when Firecrawl adapter is misconfigured (missing URL, etc.)."""
-
-
-@dataclass(frozen=True)
-class CrawlResult:
-    """Normalized result from a crawl operation."""
-
-    original_url: str
-    final_url: str | None = None
-    status_code: int | None = None
-    content_type: str | None = None
-    payload_text: str | None = None
-    metadata: dict[str, Any] | None = None
-    error: str | None = None
 
 
 @dataclass

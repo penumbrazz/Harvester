@@ -21,7 +21,7 @@ from unittest.mock import patch
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from harvester.adapters.firecrawl import CrawlResult
+from harvester.adapters.types import CrawlResult
 from harvester.db.models import CrawlRun, Job, RawObject
 from harvester.domain.fetch_policy import FetchPolicyResult
 from harvester.jobs.archive import ArchiveWriteResult

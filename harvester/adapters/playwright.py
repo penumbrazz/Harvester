@@ -17,7 +17,7 @@ from dataclasses import dataclass
 
 from playwright.sync_api import Page, sync_playwright
 
-from harvester.adapters.firecrawl import CrawlResult
+from harvester.adapters.types import CrawlResult
 
 logger = logging.getLogger(__name__)
 
