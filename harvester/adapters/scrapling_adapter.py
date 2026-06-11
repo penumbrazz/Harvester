@@ -35,11 +35,27 @@ class ScraplingConfig:
             "1",
             "yes",
         )
+        solve_cloudflare = os.environ.get("SCRAPLING_SOLVE_CLOUDFLARE", "").lower() in (
+            "true",
+            "1",
+            "yes",
+        )
         return cls(
             timeout=timeout,
             impersonate=impersonate,
             headless=headless,
+            solve_cloudflare=solve_cloudflare,
         )
+
+
+def _extract_content_type(response: object) -> str:
+    """Extract content type from Scrapling response headers."""
+    headers = getattr(response, "headers", None)
+    if isinstance(headers, dict):
+        ct = headers.get("content-type") or headers.get("Content-Type")
+        if isinstance(ct, str) and ct.strip():
+            return ct.split(";")[0].strip()
+    return "text/html"
 
 
 class ScraplingAdapter:
@@ -87,7 +103,7 @@ class ScraplingAdapter:
                 original_url=url,
                 final_url=response.url,
                 status_code=response.status,
-                content_type="text/html",
+                content_type=_extract_content_type(response),
                 payload_text=str(response.html_content),
             )
         except Exception as exc:
@@ -119,7 +135,7 @@ class ScraplingAdapter:
                 original_url=url,
                 final_url=response.url,
                 status_code=response.status,
-                content_type="text/html",
+                content_type=_extract_content_type(response),
                 payload_text=str(response.html_content),
             )
         except Exception as exc:
@@ -151,7 +167,7 @@ class ScraplingAdapter:
                 original_url=url,
                 final_url=response.url,
                 status_code=response.status,
-                content_type="text/html",
+                content_type=_extract_content_type(response),
                 payload_text=str(response.html_content),
             )
         except Exception as exc:
