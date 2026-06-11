@@ -71,6 +71,10 @@ class ScraplingAdapter:
         'fetcher' (default), 'stealthy', or 'dynamic'.
         """
         mode = (config or {}).get("scrapling_mode", "fetcher")
+        if mode not in ("fetcher", "stealthy", "dynamic"):
+            logger.warning("scrapling.unknown_mode mode=%s url=%s", mode, url)
+            mode = "fetcher"
+        logger.info("scrapling.crawl mode=%s url=%s", mode, url)
         if mode == "stealthy":
             return self._crawl_stealthy(url, config)
         if mode == "dynamic":
@@ -104,7 +108,7 @@ class ScraplingAdapter:
                 final_url=response.url,
                 status_code=response.status,
                 content_type=_extract_content_type(response),
-                payload_text=str(response.html_content),
+                payload_text=str(response.html_content or ""),
             )
         except Exception as exc:
             logger.error("scrapling.fetcher_failed url=%s error=%s", url, exc)
@@ -136,7 +140,7 @@ class ScraplingAdapter:
                 final_url=response.url,
                 status_code=response.status,
                 content_type=_extract_content_type(response),
-                payload_text=str(response.html_content),
+                payload_text=str(response.html_content or ""),
             )
         except Exception as exc:
             logger.error("scrapling.stealthy_failed url=%s error=%s", url, exc)
@@ -168,7 +172,7 @@ class ScraplingAdapter:
                 final_url=response.url,
                 status_code=response.status,
                 content_type=_extract_content_type(response),
-                payload_text=str(response.html_content),
+                payload_text=str(response.html_content or ""),
             )
         except Exception as exc:
             logger.error("scrapling.dynamic_failed url=%s error=%s", url, exc)
