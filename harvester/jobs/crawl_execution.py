@@ -62,6 +62,12 @@ def execute_adapter_crawl(
         adapter = PlaywrightAdapter.from_env()
         return adapter.crawl(url, config=config)
 
+    if executor == "scrapling":
+        from harvester.adapters.scrapling_adapter import ScraplingAdapter
+
+        adapter = ScraplingAdapter.from_env()
+        return adapter.crawl(url, config=config)
+
     from harvester.adapters.firecrawl import FirecrawlAdapter
 
     adapter = FirecrawlAdapter.from_env()
