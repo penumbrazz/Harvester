@@ -7,8 +7,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from harvester.adapters.scrapling_adapter import ScraplingAdapter, ScraplingConfig
 from harvester.adapters.types import CrawlResult
 
@@ -169,9 +167,7 @@ class TestDynamicMode:
         mock_response.html_content = "<html></html>"
         mock_cls.fetch.return_value = mock_response
 
-        adapter = ScraplingAdapter(
-            config=ScraplingConfig(headless=False)
-        )
+        adapter = ScraplingAdapter(config=ScraplingConfig(headless=False))
         adapter.crawl(
             "https://example.com",
             config={"scrapling_mode": "dynamic"},

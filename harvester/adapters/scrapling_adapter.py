@@ -96,11 +96,67 @@ class ScraplingAdapter:
 
     def _crawl_stealthy(self, url: str, config: dict | None = None) -> CrawlResult:
         """Headless browser with Cloudflare Turnstile bypass."""
-        raise NotImplementedError
+        try:
+            from scrapling.fetchers import StealthyFetcher
+        except ImportError:
+            return CrawlResult(
+                original_url=url,
+                error="scrapling is not installed. Install with: uv pip install 'scrapling[fetchers]'",
+            )
+
+        opts: dict = {
+            "headless": self._config.headless,
+            "timeout": self._config.timeout,
+        }
+        if self._config.solve_cloudflare:
+            opts["solve_cloudflare"] = True
+        if config and config.get("network_idle"):
+            opts["network_idle"] = True
+
+        try:
+            response = StealthyFetcher.fetch(url, **opts)
+            return CrawlResult(
+                original_url=url,
+                final_url=response.url,
+                status_code=response.status,
+                content_type="text/html",
+                payload_text=str(response.html_content),
+            )
+        except Exception as exc:
+            logger.error("scrapling.stealthy_failed url=%s error=%s", url, exc)
+            return CrawlResult(original_url=url, error=str(exc))
 
     def _crawl_dynamic(self, url: str, config: dict | None = None) -> CrawlResult:
         """Full browser automation via Playwright."""
-        raise NotImplementedError
+        try:
+            from scrapling.fetchers import DynamicFetcher
+        except ImportError:
+            return CrawlResult(
+                original_url=url,
+                error="scrapling is not installed. Install with: uv pip install 'scrapling[fetchers]'",
+            )
+
+        opts: dict = {
+            "headless": self._config.headless,
+            "timeout": self._config.timeout,
+        }
+        if config and config.get("disable_resources"):
+            opts["disable_resources"] = True
+        if config and config.get("network_idle"):
+            opts["network_idle"] = True
+
+        try:
+            response = DynamicFetcher.fetch(url, **opts)
+            return CrawlResult(
+                original_url=url,
+                final_url=response.url,
+                status_code=response.status,
+                content_type="text/html",
+                payload_text=str(response.html_content),
+            )
+        except Exception as exc:
+            logger.error("scrapling.dynamic_failed url=%s error=%s", url, exc)
+            return CrawlResult(original_url=url, error=str(exc))
 
     @classmethod
     def from_env(cls) -> ScraplingAdapter:
