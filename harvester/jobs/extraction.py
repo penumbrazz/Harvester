@@ -188,16 +188,20 @@ def execute_extraction(
             snippet=candidate.snippet,
         )
 
+        # Sanitize text: remove NUL bytes and surrogate characters
+        safe_text = candidate.content_text.replace("\x00", "")
+        safe_text = safe_text.encode("utf-8", errors="surrogatepass").decode("utf-8", errors="replace")
+
         content_hash = (
             "sha256:"
-            + hashlib.sha256(candidate.content_text.encode("utf-8")).hexdigest()
+            + hashlib.sha256(safe_text.encode("utf-8")).hexdigest()
         )
 
         version, created = create_version_if_changed(
             session,
             content_item_id=content_item.id,
             content_hash=content_hash,
-            normalized_text=candidate.content_text,
+            normalized_text=safe_text,
             language=candidate.language,
             raw_object_id=raw_object_id,
         )
@@ -300,6 +304,7 @@ def _process_discovered_targets(
             parent_target_id=_parse_optional_uuid(discovered.parent_target_id),
             discovered_from_raw_object_id=raw_object.id,
             external_item_id=discovered.external_item_id,
+            category=discovered.category,
             depth=discovered.depth,
             priority=discovered.priority,
         )

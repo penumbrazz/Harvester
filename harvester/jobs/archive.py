@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 from uuid import UUID
 
 
@@ -66,6 +68,9 @@ class ArchiveWriter:
         source_id: UUID,
         crawl_run_id: UUID,
         content_type: str,
+        original_url: str | None = None,
+        suggested_filename: str | None = None,
+        category_override: str | None = None,
     ) -> ArchiveWriteResult:
         """Write a raw payload to archive storage.
 
@@ -80,15 +85,27 @@ class ArchiveWriter:
         content_hash = "sha256:" + hashlib.sha256(payload).hexdigest()
         now = datetime.now(UTC)
         date_str = now.strftime("%Y-%m-%d")
-        filename = f"{crawl_run_id.hex}.raw"
+        category, extension = _archive_category(content_type)
+        if category_override:
+            category = os.path.join(category, _sanitize_dirname(category_override))
+        filename = _archive_filename(
+            crawl_run_id=crawl_run_id,
+            content_type=content_type,
+            extension=extension,
+            original_url=original_url,
+            suggested_filename=suggested_filename,
+        )
 
         relative_path = os.path.join(
+            category,
             date_str,
             str(source_id),
             filename,
         )
 
         full_path = Path(self._config.archive_path) / relative_path
+        full_path = _avoid_conflict(full_path, crawl_run_id)
+        relative_path = os.path.relpath(full_path, self._config.archive_path)
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.write_bytes(payload)
 
@@ -107,3 +124,108 @@ class ArchiveWriter:
             retention_days=retention_days,
             retain_until=retain_until,
         )
+
+
+def _archive_category(content_type: str) -> tuple[str, str]:
+    media_type = _media_type(content_type)
+    if media_type == "application/pdf":
+        return "assets/pdf", ".pdf"
+    if media_type.startswith("image/"):
+        image_ext = {
+            "image/jpeg": ".jpg",
+            "image/png": ".png",
+            "image/gif": ".gif",
+            "image/webp": ".webp",
+            "image/svg+xml": ".svg",
+        }.get(media_type, ".img")
+        return "assets/images", image_ext
+    if media_type == "text/html":
+        return "pages/html", ".html"
+    if media_type == "application/json":
+        return "pages/json", ".json"
+    if media_type.startswith("text/"):
+        return "pages/text", ".txt"
+    return "assets/files", _extension_for_media_type(media_type)
+
+
+def _archive_filename(
+    *,
+    crawl_run_id: UUID,
+    content_type: str,
+    extension: str,
+    original_url: str | None,
+    suggested_filename: str | None,
+) -> str:
+    source_name = suggested_filename or _filename_from_url(original_url)
+    if source_name:
+        filename = _sanitize_filename(source_name)
+    else:
+        filename = (
+            f"{_media_type(content_type).replace('/', '-')}-{crawl_run_id.hex[:8]}"
+        )
+
+    stem = Path(filename).stem or filename
+    suffix = Path(filename).suffix.lower()
+    if not suffix or suffix == ".raw":
+        suffix = extension
+    if suffix != extension and _media_type(content_type) == "application/pdf":
+        suffix = ".pdf"
+
+    return f"{stem}{suffix}"
+
+
+def _filename_from_url(original_url: str | None) -> str | None:
+    if not original_url:
+        return None
+    parsed = urlparse(original_url)
+    name = Path(unquote(parsed.path)).name
+    return name or None
+
+
+def _sanitize_filename(filename: str) -> str:
+    cleaned = re.sub(r"[\x00-\x1f<>:\"/\\|?*]+", "_", filename)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(". ")
+    if len(cleaned) > 180:
+        path = Path(cleaned)
+        stem = path.stem[:160].rstrip()
+        cleaned = f"{stem}{path.suffix}"
+    return cleaned or "payload"
+
+
+def _avoid_conflict(path: Path, crawl_run_id: UUID) -> Path:
+    if not path.exists():
+        return path
+
+    candidate = path.with_name(f"{path.stem}-{crawl_run_id.hex[:8]}{path.suffix}")
+    if not candidate.exists():
+        return candidate
+
+    index = 2
+    while True:
+        candidate = path.with_name(
+            f"{path.stem}-{crawl_run_id.hex[:8]}-{index}{path.suffix}"
+        )
+        if not candidate.exists():
+            return candidate
+        index += 1
+
+
+def _media_type(content_type: str) -> str:
+    return content_type.split(";", 1)[0].strip().lower()
+
+
+def _sanitize_dirname(name: str) -> str:
+    """Sanitize a directory name, preserving CJK and common unicode."""
+    cleaned = re.sub(r"[\x00-\x1f<>:\"/\\|?*]+", "_", name)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(". ")
+    return cleaned[:80].rstrip() or "uncategorized"
+
+
+def _extension_for_media_type(media_type: str) -> str:
+    return {
+        "application/msword": ".doc",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+        "application/vnd.ms-excel": ".xls",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+        "application/zip": ".zip",
+    }.get(media_type, ".bin")

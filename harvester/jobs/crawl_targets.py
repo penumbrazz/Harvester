@@ -24,6 +24,7 @@ def upsert_crawl_target(
     parent_target_id: uuid.UUID | None = None,
     discovered_from_raw_object_id: uuid.UUID | None = None,
     external_item_id: str | None = None,
+    category: str | None = None,
     depth: int = 0,
     priority: int = 0,
     now: datetime.datetime | None = None,
@@ -61,6 +62,8 @@ def upsert_crawl_target(
             existing.discovered_from_raw_object_id = discovered_from_raw_object_id
         if external_item_id is not None:
             existing.external_item_id = external_item_id
+        if category is not None:
+            existing.category = category
         session.flush()
         return existing, False
 
@@ -75,6 +78,7 @@ def upsert_crawl_target(
         canonical_url_hash=canonical_url_hash,
         target_role=target_role,
         media_type=media_type,
+        category=category,
         external_item_id=external_item_id,
         status="pending",
         depth=depth,

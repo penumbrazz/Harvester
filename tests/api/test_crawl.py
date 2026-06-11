@@ -20,7 +20,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
 from alembic import command
-from harvester.adapters.firecrawl import CrawlResult
+from harvester.adapters.types import CrawlResult
 from harvester.domain.fetch_policy import REASON_PRIVATE_IP, FetchPolicyResult
 from harvester.jobs.archive import ArchiveWriteResult
 

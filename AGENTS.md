@@ -19,7 +19,10 @@ Harvester 是个人 home lab 信息采集控制平面。第一版目标是公开
 - 默认采用 Superpowers 工作流：涉及需求澄清、设计或行为变更时先使用 `superpowers:brainstorming`；实现前写清计划；调试问题时使用 `superpowers:systematic-debugging`；功能和 bugfix 采用 TDD；完成前使用 `superpowers:verification-before-completion` 做验证。
 - 历史 `openspec/` 目录仅作为归档参考，不作为新开发的强制流程。不要再创建、安装或依赖项目本地 OpenSpec skill。
 - 涉及前端视觉、布局、组件样式或交互状态时，必须先读根目录 `DESIGN.md`，并以其中的 Animal Island UI 风格设计系统为准。优先使用 `animal-island-ui` 提供的组件，参考 `AI_USAGE.md` 了解组件 API。
-- 新增或修改抓取来源、extractor、recipe、schedule 时，必须先阅读并遵循 `.agent/skills/harvester-source-onboarding/SKILL.md`；优先复用现有 recipe、executor、extractor、pipeline 和测试结构，能复用就复用。
+- 新增、修改、测试抓取来源，或用户说“爬一下”“抓一下”“单次抓取”“下载公开 PDF”时，必须先阅读并遵循 `.agent/skills/harvester-source-onboarding/SKILL.md`；优先复用现有 recipe、executor、extractor、pipeline 和测试结构，能复用就复用。
+- 禁止用 `download_*.py`、`scrape_*.py`、本地 `*_pdfs/` 目录等独立脚本作为 Harvester 抓取任务的交付方案；临时探测可以存在，但最终必须迁移到 source、recipe、crawl run、raw_object、extractor、content item 流程。
+- PDF、图片和附件类 raw evidence 必须按原文件格式保存到 Harvester archive 的类型化目录，保留可读原文件名；只有命名冲突时才追加短后缀，禁止统一保存成 `.raw` 或纯 UUID/hash 文件名。
+- 单次抓取是正式运行模式，不等于 schedule。没有用户明确要求长期抓取时，不要创建 active schedule；应使用 Harvester API/CLI 的手动 crawl run 和 worker once 路径完成一次性抓取/抽取。
 - 一次只实现一个明确目标，除非用户明确要求跨目标协作。
 - 如果当前工作有 Superpowers spec、plan 或任务列表，任务完成后立刻更新对应状态。
 - 采用 TDD。先写或更新测试，再实现，再运行相关测试。

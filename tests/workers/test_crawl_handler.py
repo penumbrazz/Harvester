@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 
 import sqlalchemy as sa
 
-from harvester.adapters.firecrawl import CrawlResult
+from harvester.adapters.types import CrawlResult
 from harvester.db.models import CrawlRun, Job
 from harvester.domain.fetch_policy import REASON_PRIVATE_IP, FetchPolicyResult
 from harvester.jobs.archive import ArchiveWriteResult

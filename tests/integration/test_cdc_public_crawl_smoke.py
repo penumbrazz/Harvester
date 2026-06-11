@@ -18,7 +18,8 @@ from unittest.mock import patch
 import pytest
 import sqlalchemy as sa
 
-from harvester.adapters.firecrawl import CrawlResult, FirecrawlAdapter
+from harvester.adapters.firecrawl import FirecrawlAdapter
+from harvester.adapters.types import CrawlResult
 from harvester.db.models import ContentItem
 from harvester.domain.fetch_policy import FetchPolicyResult
 from harvester.extractors.cdc_fixture import CdcFixtureExtractor

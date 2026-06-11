@@ -38,6 +38,7 @@ class DiscoveredTarget:
     parent_target_id: str | None = None
     depth: int = 0
     priority: int = 0
+    category: str | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
 

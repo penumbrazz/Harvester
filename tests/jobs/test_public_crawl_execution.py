@@ -15,7 +15,7 @@ from unittest.mock import patch
 import pytest
 import sqlalchemy as sa
 
-from harvester.adapters.firecrawl import CrawlResult
+from harvester.adapters.types import CrawlResult
 from harvester.db.models import CrawlTarget
 from harvester.domain.fetch_policy import REASON_PRIVATE_IP, FetchPolicyResult
 from harvester.jobs.archive import ArchiveWriteResult
@@ -209,7 +209,9 @@ class TestApprovedSourceSuccess:
             )
 
         assert result.status == "completed"
-        mock_adapter.assert_called_once_with(target.target_url)
+        mock_adapter.assert_called_once_with(
+            target.target_url, executor="firecrawl", config={"url_pattern": "*"}
+        )
         assert mock_policy.call_args_list[0].args[0] == target.target_url
         updated = db_session.get(CrawlTarget, target.id)
         assert updated.status == "completed"

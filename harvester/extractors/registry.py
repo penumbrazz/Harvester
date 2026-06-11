@@ -10,6 +10,10 @@ from harvester.extractors.cdc_weekly import (
     CdcWeeklyDetailExtractor,
     CdcWeeklyListExtractor,
 )
+from harvester.extractors.nhc_wsbz import (
+    NhcWsbzDetailExtractor,
+    NhcWsbzListExtractor,
+)
 from harvester.extractors.pdf_text import PdfTextExtractor
 from harvester.extractors.sina_7x24 import Sina7x24Extractor
 
@@ -27,6 +31,16 @@ _REGISTRY: list[tuple[re.Pattern[str], ExtractorClass]] = [
     (
         re.compile(r"chinacdc\.cn/jksj/jksj04_14249/?$"),
         CdcWeeklyListExtractor,
+    ),
+    # NHC health standards — detail page (must precede list pattern)
+    (
+        re.compile(r"nhc\.gov\.cn/wjw/\w+/\d{6}/[a-f0-9]+\.shtml"),
+        NhcWsbzDetailExtractor,
+    ),
+    # NHC health standards — list page
+    (
+        re.compile(r"nhc\.gov\.cn/wjw/wsbzxx/wsbz\.shtml"),
+        NhcWsbzListExtractor,
     ),
     (re.compile(r"sina\.com\.cn/7x24"), Sina7x24Extractor),
 ]
@@ -47,13 +61,15 @@ def get_extractor_for_url(url: str) -> Extractor | None:
 
 def get_extractor(url: str, content_type: str | None = None) -> Extractor | None:
     """Return an extractor matching URL pattern or content type fallback."""
-    extractor = get_extractor_for_url(url)
-    if extractor is not None:
-        return extractor
+    # Binary content types (PDF, images) must use their dedicated extractors
+    # regardless of URL pattern, since URL-based extractors expect text/HTML.
     if content_type and content_type in _CONTENT_TYPE_EXTRACTORS:
         cls = _CONTENT_TYPE_EXTRACTORS[content_type]
         logger.debug(
             "Matched extractor %s for content_type %s", cls.__name__, content_type
         )
         return cls()
+    extractor = get_extractor_for_url(url)
+    if extractor is not None:
+        return extractor
     return None

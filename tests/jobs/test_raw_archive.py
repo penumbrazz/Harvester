@@ -115,6 +115,111 @@ class TestArchiveWritePayload:
         parts = Path(result.relative_path).parts
         assert len(parts) >= 2
 
+    def test_pdf_keeps_original_filename_and_extension(
+        self, writer: ArchiveWriter, archive_dir: Path
+    ):
+        """PDF assets should be readable on disk and keep the source filename."""
+        source_id = uuid.uuid4()
+        result = writer.write(
+            payload=b"%PDF-1.7 test",
+            source_id=source_id,
+            crawl_run_id=uuid.uuid4(),
+            content_type="application/pdf",
+            original_url="https://example.org/files/WST%20875-2026.pdf",
+        )
+
+        relative_path = Path(result.relative_path)
+        assert relative_path.parts[0:2] == ("assets", "pdf")
+        assert relative_path.name == "WST 875-2026.pdf"
+        assert relative_path.suffix == ".pdf"
+        assert (archive_dir / relative_path).read_bytes() == b"%PDF-1.7 test"
+
+    def test_category_override_adds_subdirectory(
+        self, writer: ArchiveWriter, archive_dir: Path
+    ):
+        """Category override should add a subdirectory under the type directory."""
+        source_id = uuid.uuid4()
+        result = writer.write(
+            payload=b"%PDF-1.7 test",
+            source_id=source_id,
+            crawl_run_id=uuid.uuid4(),
+            content_type="application/pdf",
+            original_url="https://example.org/files/report.pdf",
+            category_override="职业健康",
+        )
+
+        relative_path = Path(result.relative_path)
+        # path: assets/pdf/职业健康/DATE/SOURCE/report.pdf
+        assert relative_path.parts[0:2] == ("assets", "pdf")
+        assert relative_path.parts[2] == "职业健康"
+        assert relative_path.name == "report.pdf"
+        assert (archive_dir / relative_path).read_bytes() == b"%PDF-1.7 test"
+
+    def test_category_override_sanitized(
+        self, writer: ArchiveWriter, archive_dir: Path
+    ):
+        """Category with special characters should be sanitized."""
+        source_id = uuid.uuid4()
+        result = writer.write(
+            payload=b"test",
+            source_id=source_id,
+            crawl_run_id=uuid.uuid4(),
+            content_type="application/pdf",
+            category_override="test/category:name",
+        )
+
+        relative_path = Path(result.relative_path)
+        assert relative_path.parts[2] == "test_category_name"
+
+    def test_no_category_override_uses_default_path(
+        self, writer: ArchiveWriter, archive_dir: Path
+    ):
+        """Without category override, path should be the default structure."""
+        source_id = uuid.uuid4()
+        result = writer.write(
+            payload=b"%PDF-1.7 test",
+            source_id=source_id,
+            crawl_run_id=uuid.uuid4(),
+            content_type="application/pdf",
+            original_url="https://example.org/files/test.pdf",
+        )
+
+        relative_path = Path(result.relative_path)
+        assert relative_path.parts[0:2] == ("assets", "pdf")
+        # Third part should be date, not a category name
+        import re
+
+        assert re.match(r"\d{4}-\d{2}-\d{2}", relative_path.parts[2])
+
+    def test_filename_conflict_adds_short_suffix(
+        self, writer: ArchiveWriter, archive_dir: Path
+    ):
+        """Conflicting asset names should keep the readable stem."""
+        source_id = uuid.uuid4()
+        original_url = "https://example.org/files/report.pdf"
+
+        first = writer.write(
+            payload=b"first",
+            source_id=source_id,
+            crawl_run_id=uuid.UUID("00000000-0000-0000-0000-000000000001"),
+            content_type="application/pdf",
+            original_url=original_url,
+        )
+        second = writer.write(
+            payload=b"second",
+            source_id=source_id,
+            crawl_run_id=uuid.UUID("00000000-0000-0000-0000-000000000002"),
+            content_type="application/pdf",
+            original_url=original_url,
+        )
+
+        first_path = Path(first.relative_path)
+        second_path = Path(second.relative_path)
+        assert first_path.name == "report.pdf"
+        assert second_path.name == "report-00000000.pdf"
+        assert (archive_dir / first_path).read_bytes() == b"first"
+        assert (archive_dir / second_path).read_bytes() == b"second"
+
 
 class TestArchiveOversizedRejection:
     """Oversized payloads MUST be rejected."""
